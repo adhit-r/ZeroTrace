@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# ZeroTrace Agent Post-Install Script
+# Sets up the agent as a system service
+
+set -e
+
+# Set permissions
+chmod 755 /usr/local/bin/zerotrace-agent
+chown root:wheel /usr/local/bin/zerotrace-agent
+
+# Load LaunchDaemon
+launchctl load /Library/LaunchDaemons/com.zerotrace.agent.plist
+
+# Create log directory
+mkdir -p /var/log
+touch /var/log/zerotrace-agent.log
+touch /var/log/zerotrace-agent.error.log
+chmod 644 /var/log/zerotrace-agent*.log
+
+echo "ZeroTrace Agent installed successfully"
+exit 0

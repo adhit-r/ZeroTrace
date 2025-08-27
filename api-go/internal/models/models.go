@@ -1,0 +1,299 @@
+package models
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+// User represents a user in the system
+type User struct {
+	ID           uuid.UUID  `json:"id" db:"id"`
+	Email        string     `json:"email" db:"email"`
+	Password     string     `json:"-" db:"password_hash"`
+	Name         string     `json:"name" db:"name"`
+	Role         UserRole   `json:"role" db:"role"`
+	CompanyID    uuid.UUID  `json:"company_id" db:"company_id"`
+	OrganizationID uuid.UUID `json:"organization_id" db:"organization_id"`
+	Status       string     `json:"status" db:"status"`
+	LastLogin    *time.Time `json:"last_login,omitempty" db:"last_login"`
+	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at" db:"updated_at"`
+}
+
+// UserRole represents user roles
+type UserRole string
+
+const (
+	RoleAdmin UserRole = "ADMIN"
+	RoleUser  UserRole = "USER"
+)
+
+// Company represents a company/organization
+type Company struct {
+	ID        uuid.UUID      `json:"id" db:"id"`
+	Name      string         `json:"name" db:"name"`
+	Domain    string         `json:"domain" db:"domain"`
+	Settings  map[string]any `json:"settings" db:"settings" gorm:"type:jsonb"`
+	Status    string         `json:"status" db:"status"`
+	CreatedAt time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at" db:"updated_at"`
+}
+
+// Organization represents a tenant/organization within a company
+type Organization struct {
+	ID          uuid.UUID      `json:"id" db:"id"`
+	CompanyID   uuid.UUID      `json:"company_id" db:"company_id"`
+	Name        string         `json:"name" db:"name"`
+	Slug        string         `json:"slug" db:"slug" gorm:"uniqueIndex"`
+	Description string         `json:"description" db:"description"`
+	Settings    map[string]any `json:"settings" db:"settings" gorm:"type:jsonb"`
+	Status      string         `json:"status" db:"status"`
+	CreatedAt   time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at" db:"updated_at"`
+}
+
+// EnrollmentToken represents a token for agent enrollment
+type EnrollmentToken struct {
+	ID             uuid.UUID `json:"id" db:"id"`
+	OrganizationID uuid.UUID `json:"organization_id" db:"organization_id"`
+	Token          string    `json:"token" db:"token" gorm:"uniqueIndex"`
+	TokenHash      string    `json:"-" db:"token_hash"`
+	IssuedBy       uuid.UUID `json:"issued_by" db:"issued_by"`
+	IssuedAt       time.Time `json:"issued_at" db:"issued_at"`
+	ExpiresAt      time.Time `json:"expires_at" db:"expires_at"`
+	UsedAt         *time.Time `json:"used_at,omitempty" db:"used_at"`
+	UsedBy         *uuid.UUID `json:"used_by,omitempty" db:"used_by"`
+	Status         string     `json:"status" db:"status"` // active, used, expired, revoked
+	CreatedAt      time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at" db:"updated_at"`
+}
+
+// AgentCredential represents a long-lived credential for an agent
+type AgentCredential struct {
+	ID             uuid.UUID `json:"id" db:"id"`
+	AgentID        uuid.UUID `json:"agent_id" db:"agent_id"`
+	OrganizationID uuid.UUID `json:"organization_id" db:"organization_id"`
+	CredentialHash string    `json:"-" db:"credential_hash"`
+	IssuedAt       time.Time `json:"issued_at" db:"issued_at"`
+	ExpiresAt      *time.Time `json:"expires_at,omitempty" db:"expires_at"`
+	LastUsedAt     time.Time `json:"last_used_at" db:"last_used_at"`
+	Status         string    `json:"status" db:"status"` // active, expired, revoked
+	CreatedAt      time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// Scan represents a vulnerability scan
+type Scan struct {
+	ID             uuid.UUID      `json:"id" db:"id"`
+	CompanyID      uuid.UUID      `json:"company_id" db:"company_id"`
+	OrganizationID uuid.UUID      `json:"organization_id" db:"organization_id"`
+	AgentID        *uuid.UUID     `json:"agent_id,omitempty" db:"agent_id"`
+	Repository     string         `json:"repository" db:"repository"`
+	Branch         string         `json:"branch" db:"branch"`
+	Commit         string         `json:"commit,omitempty" db:"commit"`
+	ScanType       string         `json:"scan_type" db:"scan_type"`
+	Status         ScanStatus     `json:"status" db:"status"`
+	Progress       int            `json:"progress" db:"progress"`
+	StartTime      *time.Time     `json:"start_time,omitempty" db:"start_time"`
+	EndTime        *time.Time     `json:"end_time,omitempty" db:"end_time"`
+	Options        map[string]any `json:"options" db:"options" gorm:"type:jsonb"`
+	Results        map[string]any `json:"results" db:"results" gorm:"type:jsonb"`
+	Metadata       map[string]any `json:"metadata" db:"metadata" gorm:"type:jsonb"`
+	Notes          string         `json:"notes,omitempty" db:"notes"`
+	CreatedAt      time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at" db:"updated_at"`
+}
+
+// ScanStatus represents scan status
+type ScanStatus string
+
+const (
+	ScanStatusPending   ScanStatus = "pending"
+	ScanStatusScanning  ScanStatus = "scanning"
+	ScanStatusCompleted ScanStatus = "completed"
+	ScanStatusFailed    ScanStatus = "failed"
+	ScanStatusCancelled ScanStatus = "cancelled"
+)
+
+// Vulnerability represents a vulnerability
+type Vulnerability struct {
+	ID               uuid.UUID      `json:"id" db:"id"`
+	ScanID           uuid.UUID      `json:"scan_id" db:"scan_id"`
+	CompanyID        uuid.UUID      `json:"company_id" db:"company_id"`
+	OrganizationID   uuid.UUID      `json:"organization_id" db:"organization_id"`
+	Type             string         `json:"type" db:"type"`
+	Severity         SeverityLevel  `json:"severity" db:"severity"`
+	Title            string         `json:"title" db:"title"`
+	Description      string         `json:"description" db:"description"`
+	CVEID            string         `json:"cve_id,omitempty" db:"cve_id"`
+	CVSSScore        *float64       `json:"cvss_score,omitempty" db:"cvss_score"`
+	CVSSVector       string         `json:"cvss_vector,omitempty" db:"cvss_vector"`
+	PackageName      string         `json:"package_name,omitempty" db:"package_name"`
+	PackageVersion   string         `json:"package_version,omitempty" db:"package_version"`
+	Location         string         `json:"location,omitempty" db:"location"`
+	Remediation      string         `json:"remediation,omitempty" db:"remediation"`
+	References       []string       `json:"references" db:"references" gorm:"type:jsonb"`
+	AffectedVersions []string       `json:"affected_versions" db:"affected_versions" gorm:"type:jsonb"`
+	PatchedVersions  []string       `json:"patched_versions" db:"patched_versions" gorm:"type:jsonb"`
+	ExploitAvailable bool           `json:"exploit_available" db:"exploit_available"`
+	ExploitCount     int            `json:"exploit_count" db:"exploit_count"`
+	Status           string         `json:"status" db:"status"`
+	Priority         string         `json:"priority" db:"priority"`
+	Notes            string         `json:"notes,omitempty" db:"notes"`
+	EnrichmentData   map[string]any `json:"enrichment_data" db:"enrichment_data" gorm:"type:jsonb"`
+	CreatedAt        time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time      `json:"updated_at" db:"updated_at"`
+}
+
+// SeverityLevel represents vulnerability severity
+type SeverityLevel string
+
+const (
+	SeverityCritical SeverityLevel = "CRITICAL"
+	SeverityHigh     SeverityLevel = "HIGH"
+	SeverityMedium   SeverityLevel = "MEDIUM"
+	SeverityLow      SeverityLevel = "LOW"
+	SeverityInfo     SeverityLevel = "INFO"
+)
+
+// Agent represents an active agent
+type Agent struct {
+	ID             uuid.UUID      `json:"id" db:"id"`
+	CompanyID      uuid.UUID      `json:"company_id" db:"company_id"`
+	OrganizationID uuid.UUID      `json:"organization_id" db:"organization_id"`
+	Name           string         `json:"name" db:"name"`
+	Status         string         `json:"status" db:"status"`
+	Version        string         `json:"version" db:"version"`
+	LastSeen       time.Time      `json:"last_seen" db:"last_seen"`
+	CPUUsage       float64        `json:"cpu_usage" db:"cpu_usage"`
+	MemoryUsage    float64        `json:"memory_usage" db:"memory_usage"`
+	IPAddress      string         `json:"ip_address" db:"ip_address"`
+	Hostname       string         `json:"hostname" db:"hostname"`
+	OS             string         `json:"os" db:"os"`
+	Metadata       map[string]any `json:"metadata" db:"metadata" gorm:"type:jsonb"`
+	CreatedAt      time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at" db:"updated_at"`
+}
+
+// AgentStatus represents the current status of an agent
+type AgentStatus struct {
+	AgentID        uuid.UUID `json:"agent_id"`
+	OrganizationID uuid.UUID `json:"organization_id"`
+	Status         string    `json:"status"`
+	LastSeen       time.Time `json:"last_seen"`
+	CPUUsage       float64   `json:"cpu_usage"`
+	MemoryUsage    float64   `json:"memory_usage"`
+	IsOnline       bool      `json:"is_online"`
+}
+
+// AgentHeartbeat represents a heartbeat from an agent
+type AgentHeartbeat struct {
+	AgentID        uuid.UUID      `json:"agent_id"`
+	OrganizationID uuid.UUID      `json:"organization_id"`
+	Status         string         `json:"status"`
+	CPUUsage       float64        `json:"cpu_usage"`
+	MemoryUsage    float64        `json:"memory_usage"`
+	Metadata       map[string]any `json:"metadata" gorm:"type:jsonb"`
+	Timestamp      time.Time      `json:"timestamp"`
+}
+
+// AgentEnrollmentRequest represents an agent enrollment request
+type AgentEnrollmentRequest struct {
+	EnrollmentToken string            `json:"enrollment_token" binding:"required"`
+	AgentInfo       AgentEnrollmentInfo `json:"agent_info" binding:"required"`
+}
+
+// AgentEnrollmentInfo represents agent information during enrollment
+type AgentEnrollmentInfo struct {
+	Hostname    string            `json:"hostname" binding:"required"`
+	OS          string            `json:"os" binding:"required"`
+	Version     string            `json:"version"`
+	Architecture string           `json:"architecture"`
+	Metadata    map[string]any    `json:"metadata"`
+}
+
+// AgentEnrollmentResponse represents the response to agent enrollment
+type AgentEnrollmentResponse struct {
+	AgentID        uuid.UUID `json:"agent_id"`
+	OrganizationID uuid.UUID `json:"organization_id"`
+	Credential     string    `json:"credential"`
+	ExpiresAt      time.Time `json:"expires_at"`
+}
+
+// Request/Response Models
+
+// LoginRequest represents login request
+type LoginRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
+// LoginResponse represents login response
+type LoginResponse struct {
+	User  *User  `json:"user"`
+	Token string `json:"token"`
+}
+
+// RegisterRequest represents registration request
+type RegisterRequest struct {
+	Email     string    `json:"email" binding:"required,email"`
+	Password  string    `json:"password" binding:"required,min=8"`
+	Name      string    `json:"name" binding:"required"`
+	CompanyID uuid.UUID `json:"company_id" binding:"required"`
+}
+
+// CreateScanRequest represents scan creation request
+type CreateScanRequest struct {
+	Repository string         `json:"repository" binding:"required,url"`
+	Branch     string         `json:"branch" binding:"required"`
+	ScanType   string         `json:"scan_type"`
+	Options    map[string]any `json:"options"`
+}
+
+// GenerateEnrollmentTokenRequest represents enrollment token generation request
+type GenerateEnrollmentTokenRequest struct {
+	OrganizationID uuid.UUID `json:"organization_id" binding:"required"`
+	ExpiresIn      int       `json:"expires_in"` // minutes, default 60
+	Description    string    `json:"description"`
+}
+
+// PaginationRequest represents pagination parameters
+type PaginationRequest struct {
+	Page  int `form:"page" binding:"min=1"`
+	Limit int `form:"limit" binding:"min=1,max=100"`
+}
+
+// PaginationResponse represents paginated response
+type PaginationResponse struct {
+	Data       any   `json:"data"`
+	Total      int64 `json:"total"`
+	Page       int   `json:"page"`
+	Limit      int   `json:"limit"`
+	TotalPages int   `json:"total_pages"`
+	HasNext    bool  `json:"has_next"`
+	HasPrev    bool  `json:"has_prev"`
+}
+
+// APIResponse represents standard API response
+type APIResponse struct {
+	Success   bool      `json:"success"`
+	Data      any       `json:"data,omitempty"`
+	Message   string    `json:"message,omitempty"`
+	Error     *APIError `json:"error,omitempty"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// APIError represents API error
+type APIError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details any    `json:"details,omitempty"`
+}
+
+// HealthCheckResponse represents health check response
+type HealthCheckResponse struct {
+	Status    string            `json:"status"`
+	Timestamp time.Time         `json:"timestamp"`
+	Services  map[string]string `json:"services"`
+}

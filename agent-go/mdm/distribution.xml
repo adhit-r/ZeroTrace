@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+    <title>ZeroTrace Agent</title>
+    <organization>com.zerotrace</organization>
+    <domains enable_localSystem="true"/>
+    <options customize="never" require-scripts="true" rootVolumeOnly="true"/>
+    <pkg-ref id="com.zerotrace.agent"/>
+    <choices-outline>
+        <line choice="com.zerotrace.agent"/>
+    </choices-outline>
+    <choice id="com.zerotrace.agent" title="ZeroTrace Agent">
+        <pkg-ref id="com.zerotrace.agent"/>
+    </choice>
+    <pkg-ref id="com.zerotrace.agent" version="1.0.0" onConclusion="none">zerotrace-agent-component.pkg</pkg-ref>
+</installer-gui-script>
