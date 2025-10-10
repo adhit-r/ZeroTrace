@@ -8,17 +8,17 @@ import (
 
 // User represents a user in the system
 type User struct {
-	ID           uuid.UUID  `json:"id" db:"id"`
-	Email        string     `json:"email" db:"email"`
-	Password     string     `json:"-" db:"password_hash"`
-	Name         string     `json:"name" db:"name"`
-	Role         UserRole   `json:"role" db:"role"`
-	CompanyID    uuid.UUID  `json:"company_id" db:"company_id"`
-	OrganizationID uuid.UUID `json:"organization_id" db:"organization_id"`
-	Status       string     `json:"status" db:"status"`
-	LastLogin    *time.Time `json:"last_login,omitempty" db:"last_login"`
-	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at" db:"updated_at"`
+	ID             uuid.UUID  `json:"id" db:"id"`
+	Email          string     `json:"email" db:"email"`
+	Password       string     `json:"-" db:"password_hash"`
+	Name           string     `json:"name" db:"name"`
+	Role           UserRole   `json:"role" db:"role"`
+	CompanyID      uuid.UUID  `json:"company_id" db:"company_id"`
+	OrganizationID uuid.UUID  `json:"organization_id" db:"organization_id"`
+	Status         string     `json:"status" db:"status"`
+	LastLogin      *time.Time `json:"last_login,omitempty" db:"last_login"`
+	CreatedAt      time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // UserRole represents user roles
@@ -55,13 +55,13 @@ type Organization struct {
 
 // EnrollmentToken represents a token for agent enrollment
 type EnrollmentToken struct {
-	ID             uuid.UUID `json:"id" db:"id"`
-	OrganizationID uuid.UUID `json:"organization_id" db:"organization_id"`
-	Token          string    `json:"token" db:"token" gorm:"uniqueIndex"`
-	TokenHash      string    `json:"-" db:"token_hash"`
-	IssuedBy       uuid.UUID `json:"issued_by" db:"issued_by"`
-	IssuedAt       time.Time `json:"issued_at" db:"issued_at"`
-	ExpiresAt      time.Time `json:"expires_at" db:"expires_at"`
+	ID             uuid.UUID  `json:"id" db:"id"`
+	OrganizationID uuid.UUID  `json:"organization_id" db:"organization_id"`
+	Token          string     `json:"token" db:"token" gorm:"uniqueIndex"`
+	TokenHash      string     `json:"-" db:"token_hash"`
+	IssuedBy       uuid.UUID  `json:"issued_by" db:"issued_by"`
+	IssuedAt       time.Time  `json:"issued_at" db:"issued_at"`
+	ExpiresAt      time.Time  `json:"expires_at" db:"expires_at"`
 	UsedAt         *time.Time `json:"used_at,omitempty" db:"used_at"`
 	UsedBy         *uuid.UUID `json:"used_by,omitempty" db:"used_by"`
 	Status         string     `json:"status" db:"status"` // active, used, expired, revoked
@@ -71,16 +71,16 @@ type EnrollmentToken struct {
 
 // AgentCredential represents a long-lived credential for an agent
 type AgentCredential struct {
-	ID             uuid.UUID `json:"id" db:"id"`
-	AgentID        uuid.UUID `json:"agent_id" db:"agent_id"`
-	OrganizationID uuid.UUID `json:"organization_id" db:"organization_id"`
-	CredentialHash string    `json:"-" db:"credential_hash"`
-	IssuedAt       time.Time `json:"issued_at" db:"issued_at"`
+	ID             uuid.UUID  `json:"id" db:"id"`
+	AgentID        uuid.UUID  `json:"agent_id" db:"agent_id"`
+	OrganizationID uuid.UUID  `json:"organization_id" db:"organization_id"`
+	CredentialHash string     `json:"-" db:"credential_hash"`
+	IssuedAt       time.Time  `json:"issued_at" db:"issued_at"`
 	ExpiresAt      *time.Time `json:"expires_at,omitempty" db:"expires_at"`
-	LastUsedAt     time.Time `json:"last_used_at" db:"last_used_at"`
-	Status         string    `json:"status" db:"status"` // active, expired, revoked
-	CreatedAt      time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
+	LastUsedAt     time.Time  `json:"last_used_at" db:"last_used_at"`
+	Status         string     `json:"status" db:"status"` // active, expired, revoked
+	CreatedAt      time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // Scan represents a vulnerability scan
@@ -200,17 +200,17 @@ type AgentHeartbeat struct {
 
 // AgentEnrollmentRequest represents an agent enrollment request
 type AgentEnrollmentRequest struct {
-	EnrollmentToken string            `json:"enrollment_token" binding:"required"`
+	EnrollmentToken string              `json:"enrollment_token" binding:"required"`
 	AgentInfo       AgentEnrollmentInfo `json:"agent_info" binding:"required"`
 }
 
 // AgentEnrollmentInfo represents agent information during enrollment
 type AgentEnrollmentInfo struct {
-	Hostname    string            `json:"hostname" binding:"required"`
-	OS          string            `json:"os" binding:"required"`
-	Version     string            `json:"version"`
-	Architecture string           `json:"architecture"`
-	Metadata    map[string]any    `json:"metadata"`
+	Hostname     string         `json:"hostname" binding:"required"`
+	OS           string         `json:"os" binding:"required"`
+	Version      string         `json:"version"`
+	Architecture string         `json:"architecture"`
+	Metadata     map[string]any `json:"metadata"`
 }
 
 // AgentEnrollmentResponse represents the response to agent enrollment
@@ -273,6 +273,55 @@ type PaginationResponse struct {
 	TotalPages int   `json:"total_pages"`
 	HasNext    bool  `json:"has_next"`
 	HasPrev    bool  `json:"has_prev"`
+}
+
+// Asset represents a scanned asset
+type Asset struct {
+	ID        uuid.UUID              `json:"id"`
+	Name      string                 `json:"name"`
+	Type      string                 `json:"type"`
+	Status    string                 `json:"status"`
+	Metadata  map[string]interface{} `json:"metadata"`
+	CreatedAt time.Time              `json:"created_at"`
+	UpdatedAt time.Time              `json:"updated_at"`
+}
+
+// ScanResult represents a scan result from an agent
+type ScanResult struct {
+	ID              uuid.UUID              `json:"id"`
+	AgentID         uuid.UUID              `json:"agent_id"`
+	ScanType        string                 `json:"scan_type"`
+	Status          string                 `json:"status"`
+	Results         map[string]interface{} `json:"results"`
+	Vulnerabilities []Vulnerability        `json:"vulnerabilities,omitempty"`
+	Assets          []Asset                `json:"assets,omitempty"`
+	Metadata        map[string]interface{} `json:"metadata"`
+	CreatedAt       time.Time              `json:"created_at"`
+	UpdatedAt       time.Time              `json:"updated_at"`
+}
+
+// AgentScanResult represents scan results from agents (matches agent format)
+type AgentScanResult struct {
+	ID              uuid.UUID       `json:"id"`
+	AgentID         string          `json:"agent_id"`
+	CompanyID       string          `json:"company_id"`
+	Repository      string          `json:"repository,omitempty"`
+	Branch          string          `json:"branch,omitempty"`
+	Commit          string          `json:"commit,omitempty"`
+	StartTime       time.Time       `json:"start_time"`
+	EndTime         time.Time       `json:"end_time"`
+	Status          string          `json:"status"`
+	Vulnerabilities []Vulnerability `json:"vulnerabilities"`
+	Dependencies    []Dependency    `json:"dependencies"`
+	Metadata        map[string]any  `json:"metadata"`
+}
+
+// Dependency represents a software dependency
+type Dependency struct {
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	Type        string `json:"type"`
+	Description string `json:"description,omitempty"`
 }
 
 // APIResponse represents standard API response

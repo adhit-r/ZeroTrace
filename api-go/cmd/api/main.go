@@ -109,9 +109,24 @@ func setupRoutes(router *gin.Engine, authService *services.AuthService, scanServ
 	{
 		agents.POST("/register", handlers.RegisterAgent(agentService))
 		agents.POST("/heartbeat", handlers.AgentHeartbeat(agentService))
+		agents.POST("/results", handlers.AgentResults(agentService))
+		agents.POST("/status", handlers.AgentStatus(agentService))
 		agents.GET("/", handlers.GetAgents(agentService))
 		agents.GET("/online", handlers.GetOnlineAgents(agentService))
 		agents.GET("/stats", handlers.GetAgentStats(agentService))
+		agents.GET("/stats/public", handlers.GetPublicAgentStats(agentService))
+	}
+
+	// Public dashboard routes (no auth required)
+	dashboard := router.Group("/api/dashboard")
+	{
+		dashboard.GET("/overview", handlers.GetPublicDashboardOverview(agentService))
+	}
+
+	// Public vulnerabilities route (no auth required)
+	vulnerabilities := router.Group("/api/vulnerabilities")
+	{
+		vulnerabilities.GET("/", handlers.GetPublicVulnerabilities(agentService))
 	}
 
 	// Enrollment routes (public - no auth required)
@@ -151,13 +166,13 @@ func setupRoutes(router *gin.Engine, authService *services.AuthService, scanServ
 				companies.PUT("/:id", handlers.UpdateCompany)
 			}
 
-			// Vulnerability routes
-			vulnerabilities := protected.Group("/vulnerabilities")
-			{
-				vulnerabilities.GET("/", handlers.GetVulnerabilities)
-				vulnerabilities.GET("/:id", handlers.GetVulnerabilityDetails)
-				vulnerabilities.GET("/stats", handlers.GetVulnerabilityStats)
-			}
+			// Vulnerability routes (commented out until handlers are implemented)
+			// vulnerabilities := protected.Group("/vulnerabilities")
+			// {
+			// 	vulnerabilities.GET("/", handlers.GetVulnerabilities)
+			// 	vulnerabilities.GET("/:id", handlers.GetVulnerabilityDetails)
+			// 	vulnerabilities.GET("/stats", handlers.GetVulnerabilityStats)
+			// }
 
 			// Dashboard routes
 			dashboard := protected.Group("/dashboard")

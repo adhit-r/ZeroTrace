@@ -100,6 +100,18 @@ func (as *AgentService) GetAgents(organizationID uuid.UUID) []*models.Agent {
 	return agents
 }
 
+// GetAllAgents gets all agents (for public endpoints)
+func (as *AgentService) GetAllAgents() []*models.Agent {
+	as.mutex.RLock()
+	defer as.mutex.RUnlock()
+
+	var agents []*models.Agent
+	for _, agent := range as.agents {
+		agents = append(agents, agent)
+	}
+	return agents
+}
+
 // GetOnlineAgents gets online agents for an organization
 func (as *AgentService) GetOnlineAgents(organizationID uuid.UUID) []*models.Agent {
 	as.mutex.RLock()
@@ -179,6 +191,44 @@ func (as *AgentService) GetAgentStats(organizationID uuid.UUID) map[string]inter
 	return stats
 }
 
+// GetPublicAgentStats gets agent statistics for all agents (public endpoint)
+func (as *AgentService) GetPublicAgentStats() map[string]interface{} {
+	as.mutex.RLock()
+	defer as.mutex.RUnlock()
+
+	stats := map[string]interface{}{
+		"total":     0,
+		"online":    0,
+		"offline":   0,
+		"avgCpu":    0.0,
+		"avgMemory": 0.0,
+	}
+
+	offlineThreshold := time.Now().Add(-5 * time.Minute)
+	totalCpu := 0.0
+	totalMemory := 0.0
+
+	for _, agent := range as.agents {
+		stats["total"] = stats["total"].(int) + 1
+		totalCpu += agent.CPUUsage
+		totalMemory += agent.MemoryUsage
+
+		if agent.LastSeen.After(offlineThreshold) {
+			stats["online"] = stats["online"].(int) + 1
+		} else {
+			stats["offline"] = stats["offline"].(int) + 1
+		}
+	}
+
+	// Calculate averages
+	if stats["total"].(int) > 0 {
+		stats["avgCpu"] = totalCpu / float64(stats["total"].(int))
+		stats["avgMemory"] = totalMemory / float64(stats["total"].(int))
+	}
+
+	return stats
+}
+
 // StartCleanupRoutine starts the cleanup routine
 func (as *AgentService) StartCleanupRoutine() {
 	go func() {
@@ -191,3 +241,105 @@ func (as *AgentService) StartCleanupRoutine() {
 	}()
 }
 
+// UpdateAgentResults updates agent with scan results
+func (as *AgentService) UpdateAgentResults(agentID string, results []models.AgentScanResult, metadata map[string]interface{}) {
+	as.mutex.Lock()
+	defer as.mutex.Unlock()
+
+	agentUUID, err := uuid.Parse(agentID)
+	if err != nil {
+		return
+	}
+
+	agent, exists := as.agents[agentUUID]
+	if !exists {
+		return
+	}
+
+	// Update agent with scan results
+	agent.LastSeen = time.Now()
+
+	// Initialize metadata if nil
+	if agent.Metadata == nil {
+		agent.Metadata = make(map[string]interface{})
+	}
+
+	// Store scan results in metadata
+	if len(results) > 0 {
+		// Count total vulnerabilities
+		totalVulns := 0
+		criticalVulns := 0
+		highVulns := 0
+		mediumVulns := 0
+		lowVulns := 0
+		totalAssets := 0
+
+		// Collect all dependencies and vulnerabilities
+		var allDependencies []models.Dependency
+		var allVulnerabilities []models.Vulnerability
+
+		for _, result := range results {
+			// Count dependencies as assets (agent sends Dependencies)
+			totalAssets += len(result.Dependencies)
+			allDependencies = append(allDependencies, result.Dependencies...)
+
+			for _, vuln := range result.Vulnerabilities {
+				totalVulns++
+				allVulnerabilities = append(allVulnerabilities, vuln)
+				switch vuln.Severity {
+				case "critical":
+					criticalVulns++
+				case "high":
+					highVulns++
+				case "medium":
+					mediumVulns++
+				case "low":
+					lowVulns++
+				}
+			}
+		}
+
+		// Store actual data arrays
+		agent.Metadata["dependencies"] = allDependencies
+		agent.Metadata["vulnerabilities"] = allVulnerabilities
+
+		// Store counts in metadata
+		agent.Metadata["total_vulnerabilities"] = totalVulns
+		agent.Metadata["critical_vulnerabilities"] = criticalVulns
+		agent.Metadata["high_vulnerabilities"] = highVulns
+		agent.Metadata["medium_vulnerabilities"] = mediumVulns
+		agent.Metadata["low_vulnerabilities"] = lowVulns
+		agent.Metadata["total_assets"] = totalAssets
+		agent.Metadata["last_scan_time"] = time.Now().Format(time.RFC3339)
+	}
+
+	// Update with provided metadata
+	if metadata != nil {
+		for k, v := range metadata {
+			agent.Metadata[k] = v
+		}
+	}
+}
+
+// UpdateAgentStatus updates agent status
+func (as *AgentService) UpdateAgentStatus(agentID string, status string, metadata map[string]interface{}) {
+	as.mutex.Lock()
+	defer as.mutex.Unlock()
+
+	agentUUID, err := uuid.Parse(agentID)
+	if err != nil {
+		return
+	}
+
+	agent, exists := as.agents[agentUUID]
+	if !exists {
+		return
+	}
+
+	// Update agent status
+	agent.Status = status
+	agent.LastSeen = time.Now()
+	if metadata != nil {
+		agent.Metadata = metadata
+	}
+}

@@ -14,10 +14,8 @@ import (
 // GetAgents retrieves all agents for a company
 func GetAgents(agentService *services.AgentService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		companyID, _ := c.Get("company_id")
-		companyUUID, _ := uuid.Parse(companyID.(string))
-
-		agents := agentService.GetAgents(companyUUID)
+		// For public endpoint, get all agents without company filter
+		agents := agentService.GetAllAgents()
 
 		c.JSON(http.StatusOK, models.APIResponse{
 			Success:   true,
@@ -168,8 +166,8 @@ func RegisterAgent(agentService *services.AgentService) gin.HandlerFunc {
 			return
 		}
 
-		companyID, _ := c.Get("company_id")
-		companyUUID, _ := uuid.Parse(companyID.(string))
+		// For public endpoint, use a default company ID
+		companyUUID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 
 		agent := agentService.RegisterAgent(
 			req.AgentID,
@@ -189,3 +187,156 @@ func RegisterAgent(agentService *services.AgentService) gin.HandlerFunc {
 	}
 }
 
+// AgentResults handles scan results from agents
+func AgentResults(agentService *services.AgentService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			AgentID  string                 `json:"agent_id" binding:"required"`
+			Results  []models.AgentScanResult `json:"results"`
+			Metadata map[string]interface{} `json:"metadata"`
+		}
+
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, models.APIResponse{
+				Success:   false,
+				Message:   "Invalid request body",
+				Timestamp: time.Now(),
+			})
+			return
+		}
+
+		// Update agent with results directly (AgentScanResult format)
+		agentService.UpdateAgentResults(req.AgentID, req.Results, req.Metadata)
+
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success:   true,
+			Message:   "Scan results received successfully",
+			Timestamp: time.Now(),
+		})
+	}
+}
+
+// AgentStatus handles agent status updates
+func AgentStatus(agentService *services.AgentService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			AgentID  string                 `json:"agent_id" binding:"required"`
+			Status   string                 `json:"status" binding:"required"`
+			Metadata map[string]interface{} `json:"metadata"`
+		}
+
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, models.APIResponse{
+				Success:   false,
+				Message:   "Invalid request body",
+				Timestamp: time.Now(),
+			})
+			return
+		}
+
+		// Update agent status
+		agentService.UpdateAgentStatus(req.AgentID, req.Status, req.Metadata)
+
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success:   true,
+			Message:   "Agent status updated successfully",
+			Timestamp: time.Now(),
+		})
+	}
+}
+
+// GetPublicDashboardOverview provides public dashboard data
+func GetPublicDashboardOverview(agentService *services.AgentService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get all agents
+		agents := agentService.GetAllAgents()
+
+		// Calculate dashboard metrics
+		totalAssets := 0
+		onlineAgents := 0
+		vulnerableAssets := 0
+		criticalVulnerabilities := 0
+		lastScan := time.Time{}
+
+		for _, agent := range agents {
+			// Count online agents (seen within last 5 minutes)
+			if time.Since(agent.LastSeen) < 5*time.Minute {
+				onlineAgents++
+			}
+
+			// Count actual scanned assets from agent metadata
+			if agent.Metadata != nil {
+				// Count total assets scanned by this agent
+				if totalAssetsFromAgent, ok := agent.Metadata["total_assets"]; ok {
+					if count, ok := totalAssetsFromAgent.(float64); ok {
+						totalAssets += int(count)
+					}
+				}
+
+				// Count vulnerable assets
+				if vulns, ok := agent.Metadata["vulnerabilities_found"]; ok {
+					if count, ok := vulns.(float64); ok && count > 0 {
+						vulnerableAssets++
+					}
+				}
+
+				// Count critical vulnerabilities
+				if critical, ok := agent.Metadata["critical_vulnerabilities"]; ok {
+					if count, ok := critical.(float64); ok {
+						criticalVulnerabilities += int(count)
+					}
+				}
+			}
+
+			// Track last scan time
+			if agent.LastSeen.After(lastScan) {
+				lastScan = agent.LastSeen
+			}
+		}
+
+		// Create dashboard response
+		dashboardData := map[string]interface{}{
+			"assets": map[string]interface{}{
+				"total":      totalAssets,
+				"vulnerable": vulnerableAssets,
+				"critical":   criticalVulnerabilities,
+				"high":       0, // Placeholder
+				"medium":     0, // Placeholder
+				"low":        0, // Placeholder
+				"lastScan":   lastScan.Format(time.RFC3339),
+			},
+			"vulnerabilities": map[string]interface{}{
+				"total":    criticalVulnerabilities,
+				"critical": criticalVulnerabilities,
+				"high":     0, // Placeholder
+				"medium":   0, // Placeholder
+				"low":      0, // Placeholder
+			},
+			"agents": map[string]interface{}{
+				"total":  len(agents),
+				"online": onlineAgents,
+			},
+		}
+
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success:   true,
+			Data:      dashboardData,
+			Message:   "Dashboard overview retrieved successfully",
+			Timestamp: time.Now(),
+		})
+	}
+}
+
+// GetPublicAgentStats retrieves agent statistics for all agents (public endpoint)
+func GetPublicAgentStats(agentService *services.AgentService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		stats := agentService.GetPublicAgentStats()
+
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success:   true,
+			Data:      stats,
+			Message:   "Agent statistics retrieved successfully",
+			Timestamp: time.Now(),
+		})
+	}
+}
