@@ -191,9 +191,9 @@ func RegisterAgent(agentService *services.AgentService) gin.HandlerFunc {
 func AgentResults(agentService *services.AgentService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
-			AgentID  string                 `json:"agent_id" binding:"required"`
+			AgentID  string                   `json:"agent_id" binding:"required"`
 			Results  []models.AgentScanResult `json:"results"`
-			Metadata map[string]interface{} `json:"metadata"`
+			Metadata map[string]interface{}   `json:"metadata"`
 		}
 
 		if err := c.ShouldBindJSON(&req); err != nil {
