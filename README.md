@@ -6,7 +6,7 @@
 [![Python Version](https://img.shields.io/badge/Python-3.9+-green.svg)](https://python.org/)
 [![React Version](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](https://github.com/radhi1991/ZeroTrace)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](https://github.com/adhit-r/ZeroTrace)
 
 ## 🎯 **Overview**
 
@@ -19,6 +19,21 @@ ZeroTrace is a high-performance, enterprise-grade vulnerability detection and ma
 - **💡 Agent**: 95% CPU reduction with adaptive resource management
 - **📊 Monitoring**: Complete APM system with Prometheus + Grafana
 - **🔄 Scalability**: Support for 1000+ agents, 100+ companies, 1M+ apps/hour
+
+## 📊 **Current Status**
+
+✅ **Fully Functional**: All components working correctly
+- **Agent**: Successfully scanning 134+ applications and 3+ vulnerabilities
+- **API**: Processing and storing all scan data correctly
+- **Frontend**: Displaying real-time vulnerability data
+- **Database**: Storing comprehensive scan results and metadata
+
+## 🔧 **Recent Fixes (October 2025)**
+
+- **Agent Data Pipeline**: Fixed critical issue where agent was finding applications but API wasn't storing data
+- **Type Safety**: Resolved model mismatches between agent and API components
+- **CORS Issues**: Fixed frontend API communication problems
+- **Data Conversion**: Implemented proper conversion between agent `Dependencies` and API `Assets`
 
 ## 🏗️ **Architecture**
 
@@ -45,7 +60,7 @@ ZeroTrace is a high-performance, enterprise-grade vulnerability detection and ma
 ### **Installation**
 ```bash
 # Clone repository
-git clone https://github.com/radhi1991/ZeroTrace.git
+git clone https://github.com/adhit-r/ZeroTrace.git
 cd ZeroTrace
 
 # Start services

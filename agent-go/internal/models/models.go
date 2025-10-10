@@ -298,3 +298,14 @@ type InstalledApp struct {
 	Vendor      string    `json:"vendor"`
 	Description string    `json:"description"`
 }
+
+// Asset represents a scanned asset
+type Asset struct {
+	ID        string                 `json:"id"`
+	Name      string                 `json:"name"`
+	Type      string                 `json:"type"`
+	Status    string                 `json:"status"`
+	Metadata  map[string]interface{} `json:"metadata"`
+	CreatedAt time.Time              `json:"created_at"`
+	UpdatedAt time.Time              `json:"updated_at"`
+}

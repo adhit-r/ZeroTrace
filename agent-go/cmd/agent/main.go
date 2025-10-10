@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -34,6 +35,13 @@ func main() {
 	// Initialize simple tray manager (MDM-friendly)
 	trayManager := tray.NewSimpleTrayManager()
 	trayManager.Start()
+
+	testTray := flag.Bool("test-tray", false, "Run in tray test mode")
+	flag.Parse()
+
+	if *testTray {
+		select {}
+	}
 
 	// Create context for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())

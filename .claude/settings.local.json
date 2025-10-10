@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go build:*)",
+      "Bash(GOOS=windows GOARCH=amd64 go build -v -o agent-windows.exe ./cmd/agent/)",
+      "Bash(GOOS=linux GOARCH=amd64 go build -v -o agent-linux ./cmd/agent/)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

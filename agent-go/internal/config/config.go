@@ -2,8 +2,11 @@ package config
 
 import (
 	"os"
+	"runtime"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Config holds application configuration
@@ -56,9 +59,20 @@ func Load() *Config {
 	dbPort, _ := strconv.Atoi(getEnv("DB_PORT", "5432"))
 	debug, _ := strconv.ParseBool(getEnv("DEBUG", "false"))
 
+	// Generate UUID for agent ID if not set or not a valid UUID
+	agentID := getEnv("AGENT_ID", "")
+	if agentID == "" {
+		agentID = uuid.New().String()
+	} else {
+		// Validate if it's a UUID, if not generate a new one
+		if _, err := uuid.Parse(agentID); err != nil {
+			agentID = uuid.New().String()
+		}
+	}
+
 	return &Config{
 		// Agent Configuration
-		AgentID:     getEnv("AGENT_ID", ""),
+		AgentID:     agentID,
 		APIURL:      getEnv("API_URL", "http://localhost:8080"),
 		APIEndpoint: getEnv("API_ENDPOINT", "http://localhost:8080"),
 		APIKey:      getEnv("API_KEY", ""),
@@ -77,8 +91,8 @@ func Load() *Config {
 		CompanySlug: getEnv("COMPANY_SLUG", ""),
 
 		// System Information
-		Hostname: getEnv("HOSTNAME", ""),
-		OS:       getEnv("OS", ""),
+		Hostname: getEnv("HOSTNAME", getHostname()),
+		OS:       getEnv("OS", getOS()),
 
 		// API Configuration
 		APIPort: apiPort,
@@ -134,4 +148,27 @@ func (c *Config) GetCompanyIdentifier() string {
 // GetOrganizationIdentifier returns the organization identifier
 func (c *Config) GetOrganizationIdentifier() string {
 	return c.OrganizationID
+}
+
+// getHostname gets the system hostname
+func getHostname() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "unknown"
+	}
+	return hostname
+}
+
+// getOS gets the operating system name
+func getOS() string {
+	switch runtime.GOOS {
+	case "darwin":
+		return "macOS"
+	case "linux":
+		return "Linux"
+	case "windows":
+		return "Windows"
+	default:
+		return runtime.GOOS
+	}
 }

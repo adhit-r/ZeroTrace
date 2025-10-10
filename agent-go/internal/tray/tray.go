@@ -19,6 +19,7 @@ type TrayManager struct {
 	memChan    chan float64
 	quitChan   chan bool
 	monitor    *monitor.Monitor
+	platform   PlatformOperations
 }
 
 // NewTrayManager creates a new tray manager
@@ -29,15 +30,13 @@ func NewTrayManager() *TrayManager {
 		memChan:    make(chan float64, 1),
 		quitChan:   make(chan bool, 1),
 		monitor:    monitor.NewMonitor(),
+		platform:   GetPlatformOperations(),
 	}
 }
 
 // Start initializes and runs the tray icon
 func (tm *TrayManager) Start() {
-	if runtime.GOOS != "darwin" {
-		log.Println("Tray icon only supported on macOS")
-		return
-	}
+	log.Printf("Starting tray icon on %s (%s)", runtime.GOOS, tm.platform.GetPlatformName())
 
 	// Start monitoring
 	tm.monitor.Start()
@@ -49,7 +48,7 @@ func (tm *TrayManager) Start() {
 
 // onReady is called when the tray is ready
 func (tm *TrayManager) onReady() {
-	systray.SetIcon(getIcon())
+	systray.SetIcon(GetDefaultIcon())
 	systray.SetTitle("ZeroTrace Agent")
 	systray.SetTooltip("ZeroTrace Vulnerability Agent")
 
@@ -130,8 +129,7 @@ func (tm *TrayManager) monitorAndUpdate(mStatus, mCPU, mMem *systray.MenuItem) {
 // getAgentStatus returns the current agent status
 func (tm *TrayManager) getAgentStatus() string {
 	// Check if agent process is running
-	cmd := exec.Command("pgrep", "-f", "zerotrace-agent")
-	if err := cmd.Run(); err != nil {
+	if !tm.platform.CheckProcessRunning("zerotrace-agent") {
 		return "Not Running"
 	}
 
@@ -188,24 +186,28 @@ func (tm *TrayManager) checkNow() {
 
 // openWebUI opens the web dashboard
 func (tm *TrayManager) openWebUI() {
-	exec.Command("open", "http://localhost:5173").Run()
+	if err := tm.platform.OpenWebUI("http://localhost:5173"); err != nil {
+		log.Printf("Failed to open web UI: %v", err)
+	}
 }
 
 // restartAgent restarts the agent
 func (tm *TrayManager) restartAgent() {
-	// Kill existing agent
-	exec.Command("pkill", "-f", "zerotrace-agent").Run()
-	time.Sleep(2 * time.Second)
-
-	// Start new agent
-	exec.Command("open", "ZeroTrace Agent.app").Run()
+	// Restart using platform-specific method
+	if err := tm.platform.RestartAgent("ZeroTrace Agent.app"); err != nil {
+		log.Printf("Failed to restart agent: %v", err)
+		tm.showNotification("ZeroTrace Agent", "Restart Failed", "Could not restart agent")
+		return
+	}
 
 	tm.showNotification("ZeroTrace Agent", "Restart", "Agent restarted successfully")
 }
 
 // openSettings opens the configuration file
 func (tm *TrayManager) openSettings() {
-	exec.Command("open", "-t", ".env").Run()
+	if err := tm.platform.OpenSettings(".env"); err != nil {
+		log.Printf("Failed to open settings: %v", err)
+	}
 }
 
 // quitAgent quits the agent
@@ -214,13 +216,11 @@ func (tm *TrayManager) quitAgent() {
 	systray.Quit()
 }
 
-// showNotification displays a macOS notification
+// showNotification displays a system notification
 func (tm *TrayManager) showNotification(title, subtitle, message string) {
-	script := fmt.Sprintf(`
-		display notification "%s" with title "%s" subtitle "%s"
-	`, message, title, subtitle)
-
-	exec.Command("osascript", "-e", script).Run()
+	if err := tm.platform.ShowNotification(title, subtitle, message); err != nil {
+		log.Printf("Failed to show notification: %v", err)
+	}
 }
 
 // UpdateStatus updates the status from external sources
@@ -256,18 +256,4 @@ func (tm *TrayManager) Stop() {
 // GetMonitor returns the monitor instance
 func (tm *TrayManager) GetMonitor() *monitor.Monitor {
 	return tm.monitor
-}
-
-// getIcon returns the tray icon data
-func getIcon() []byte {
-	// This would return actual icon data
-	// For now, return a simple placeholder
-	return []byte{
-		0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-		0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10,
-		0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0xF3, 0xFF, 0x61, 0x00, 0x00, 0x00,
-		0x0C, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x60, 0x18, 0x05, 0x03,
-		0x00, 0x00, 0x30, 0x00, 0x00, 0x01, 0x57, 0x6D, 0xB7, 0x4A, 0x00, 0x00,
-		0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
-	}
 }

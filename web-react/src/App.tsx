@@ -9,7 +9,7 @@ import Topology from './pages/Topology';
 import Agents from './pages/Agents';
 import Login from './pages/Login';
 import { AuthProvider } from './contexts/AuthContext';
-import './styles/terminal-theme.css'; // Terminal-inspired dark theme
+import './styles/zerotrace-theme.css'; // ZeroTrace neubrutalist theme
 
 // Create a client
 const queryClient = new QueryClient({

@@ -31,10 +31,11 @@ func NewCommunicator(cfg *config.Config) *Communicator {
 func (c *Communicator) SendResults(result *models.ScanResult) error {
 	// Prepare request payload
 	payload := map[string]any{
-		"scan_result": result,
-		"agent_id":    c.config.AgentID,
-		"company_id":  c.config.CompanyID,
-		"timestamp":   time.Now(),
+		"agent_id": c.config.AgentID,
+		"results":  []models.ScanResult{*result},
+		"metadata": map[string]interface{}{
+			"status": result.Status,
+		},
 	}
 
 	// Marshal to JSON
@@ -44,7 +45,7 @@ func (c *Communicator) SendResults(result *models.ScanResult) error {
 	}
 
 	// Create request
-	url := fmt.Sprintf("%s/api/v1/agent/results", c.config.APIEndpoint)
+	url := fmt.Sprintf("%s/api/agents/results", c.config.APIEndpoint)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -52,7 +53,6 @@ func (c *Communicator) SendResults(result *models.ScanResult) error {
 
 	// Set headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.APIKey))
 	req.Header.Set("User-Agent", "ZeroTrace-Agent/1.0")
 
 	// Send request
@@ -85,7 +85,7 @@ func (c *Communicator) SendStatus(status *models.AgentStatus) error {
 	}
 
 	// Create request
-	url := fmt.Sprintf("%s/api/v1/agent/status", c.config.APIEndpoint)
+	url := fmt.Sprintf("%s/api/agents/status", c.config.APIEndpoint)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -171,7 +171,7 @@ func (c *Communicator) SendHeartbeat(cpuUsage, memoryUsage float64, metadata map
 	}
 
 	// Create request
-	url := fmt.Sprintf("%s/api/v1/agent/heartbeat", c.config.APIEndpoint)
+	url := fmt.Sprintf("%s/api/agents/heartbeat", c.config.APIEndpoint)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -215,7 +215,7 @@ func (c *Communicator) RegisterAgent() error {
 	}
 
 	// Create request
-	url := fmt.Sprintf("%s/api/v1/agent/register", c.config.APIEndpoint)
+	url := fmt.Sprintf("%s/api/agents/register", c.config.APIEndpoint)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create registration request: %w", err)
@@ -223,7 +223,6 @@ func (c *Communicator) RegisterAgent() error {
 
 	// Set headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.APIKey))
 	req.Header.Set("User-Agent", "ZeroTrace-Agent/1.0")
 
 	// Send request

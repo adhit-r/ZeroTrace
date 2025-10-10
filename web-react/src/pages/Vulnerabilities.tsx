@@ -10,7 +10,7 @@ const Vulnerabilities: React.FC = () => {
   const { data: vulnData, isLoading, error } = useQuery({
     queryKey: ['vulnerabilities'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:8080/api/v1/vulnerabilities', {
+      const response = await fetch('http://localhost:8080/api/vulnerabilities/', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },

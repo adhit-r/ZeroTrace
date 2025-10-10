@@ -16,34 +16,41 @@ import (
 type SimpleTrayManager struct {
 	monitor  *monitor.Monitor
 	quitChan chan bool
+	platform PlatformOperations
 }
 
 // NewSimpleTrayManager creates a new simple tray manager
 func NewSimpleTrayManager() *SimpleTrayManager {
 	return &SimpleTrayManager{
 		quitChan: make(chan bool, 1),
+		monitor:  monitor.NewMonitor(),
+		platform: GetPlatformOperations(),
 	}
 }
 
 // Start initializes and runs the simple tray icon
 func (stm *SimpleTrayManager) Start() {
-	if runtime.GOOS != "darwin" {
-		log.Println("Tray icon only supported on macOS")
-		return
-	}
+	log.Printf("Starting simple tray icon on %s (%s)", runtime.GOOS, stm.platform.GetPlatformName())
 
 	// Start monitoring
 	stm.monitor.Start()
 
 	go func() {
-		systray.Run(stm.onReady, stm.onExit)
+		if runtime.GOOS == "darwin" {
+			log.Println("Systray temporarily disabled on macOS due to native crash. Agent running without tray icon.")
+			// For macOS, we'll just keep the goroutine alive without systray.Run()
+			// In a real scenario, we'd use a different tray library or fix the systray issue.
+			select {}
+		} else {
+			systray.Run(stm.onReady, stm.onExit)
+		}
 	}()
 }
 
 // onReady is called when the tray is ready
 func (stm *SimpleTrayManager) onReady() {
 	// Set initial icon (gray - offline)
-	systray.SetIcon(getGrayIcon())
+	systray.SetIcon(GetGrayIcon())
 	systray.SetTitle("ZeroTrace Agent")
 	systray.SetTooltip("ZeroTrace Vulnerability Agent")
 
@@ -91,10 +98,10 @@ func (stm *SimpleTrayManager) monitorStatus(mStatus, mCPU *systray.MenuItem) {
 
 			// Update icon based on API status
 			if apiConnected {
-				systray.SetIcon(getGreenIcon())
+				systray.SetIcon(GetGreenIcon())
 				mStatus.SetTitle("🟢 Connected")
 			} else {
-				systray.SetIcon(getGrayIcon())
+				systray.SetIcon(GetGrayIcon())
 				mStatus.SetTitle("⚫ Disconnected")
 			}
 
@@ -138,13 +145,12 @@ func (stm *SimpleTrayManager) quitAgent() {
 	systray.Quit()
 }
 
-// showNotification displays a macOS notification
+// showNotification displays a system notification
 func (stm *SimpleTrayManager) showNotification(title, subtitle, message string) {
-	script := fmt.Sprintf(`
-		display notification "%s" with title "%s" subtitle "%s"
-	`, message, title, subtitle)
-
-	exec.Command("osascript", "-e", script).Run()
+	err := stm.platform.ShowNotification(title, subtitle, message)
+	if err != nil {
+		log.Printf("Failed to show notification: %v", err)
+	}
 }
 
 // Stop stops the simple tray manager
@@ -156,30 +162,4 @@ func (stm *SimpleTrayManager) Stop() {
 // GetMonitor returns the monitor instance
 func (stm *SimpleTrayManager) GetMonitor() *monitor.Monitor {
 	return stm.monitor
-}
-
-// getGreenIcon returns the green ZeroTrace icon (API connected)
-func getGreenIcon() []byte {
-	// Green ZeroTrace logo icon data
-	return []byte{
-		0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-		0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10,
-		0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0xF3, 0xFF, 0x61, 0x00, 0x00, 0x00,
-		0x0C, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x60, 0x18, 0x05, 0x03,
-		0x00, 0x00, 0x30, 0x00, 0x00, 0x01, 0x57, 0x6D, 0xB7, 0x4A, 0x00, 0x00,
-		0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
-	}
-}
-
-// getGrayIcon returns the gray ZeroTrace icon (API disconnected)
-func getGrayIcon() []byte {
-	// Gray ZeroTrace logo icon data
-	return []byte{
-		0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-		0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10,
-		0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0xF3, 0xFF, 0x61, 0x00, 0x00, 0x00,
-		0x0C, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x60, 0x18, 0x05, 0x03,
-		0x00, 0x00, 0x30, 0x00, 0x00, 0x01, 0x57, 0x6D, 0xB7, 0x4A, 0x00, 0x00,
-		0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
-	}
 }

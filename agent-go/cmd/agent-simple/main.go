@@ -26,7 +26,8 @@ func main() {
 	cfg := config.Load()
 
 	// Initialize components
-	scanner := scanner.NewSoftwareScanner(cfg)
+	softwareScanner := scanner.NewSoftwareScanner(cfg)
+	configScanner := scanner.NewConfigScanner(cfg)
 	processor := processor.NewProcessor(cfg)
 	communicator := communicator.NewCommunicator(cfg)
 
@@ -75,27 +76,44 @@ func main() {
 				return
 			default:
 				// Scan for installed software
-				results, err := scanner.Scan()
+				softwareResults, err := softwareScanner.Scan()
 				if err != nil {
-					log.Printf("Scan error: %v", err)
+					log.Printf("Software scan error: %v", err)
 					time.Sleep(30 * time.Second)
 					continue
 				}
 
-				log.Printf("Found %d installed applications", len(results.Dependencies))
+				log.Printf("Found %d installed applications", len(softwareResults.Dependencies))
 
-				// Process results
-				processedResults, err := processor.Process(results)
+				// Scan for configuration vulnerabilities
+				configResults, err := configScanner.Scan()
+				if err != nil {
+					log.Printf("Configuration scan error: %v", err)
+				} else {
+					log.Printf("Found %d configuration vulnerabilities", len(configResults.Vulnerabilities))
+				}
+
+				// Process software results
+				processedResults, err := processor.Process(softwareResults)
 				if err != nil {
 					log.Printf("Processing error: %v", err)
 					continue
 				}
 
-				// Send results to API
+				// Send software results to API
 				if err := communicator.SendResults(processedResults); err != nil {
-					log.Printf("Failed to send results: %v", err)
+					log.Printf("Failed to send software results: %v", err)
 				} else {
-					log.Printf("Results sent successfully")
+					log.Printf("Software results sent successfully")
+				}
+
+				// Send configuration results to API
+				if configResults != nil {
+					if err := communicator.SendResults(configResults); err != nil {
+						log.Printf("Failed to send configuration results: %v", err)
+					} else {
+						log.Printf("Configuration results sent successfully")
+					}
 				}
 
 				// Wait for next scan interval

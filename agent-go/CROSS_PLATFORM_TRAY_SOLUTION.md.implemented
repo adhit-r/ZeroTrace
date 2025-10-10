@@ -1,0 +1,225 @@
+# Cross-Platform Tray Icon Implementation Plan
+
+## Current Issues
+1. **Platform Restriction**: Code explicitly blocks non-macOS systems
+2. **OS-Specific Commands**: Uses macOS-only commands for notifications and process management
+3. **Missing Platform Implementations**: No Windows/Linux specific code paths
+
+## Solution Architecture
+
+### 1. Remove Platform Restrictions
+```go
+// REMOVE THIS:
+if runtime.GOOS != "darwin" {
+    log.Println("Tray icon only supported on macOS")
+    return
+}
+
+// REPLACE WITH:
+log.Printf("Starting tray icon on %s", runtime.GOOS)
+```
+
+### 2. Platform-Specific Implementations
+
+#### Windows Implementation
+```go
+// tray_windows.go
+func showNotification(title, subtitle, message string) {
+    // Use Windows Toast notifications
+    exec.Command("powershell", "-Command", fmt.Sprintf(
+        `[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null; 
+        [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null;
+        $template = '<toast><visual><binding template="ToastText02"><text id="1">%s</text><text id="2">%s</text></binding></visual></toast>';
+        $xml = New-Object Windows.Data.Xml.Dom.XmlDocument;
+        $xml.LoadXml($template);
+        $toast = [Windows.UI.Notifications.ToastNotification]::new($xml);
+        [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("ZeroTrace Agent").Show($toast)`,
+        title, message)).Run()
+}
+
+func openWebUI() {
+    exec.Command("cmd", "/c", "start", "http://localhost:5173").Run()
+}
+
+func checkProcessRunning() bool {
+    cmd := exec.Command("tasklist", "/FI", "IMAGENAME eq zerotrace-agent.exe")
+    output, _ := cmd.Output()
+    return strings.Contains(string(output), "zerotrace-agent.exe")
+}
+```
+
+#### Linux Implementation
+```go
+// tray_linux.go
+func showNotification(title, subtitle, message string) {
+    // Try notify-send first (works on most Linux distros)
+    if err := exec.Command("notify-send", title, message, "-i", "dialog-information").Run(); err != nil {
+        // Fallback to zenity if notify-send is not available
+        exec.Command("zenity", "--notification", "--text", fmt.Sprintf("%s: %s", title, message)).Run()
+    }
+}
+
+func openWebUI() {
+    // Try xdg-open first (works on most Linux distros)
+    if err := exec.Command("xdg-open", "http://localhost:5173").Run(); err != nil {
+        // Fallback to specific browsers
+        for _, browser := range []string{"firefox", "chromium", "google-chrome"} {
+            if exec.Command(browser, "http://localhost:5173").Run() == nil {
+                break
+            }
+        }
+    }
+}
+
+func checkProcessRunning() bool {
+    cmd := exec.Command("pgrep", "-f", "zerotrace-agent")
+    return cmd.Run() == nil
+}
+```
+
+#### macOS Implementation (existing, refactored)
+```go
+// tray_darwin.go
+func showNotification(title, subtitle, message string) {
+    script := fmt.Sprintf(`display notification "%s" with title "%s" subtitle "%s"`, 
+        message, title, subtitle)
+    exec.Command("osascript", "-e", script).Run()
+}
+
+func openWebUI() {
+    exec.Command("open", "http://localhost:5173").Run()
+}
+
+func checkProcessRunning() bool {
+    cmd := exec.Command("pgrep", "-f", "zerotrace-agent")
+    return cmd.Run() == nil
+}
+```
+
+### 3. Unified Interface
+```go
+// tray_common.go
+package tray
+
+// Platform-specific functions that must be implemented
+type PlatformOperations interface {
+    ShowNotification(title, subtitle, message string)
+    OpenWebUI()
+    CheckProcessRunning() bool
+    RestartAgent()
+    OpenSettings()
+}
+
+// Get platform-specific implementation
+func GetPlatformOps() PlatformOperations {
+    switch runtime.GOOS {
+    case "windows":
+        return &WindowsOperations{}
+    case "linux":
+        return &LinuxOperations{}
+    case "darwin":
+        return &DarwinOperations{}
+    default:
+        return &FallbackOperations{}
+    }
+}
+```
+
+### 4. Icon Support
+The `fyne.io/systray` library already supports cross-platform tray icons. We just need to provide appropriate icon formats:
+
+- **Windows**: ICO format (16x16, 32x32, 48x48)
+- **Linux**: PNG format (22x22, 24x24 for most distros)
+- **macOS**: PNG format (16x16 @1x, 32x32 @2x for Retina)
+
+### 5. Build Tags for Conditional Compilation
+```go
+// +build windows
+package tray
+
+// Windows-specific code
+
+// +build linux
+package tray
+
+// Linux-specific code
+
+// +build darwin
+package tray
+
+// macOS-specific code
+```
+
+## Implementation Steps
+
+1. **Create platform-specific files**:
+   - `tray_windows.go`
+   - `tray_linux.go`
+   - `tray_darwin.go`
+   - `tray_common.go`
+
+2. **Update main tray files**:
+   - Remove platform restrictions
+   - Use platform interface for OS-specific operations
+
+3. **Test on each platform**:
+   - Windows 10/11
+   - Ubuntu/Debian Linux
+   - macOS 12+
+
+4. **Add platform-specific icons**:
+   - Create icon assets for each platform
+   - Embed using `go:embed`
+
+## Testing Requirements
+
+### Windows
+```powershell
+# Build for Windows
+GOOS=windows GOARCH=amd64 go build -o zerotrace-agent.exe ./cmd/agent
+
+# Test tray functionality
+./zerotrace-agent.exe
+```
+
+### Linux
+```bash
+# Build for Linux
+GOOS=linux GOARCH=amd64 go build -o zerotrace-agent ./cmd/agent
+
+# Install dependencies (Ubuntu/Debian)
+sudo apt-get install libayatana-appindicator3-dev
+
+# Test tray functionality
+./zerotrace-agent
+```
+
+### macOS
+```bash
+# Build for macOS
+go build -o zerotrace-agent ./cmd/agent
+
+# Test tray functionality
+./zerotrace-agent
+```
+
+## Dependencies
+
+### Current (macOS only)
+- `fyne.io/systray` - Already supports all platforms
+
+### Additional for Linux
+- `libayatana-appindicator3-dev` or `libappindicator3-dev` (build time)
+- `notify-send` or `zenity` (runtime, usually pre-installed)
+
+### Additional for Windows
+- No additional dependencies (uses native Windows APIs)
+
+## Expected Outcome
+
+After implementation:
+1. ✅ Tray icon works on Linux distributions
+2. ✅ Tray icon works on Windows 10/11
+3. ✅ Tray icon continues working on macOS
+4. ✅ Platform-appropriate notifications
+5. ✅ Platform-appropriate system integration
