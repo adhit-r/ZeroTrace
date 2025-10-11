@@ -49,11 +49,9 @@ func main() {
 	}
 
 	// Initialize repositories
-	userRepo := repository.NewUserRepository(db.DB)
 	scanRepo := repository.NewScanRepository(db.DB)
 
 	// Initialize services
-	authService := services.NewAuthService(cfg, userRepo)
 	scanService := services.NewScanService(cfg, scanRepo)
 	agentService := services.NewAgentService()
 	enrollmentService := services.NewEnrollmentService(cfg)
@@ -67,7 +65,7 @@ func main() {
 	router.Use(middleware.RequestLogger())
 
 	// Setup routes
-	setupRoutes(router, authService, scanService, agentService, enrollmentService)
+	setupRoutes(router, scanService, agentService, enrollmentService)
 
 	// Create server
 	server := &http.Server{
@@ -100,7 +98,7 @@ func main() {
 	log.Println("Server exited")
 }
 
-func setupRoutes(router *gin.Engine, authService *services.AuthService, scanService *services.ScanService, agentService *services.AgentService, enrollmentService *services.EnrollmentService) {
+func setupRoutes(router *gin.Engine, scanService *services.ScanService, agentService *services.AgentService, enrollmentService *services.EnrollmentService) {
 	// Health check
 	router.GET("/health", handlers.HealthCheck)
 
@@ -138,16 +136,12 @@ func setupRoutes(router *gin.Engine, authService *services.AuthService, scanServ
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
-		// Public routes
-		auth := v1.Group("/auth")
-		{
-			auth.POST("/login", handlers.Login(authService))
-			auth.POST("/register", handlers.Register(authService))
-		}
+		// Note: Authentication is now handled by Clerk
+		// No custom auth routes needed - users authenticate via Clerk frontend
 
 		// Protected routes
 		protected := v1.Group("")
-		protected.Use(middleware.Auth(authService))
+		protected.Use(middleware.ClerkAuth())
 		{
 			// Scan routes
 			scans := protected.Group("/scans")

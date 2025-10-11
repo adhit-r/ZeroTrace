@@ -26,9 +26,9 @@ type Config struct {
 	RedisPassword string
 	RedisDB       int
 
-	// JWT configuration
-	JWTSecret string
-	JWTExpiry time.Duration
+	// JWT configuration (for Clerk)
+	ClerkJWTVerificationKey string
+	JWTExpiry              time.Duration
 
 	// Rate limiting
 	RateLimitRequests int
@@ -63,9 +63,9 @@ func Load() *Config {
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 		RedisDB:       getEnvAsInt("REDIS_DB", 0),
 
-		// JWT
-		JWTSecret: getEnv("JWT_SECRET", "dev-secret-key-change-in-production"),
-		JWTExpiry: getEnvAsDuration("JWT_EXPIRY", "24h"),
+		// JWT (for Clerk)
+		ClerkJWTVerificationKey: getEnv("CLERK_JWT_VERIFICATION_KEY", "dev-clerk-key-change-in-production"),
+		JWTExpiry:              getEnvAsDuration("JWT_EXPIRY", "24h"),
 
 		// Rate limiting
 		RateLimitRequests: getEnvAsInt("RATE_LIMIT_REQUESTS", 100),

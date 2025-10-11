@@ -1,16 +1,24 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
-	"zerotrace/api/internal/services"
-
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
-// Auth middleware validates JWT tokens
-func Auth(authService *services.AuthService) gin.HandlerFunc {
+// ClerkAuth middleware validates Clerk JWT tokens
+func ClerkAuth() gin.HandlerFunc {
+	// Get Clerk JWT verification key from environment
+	clerkSecret := os.Getenv("CLERK_JWT_VERIFICATION_KEY")
+	if clerkSecret == "" {
+		// Fallback for development
+		clerkSecret = "development-key"
+	}
+
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
 		if token == "" {
@@ -30,7 +38,7 @@ func Auth(authService *services.AuthService) gin.HandlerFunc {
 			token = token[7:]
 		}
 
-		// Demo mode - accept demo tokens
+		// Demo mode for development
 		if token == "demo-valid-token" {
 			c.Set("user_id", "demo-user-1")
 			c.Set("company_id", "demo-company-1")
@@ -39,8 +47,8 @@ func Auth(authService *services.AuthService) gin.HandlerFunc {
 			return
 		}
 
-		// Validate token
-		claims, err := authService.ValidateToken(token)
+		// Validate Clerk JWT token
+		claims, err := validateClerkToken(token, clerkSecret)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
@@ -53,17 +61,38 @@ func Auth(authService *services.AuthService) gin.HandlerFunc {
 			return
 		}
 
-		// Set user context
-		if userID, exists := claims["user_id"]; exists {
-			c.Set("user_id", userID)
+		// Set user context from Clerk claims
+		if sub, exists := claims["sub"]; exists {
+			c.Set("user_id", sub)
 		}
-		if companyID, exists := claims["company_id"]; exists {
-			c.Set("company_id", companyID)
+		if orgID, exists := claims["org_id"]; exists {
+			c.Set("company_id", orgID)
 		}
-		if role, exists := claims["role"]; exists {
-			c.Set("role", role)
+		if orgRole, exists := claims["org_role"]; exists {
+			c.Set("role", orgRole)
 		}
 
 		c.Next()
 	}
+}
+
+// validateClerkToken validates a Clerk JWT token
+func validateClerkToken(tokenString, secret string) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Verify the signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, fmt.Errorf("invalid token")
 }
