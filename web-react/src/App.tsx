@@ -1,14 +1,15 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
+import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Scans from './pages/Scans';
 import Vulnerabilities from './pages/Vulnerabilities';
 import Topology from './pages/Topology';
 import Agents from './pages/Agents';
+import AssetDetail from './pages/AssetDetail';
 import Login from './pages/Login';
-import { AuthProvider } from './contexts/AuthContext';
 import './styles/zerotrace-theme.css'; // ZeroTrace neubrutalist theme
 
 // Create a client
@@ -21,30 +22,35 @@ const queryClient = new QueryClient({
   },
 });
 
+// Clerk configuration - you'll need to set this in your .env file
+const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+if (!clerkPubKey) {
+  throw new Error("Missing Clerk Publishable Key");
+}
+
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
+    <ClerkProvider publishableKey={clerkPubKey}>
+      <QueryClientProvider client={queryClient}>
+        <Router>
           <div className="min-h-screen">
+            {/* Temporarily disable authentication for development */}
             <Routes>
-              <Route path="/login" element={<Login />} />
               <Route path="/" element={<Layout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="agents" element={<Agents />} />
+                <Route path="agents/:id" element={<AssetDetail />} />
                 <Route path="vulnerabilities" element={<Vulnerabilities />} />
-                <Route path="issues" element={<Issues />} />
                 <Route path="scans" element={<Scans />} />
-                <Route path="reports" element={<Reports />} />
                 <Route path="topology" element={<Topology />} />
-                <Route path="settings" element={<Settings />} />
               </Route>
             </Routes>
             <Toaster position="top-right" />
           </div>
-        </AuthProvider>
-      </Router>
-    </QueryClientProvider>
+        </Router>
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 }
 

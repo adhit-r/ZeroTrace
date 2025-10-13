@@ -91,166 +91,28 @@ const GlobalDashboard: React.FC<GlobalDashboardProps> = ({ userRole, className =
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'branches'>('overview');
 
-  // Mock data - replace with actual API calls
+  // Fetch real data from API
   useEffect(() => {
     const fetchDashboardData = async () => {
       setLoading(true);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockData: DashboardData = {
-        kpis: [
-          {
-            id: 'active_critical_cves',
-            label: 'Active Critical CVEs',
-            value: 47,
-            delta: { value: 12, trend: 'up', period: 'last 7 days' },
-            sparkline: [45, 42, 38, 41, 44, 47, 43],
-            color: 'critical'
-          },
-          {
-            id: 'mean_time_to_remediate',
-            label: 'MTTR (days)',
-            value: 12.5,
-            delta: { value: 8, trend: 'down', period: 'last 30 days' },
-            sparkline: [18, 16, 14, 13, 12.5, 12.8, 12.5],
-            color: 'success'
-          },
-          {
-            id: 'compliance_percent',
-            label: 'Compliance %',
-            value: 87,
-            delta: { value: 3, trend: 'up', period: 'last 30 days' },
-            sparkline: [82, 84, 85, 86, 87, 86.5, 87],
-            color: 'success'
-          },
-          {
-            id: 'scan_coverage',
-            label: 'Scan Coverage %',
-            value: 94,
-            delta: { value: 2, trend: 'up', period: 'last 7 days' },
-            sparkline: [89, 91, 92, 93, 94, 93.5, 94],
-            color: 'success'
-          },
-          {
-            id: 'exploit_presence',
-            label: 'Exploitable CVEs',
-            value: 23,
-            delta: { value: 5, trend: 'up', period: 'last 7 days' },
-            sparkline: [18, 19, 21, 20, 23, 22, 23],
-            color: 'warning'
-          },
-          {
-            id: 'total_assets',
-            label: 'Total Assets',
-            value: 1247,
-            delta: { value: 12, trend: 'up', period: 'last 30 days' },
-            sparkline: [1200, 1210, 1220, 1230, 1240, 1245, 1247],
-            color: 'default'
-          }
-        ],
-        branches: [
-          {
-            id: 'hq-nyc',
-            name: 'Headquarters NYC',
-            location: 'New York, NY',
-            type: 'headquarters',
-            status: 'active',
-            metrics: { totalAssets: 450, criticalVulns: 12, complianceScore: 92, lastScan: '2025-01-09T10:30:00Z' },
-            coordinates: { lat: 40.7128, lng: -74.0060 }
-          },
-          {
-            id: 'branch-london',
-            name: 'London Branch',
-            location: 'London, UK',
-            type: 'branch',
-            status: 'active',
-            metrics: { totalAssets: 280, criticalVulns: 8, complianceScore: 89, lastScan: '2025-01-09T08:15:00Z' },
-            coordinates: { lat: 51.5074, lng: -0.1278 }
-          },
-          {
-            id: 'datacenter-tx',
-            name: 'Texas Datacenter',
-            location: 'Austin, TX',
-            type: 'datacenter',
-            status: 'active',
-            metrics: { totalAssets: 320, criticalVulns: 15, complianceScore: 85, lastScan: '2025-01-09T09:45:00Z' },
-            coordinates: { lat: 30.2672, lng: -97.7431 }
-          },
-          {
-            id: 'cloud-aws',
-            name: 'AWS Cloud',
-            location: 'Global',
-            type: 'cloud',
-            status: 'active',
-            metrics: { totalAssets: 197, criticalVulns: 6, complianceScore: 94, lastScan: '2025-01-09T11:20:00Z' },
-            coordinates: { lat: 39.8283, lng: -98.5795 }
-          }
-        ],
-        assets: [
-          {
-            id: 'asset-001',
-            hostname: 'web-server-01',
-            ip: '192.168.1.100',
-            branch: 'Headquarters NYC',
-            location: 'New York, NY',
-            owner: 'IT Team',
-            businessCriticality: 'critical',
-            tags: ['web', 'production'],
-            lastSeen: '2025-01-09T10:30:00Z',
-            agentStatus: 'online',
-            vulnerabilities: { critical: 3, high: 5, medium: 8, low: 12 },
-            complianceScore: 78,
-            riskScore: 85,
-            suggestedFixes: 7
-          },
-          {
-            id: 'asset-002',
-            hostname: 'db-server-02',
-            ip: '192.168.1.101',
-            branch: 'Headquarters NYC',
-            location: 'New York, NY',
-            owner: 'Database Team',
-            businessCriticality: 'critical',
-            tags: ['database', 'production'],
-            lastSeen: '2025-01-09T10:25:00Z',
-            agentStatus: 'online',
-            vulnerabilities: { critical: 2, high: 3, medium: 6, low: 9 },
-            complianceScore: 82,
-            riskScore: 78,
-            suggestedFixes: 5
-          }
-        ],
-        recentAlerts: [
-          {
-            id: 'alert-001',
-            type: 'critical',
-            title: 'Critical CVE-2024-1234 Detected',
-            description: 'Remote code execution vulnerability found in Apache HTTP Server',
-            timestamp: '2025-01-09T10:30:00Z',
-            branch: 'Headquarters NYC',
-            asset: 'web-server-01'
-          },
-          {
-            id: 'alert-002',
-            type: 'high',
-            title: 'High Risk CVE-2024-5678',
-            description: 'Privilege escalation vulnerability in Linux kernel',
-            timestamp: '2025-01-09T09:15:00Z',
-            branch: 'London Branch',
-            asset: 'app-server-03'
-          }
-        ],
-        topRiskyAssets: [
-          { id: 'asset-001', hostname: 'web-server-01', riskScore: 85, criticalVulns: 3, branch: 'Headquarters NYC' },
-          { id: 'asset-003', hostname: 'app-server-02', riskScore: 82, criticalVulns: 2, branch: 'London Branch' },
-          { id: 'asset-004', hostname: 'db-server-03', riskScore: 79, criticalVulns: 1, branch: 'Texas Datacenter' }
-        ]
-      };
-      
-      setDashboardData(mockData);
-      setLoading(false);
+      try {
+        // TODO: Implement actual API calls to fetch dashboard data
+        // For now, show empty state until APIs are implemented
+        const emptyData: DashboardData = {
+          kpis: [],
+          branches: [],
+          assets: [],
+          recentAlerts: [],
+          topRiskyAssets: []
+        };
+        
+        setDashboardData(emptyData);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchDashboardData();

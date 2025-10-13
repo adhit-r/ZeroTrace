@@ -28,7 +28,8 @@ func main() {
 	// Initialize components
 	softwareScanner := scanner.NewSoftwareScanner(cfg)
 	configScanner := scanner.NewConfigScanner(cfg)
-	processor := processor.NewProcessor(cfg)
+	systemScanner := scanner.NewSystemScanner(cfg)
+	processor := processor.NewProcessor(cfg, cfg.EnrichmentURL)
 	communicator := communicator.NewCommunicator(cfg)
 
 	// Create context for graceful shutdown
@@ -36,10 +37,11 @@ func main() {
 	defer cancel()
 
 	// Start agent
-	log.Println("Starting ZeroTrace Software Vulnerability Agent (MDM Mode)...")
+	log.Printf("Starting ZeroTrace Software Vulnerability Agent (MDM Mode)...")
 	log.Printf("Agent ID: %s", cfg.AgentID)
 	log.Printf("API Endpoint: %s", cfg.APIEndpoint)
 	log.Printf("Organization ID: %s", cfg.OrganizationID)
+	log.Printf("Enrichment URL: %s", cfg.EnrichmentURL)
 
 	// Check if agent needs enrollment
 	if !cfg.IsEnrolled() {
@@ -70,11 +72,30 @@ func main() {
 
 	// Start scanning in a goroutine
 	go func() {
+		log.Printf("Starting scanning loop with interval: %v", cfg.ScanInterval)
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			default:
+				log.Printf("Starting scan cycle...")
+
+				// Scan for system information
+				systemInfo, err := systemScanner.Scan()
+				if err != nil {
+					log.Printf("System scan error: %v", err)
+				} else {
+					log.Printf("System scan completed: %s %s", systemInfo.OSName, systemInfo.OSVersion)
+
+					// Send system information to API
+					log.Printf("About to call SendSystemInfo...")
+					if err := communicator.SendSystemInfo(systemInfo); err != nil {
+						log.Printf("Failed to send system information: %v", err)
+					} else {
+						log.Printf("System information sent successfully")
+					}
+				}
+
 				// Scan for installed software
 				softwareResults, err := softwareScanner.Scan()
 				if err != nil {

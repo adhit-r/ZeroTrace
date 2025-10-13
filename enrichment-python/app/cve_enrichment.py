@@ -23,6 +23,23 @@ class CVEEnrichmentService:
             'vulndb': 'https://vuldb.com/api/v1/search',
             'cve_search': 'https://cve.circl.lu/api/search'
         }
+        self.local_cve_data = self.load_local_cve_data()
+        
+    def load_local_cve_data(self) -> List[Dict]:
+        """Load CVE data from local file"""
+        try:
+            cve_file = os.path.join(os.path.dirname(__file__), '..', 'cve_data.json')
+            if os.path.exists(cve_file):
+                with open(cve_file, 'r') as f:
+                    data = json.load(f)
+                    logger.info(f"Loaded {len(data)} CVEs from local database")
+                    return data
+            else:
+                logger.warning("No local CVE data file found")
+                return []
+        except Exception as e:
+            logger.error(f"Error loading local CVE data: {e}")
+            return []
         
     async def enrich_software(self, software_list: List[Dict]) -> List[Dict]:
         """
@@ -68,7 +85,17 @@ class CVEEnrichmentService:
         """
         cves = []
         
-        # Search in multiple sources
+        # First, search local CVE database
+        local_cves = self.search_local_cve_data(software_name, version)
+        cves.extend(local_cves)
+        
+        # If we found local CVEs, return them (faster and more reliable)
+        if local_cves:
+            logger.info(f"Found {len(local_cves)} CVEs in local database for {software_name}")
+            return local_cves
+        
+        # Fallback to online sources if no local data
+        logger.info(f"No local CVEs found for {software_name}, searching online sources...")
         tasks = [
             self.search_nvd(software_name, version),
             self.search_cve_search(software_name, version)
@@ -88,6 +115,56 @@ class CVEEnrichmentService:
                 unique_cves[cve_id] = cve
         
         return list(unique_cves.values())
+    
+    def search_local_cve_data(self, software_name: str, version: str = None) -> List[Dict]:
+        """
+        Search local CVE database for software vulnerabilities
+        """
+        matching_cves = []
+        software_name_lower = software_name.lower()
+        
+        for cve_entry in self.local_cve_data:
+            try:
+                cve_data = cve_entry.get('cve', {})
+                descriptions = cve_data.get('descriptions', [])
+                
+                # Check if software name appears in any description
+                for desc in descriptions:
+                    desc_text = desc.get('value', '').lower()
+                    if software_name_lower in desc_text:
+                        # Extract CVE information
+                        cve_id = cve_data.get('id', '')
+                        if cve_id:
+                            # Get CVSS score
+                            cvss_score = 0.0
+                            severity = 'UNKNOWN'
+                            
+                            metrics = cve_data.get('metrics', {})
+                            cvss_v31 = metrics.get('cvssMetricV31', [])
+                            if cvss_v31:
+                                cvss_data = cvss_v31[0].get('cvssData', {})
+                                cvss_score = cvss_data.get('baseScore', 0.0)
+                                severity = cvss_data.get('baseSeverity', 'UNKNOWN')
+                            
+                            # Create CVE entry
+                            cve_entry = {
+                                'id': cve_id,
+                                'description': desc.get('value', ''),
+                                'severity': severity,
+                                'cvss_score': cvss_score,
+                                'published_date': cve_data.get('published', ''),
+                                'last_modified': cve_data.get('lastModified', ''),
+                                'source': 'local_database'
+                            }
+                            
+                            matching_cves.append(cve_entry)
+                            break  # Found a match, move to next CVE
+                            
+            except Exception as e:
+                logger.error(f"Error processing CVE entry: {e}")
+                continue
+        
+        return matching_cves
     
     async def search_nvd(self, software_name: str, version: str = None) -> List[Dict]:
         """

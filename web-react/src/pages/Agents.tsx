@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Server, 
   Activity, 
@@ -12,7 +13,8 @@ import {
   Terminal,
   AlertTriangle,
   CheckCircle,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 import { agentService } from '../services/agentService';
 
@@ -447,9 +449,13 @@ const Agents: React.FC = () => {
                         >
                           <X className="h-4 w-4" />
                         </button>
-                        <button className="p-2 hover:bg-gray-200 rounded border-2 border-black">
+                        <Link 
+                          to={`/agents/${agent.id}`}
+                          className="p-2 hover:bg-gray-200 rounded border-2 border-black"
+                          title="View Asset Details"
+                        >
                           <Eye className="h-4 w-4" />
-                        </button>
+                        </Link>
                         <button className="p-2 hover:bg-gray-200 rounded border-2 border-black">
                           <Settings className="h-4 w-4" />
                         </button>

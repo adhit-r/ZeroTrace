@@ -2,8 +2,10 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,6 +39,9 @@ type Config struct {
 	// API Configuration
 	APIPort int `json:"api_port"`
 
+	// Enrichment Configuration
+	EnrichmentURL string `json:"enrichment_url"`
+
 	// Scan Configuration
 	ScanInterval    time.Duration `json:"scan_interval"`
 	ScanDepth       int           `json:"scan_depth"`
@@ -59,16 +64,8 @@ func Load() *Config {
 	dbPort, _ := strconv.Atoi(getEnv("DB_PORT", "5432"))
 	debug, _ := strconv.ParseBool(getEnv("DEBUG", "false"))
 
-	// Generate UUID for agent ID if not set or not a valid UUID
-	agentID := getEnv("AGENT_ID", "")
-	if agentID == "" {
-		agentID = uuid.New().String()
-	} else {
-		// Validate if it's a UUID, if not generate a new one
-		if _, err := uuid.Parse(agentID); err != nil {
-			agentID = uuid.New().String()
-		}
-	}
+	// Get or generate agent ID (persist to disk)
+	agentID := getOrGenerateAgentID()
 
 	return &Config{
 		// Agent Configuration
@@ -83,7 +80,7 @@ func Load() *Config {
 		// Enrollment Configuration
 		EnrollmentToken: getEnv("ENROLLMENT_TOKEN", ""),
 		AgentCredential: getEnv("AGENT_CREDENTIAL", ""),
-		OrganizationID:  getEnv("ORGANIZATION_ID", ""),
+		OrganizationID:  getEnv("ZEROTRACE_ORGANIZATION_ID", ""),
 
 		// Company-specific Configuration (legacy)
 		CompanyID:   getEnv("COMPANY_ID", ""),
@@ -96,6 +93,9 @@ func Load() *Config {
 
 		// API Configuration
 		APIPort: apiPort,
+
+		// Enrichment Configuration
+		EnrichmentURL: getEnv("ZEROTRACE_ENRICHMENT_URL", "http://localhost:8000"),
 
 		// Scan Configuration
 		ScanInterval:    5 * time.Minute,  // Default 5 minutes
@@ -170,5 +170,48 @@ func getOS() string {
 		return "Windows"
 	default:
 		return runtime.GOOS
+	}
+}
+
+// getOrGenerateAgentID gets the agent ID from env, file, or generates a new one
+func getOrGenerateAgentID() string {
+	// 1. Check environment variable first
+	if envID := os.Getenv("AGENT_ID"); envID != "" {
+		if _, err := uuid.Parse(envID); err == nil {
+			return envID
+		}
+	}
+
+	// 2. Check if agent ID file exists
+	idFilePath := getAgentIDFilePath()
+	if data, err := os.ReadFile(idFilePath); err == nil {
+		agentID := strings.TrimSpace(string(data))
+		if _, err := uuid.Parse(agentID); err == nil {
+			return agentID
+		}
+	}
+
+	// 3. Generate new agent ID and save it
+	newID := uuid.New().String()
+
+	// Create directory if it doesn't exist
+	if err := os.MkdirAll(filepath.Dir(idFilePath), 0755); err == nil {
+		// Save the agent ID to file
+		os.WriteFile(idFilePath, []byte(newID), 0644)
+	}
+
+	return newID
+}
+
+// getAgentIDFilePath returns the path to the agent ID file
+func getAgentIDFilePath() string {
+	// Use different paths based on OS
+	switch runtime.GOOS {
+	case "windows":
+		return filepath.Join(os.Getenv("PROGRAMDATA"), "ZeroTrace", "agent_id")
+	case "darwin":
+		return filepath.Join(os.Getenv("HOME"), ".zerotrace", "agent_id")
+	default: // linux and others
+		return filepath.Join("/var/lib/zerotrace", "agent_id")
 	}
 }

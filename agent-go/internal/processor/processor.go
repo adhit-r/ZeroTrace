@@ -4,18 +4,21 @@ import (
 	"time"
 
 	"zerotrace/agent/internal/config"
+	"zerotrace/agent/internal/enrichment"
 	"zerotrace/agent/internal/models"
 )
 
 // Processor handles scan result processing
 type Processor struct {
-	config *config.Config
+	config           *config.Config
+	enrichmentClient *enrichment.Client
 }
 
 // NewProcessor creates a new processor instance
-func NewProcessor(cfg *config.Config) *Processor {
+func NewProcessor(cfg *config.Config, enrichmentURL string) *Processor {
 	return &Processor{
-		config: cfg,
+		config:           cfg,
+		enrichmentClient: enrichment.NewClient(enrichmentURL),
 	}
 }
 
@@ -24,6 +27,9 @@ func (p *Processor) Process(result *models.ScanResult) (*models.ScanResult, erro
 	// Add processing metadata
 	result.Metadata["processed_at"] = time.Now()
 	result.Metadata["processor_version"] = "1.0.0"
+
+	// Note: Enrichment moved to API level for better performance
+	// Agent now sends raw dependencies to API, which handles enrichment asynchronously
 
 	// Process vulnerabilities
 	for i := range result.Vulnerabilities {
@@ -46,12 +52,10 @@ func (p *Processor) processVulnerability(vuln *models.Vulnerability) {
 	}
 	vuln.EnrichmentData["processed"] = true
 	vuln.EnrichmentData["processor_timestamp"] = time.Now()
+	vuln.EnrichmentData["agent_id"] = p.config.AgentID
 
-	// TODO: Implement actual vulnerability processing
-	// - CVE lookup
-	// - Severity calculation
-	// - Risk scoring
-	// - Remediation suggestions
+	// Vulnerability is already enriched by enrichment service
+	// Additional processing can be added here
 }
 
 // processDependency processes a single dependency
@@ -63,8 +67,6 @@ func (p *Processor) processDependency(dep *models.Dependency) {
 	dep.Metadata["processed"] = true
 	dep.Metadata["processor_timestamp"] = time.Now()
 
-	// TODO: Implement actual dependency processing
-	// - Version analysis
-	// - Vulnerability lookup
-	// - Update recommendations
+	// Dependencies are enriched by enrichment service
+	// Additional processing can be added here
 }

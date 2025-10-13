@@ -109,6 +109,7 @@ func setupRoutes(router *gin.Engine, scanService *services.ScanService, agentSer
 		agents.POST("/heartbeat", handlers.AgentHeartbeat(agentService))
 		agents.POST("/results", handlers.AgentResults(agentService))
 		agents.POST("/status", handlers.AgentStatus(agentService))
+		agents.POST("/system-info", handlers.UpdateSystemInfo(agentService))
 		agents.GET("/", handlers.GetAgents(agentService))
 		agents.GET("/online", handlers.GetOnlineAgents(agentService))
 		agents.GET("/stats", handlers.GetAgentStats(agentService))

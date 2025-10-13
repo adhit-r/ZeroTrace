@@ -34,6 +34,7 @@ ZeroTrace is a high-performance, enterprise-grade vulnerability detection and ma
 - **Type Safety**: Resolved model mismatches between agent and API components
 - **CORS Issues**: Fixed frontend API communication problems
 - **Data Conversion**: Implemented proper conversion between agent `Dependencies` and API `Assets`
+- **Authentication**: Migrated from custom JWT to **Clerk Auth** for production-ready auth with multi-org RBAC
 
 ## 🏗️ **Architecture**
 
@@ -63,6 +64,10 @@ ZeroTrace is a high-performance, enterprise-grade vulnerability detection and ma
 git clone https://github.com/adhit-r/ZeroTrace.git
 cd ZeroTrace
 
+# Set up Clerk authentication
+cp web-react/.env.example web-react/.env
+# Edit .env file with your Clerk keys (see Authentication Setup below)
+
 # Start services
 docker-compose up -d
 
@@ -70,6 +75,45 @@ docker-compose up -d
 curl http://localhost:8080/api/v1/health
 open http://localhost:3000
 ```
+
+## 🔐 **Authentication Setup (Clerk)**
+
+ZeroTrace uses **Clerk** for production-ready authentication with multi-organization support and RBAC.
+
+### **Step 1: Create Clerk Account**
+1. Go to [clerk.com](https://clerk.com) and sign up for a free account
+2. Create a new application
+3. Choose "React" as your framework
+
+### **Step 2: Configure Environment Variables**
+Edit `web-react/.env`:
+```bash
+# Replace with your actual Clerk keys
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_actual_key_here
+```
+
+### **Step 3: Set up Organizations**
+1. In your Clerk dashboard, go to "Organizations"
+2. Enable multi-organization support
+3. Configure organization roles:
+   - **Global Admin**: Full system access
+   - **Organization Admin**: Company-wide access
+   - **Security Analyst**: Read-only access to company data
+   - **Viewer**: Dashboard access only
+
+### **Step 4: API Integration**
+The API automatically validates Clerk JWT tokens:
+- Set `CLERK_JWT_VERIFICATION_KEY` in API environment
+- Configure webhook endpoints for user/org changes
+- Update middleware to use Clerk's session validation
+
+### **Features Included**
+- ✅ **Multi-Organization Support**
+- ✅ **Role-Based Access Control (RBAC)**
+- ✅ **SSO Integration** (Google, GitHub, etc.)
+- ✅ **Secure JWT Tokens**
+- ✅ **Organization Management**
+- ✅ **User Invitation System**
 
 ### **Development Setup**
 ```bash

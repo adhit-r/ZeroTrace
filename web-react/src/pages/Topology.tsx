@@ -1,210 +1,230 @@
 import React, { useState, useEffect } from 'react';
-import NetworkTopology from '../components/NetworkTopology';
-
-// Mock data for demonstration
-const mockTopologyData = {
-  id: "topology-1",
-  companyId: "company-123",
-  nodes: [
-    // Vulnerability Management Agents
-    {
-      id: "vuln-agent-1",
-      type: "agent" as const,
-      agentId: "agent-001",
-      name: "Vuln Scanner DC1",
-      ipAddress: "192.168.1.10",
-      location: "HQ - Floor 1",
-      riskScore: 15,
-      status: "active" as const,
-      metadata: { vulnerabilities: 15, lastSeen: new Date() }
-    },
-    {
-      id: "vuln-agent-2",
-      type: "agent" as const,
-      agentId: "agent-002",
-      name: "Vuln Scanner DC2",
-      ipAddress: "192.168.2.10",
-      location: "HQ - Floor 2",
-      riskScore: 8,
-      status: "active" as const,
-      metadata: { vulnerabilities: 8, lastSeen: new Date() }
-    },
-    
-    // Endpoint Agents
-    {
-      id: "endpoint-1",
-      type: "asset" as const,
-      assetId: "asset-001",
-      name: "Workstation-001",
-      ipAddress: "192.168.1.101",
-      location: "HQ - Floor 1",
-      riskScore: 3,
-      status: "active" as const,
-      metadata: { os: "Windows 11", vulnerabilities: 3 }
-    },
-    {
-      id: "endpoint-2",
-      type: "asset" as const,
-      assetId: "asset-002",
-      name: "Server-DB",
-      ipAddress: "192.168.1.50",
-      location: "HQ - Basement",
-      riskScore: 12,
-      status: "active" as const,
-      metadata: { os: "Ubuntu 22.04", vulnerabilities: 12 }
-    },
-    
-    // Network Devices
-    {
-      id: "switch-1",
-      type: "asset" as const,
-      assetId: "asset-003",
-      name: "Core Switch",
-      ipAddress: "192.168.1.1",
-      location: "HQ - Basement",
-      riskScore: 0,
-      status: "active" as const,
-      metadata: { deviceType: "network", vulnerabilities: 0 }
-    },
-    {
-      id: "router-1",
-      type: "asset" as const,
-      assetId: "asset-004",
-      name: "Border Router",
-      ipAddress: "10.0.0.1",
-      location: "HQ - Basement",
-      riskScore: 2,
-      status: "active" as const,
-      metadata: { deviceType: "network", vulnerabilities: 2 }
-    },
-    
-    // OWASP Amass Discovered Assets
-    {
-      id: "amass-1",
-      type: "amass_discovery" as const,
-      name: "External API",
-      ipAddress: "203.0.113.10",
-      location: "Cloud - External",
-      riskScore: 5,
-      status: "discovered" as const,
-      metadata: { domain: "api.company.com", source: "amass" }
-    },
-    {
-      id: "amass-2",
-      type: "amass_discovery" as const,
-      name: "Mail Server",
-      ipAddress: "203.0.113.20",
-      location: "Cloud - External",
-      riskScore: 1,
-      status: "discovered" as const,
-      metadata: { domain: "mail.company.com", source: "amass" }
-    },
-  ],
-  links: [
-    { source: "vuln-agent-1", target: "endpoint-1", type: "scan" as const, strength: 1 },
-    { source: "vuln-agent-1", target: "switch-1", type: "scan" as const, strength: 1 },
-    { source: "vuln-agent-2", target: "endpoint-2", type: "scan" as const, strength: 1 },
-    { source: "switch-1", target: "endpoint-1", type: "network" as const, strength: 2 },
-    { source: "switch-1", target: "endpoint-2", type: "network" as const, strength: 2 },
-    { source: "switch-1", target: "router-1", type: "network" as const, strength: 3 },
-    { source: "router-1", target: "amass-1", type: "external" as const, strength: 1 },
-    { source: "router-1", target: "amass-2", type: "external" as const, strength: 1 },
-  ],
-  clusters: [
-    {
-      id: "cluster-1",
-      name: "HQ Network",
-      type: "subnet",
-      nodeIds: ["vuln-agent-1", "endpoint-1", "switch-1"],
-      riskScore: 8.5,
-      description: "Main headquarters network"
-    },
-    {
-      id: "cluster-2",
-      name: "External Assets",
-      type: "geographic",
-      nodeIds: ["amass-1", "amass-2"],
-      riskScore: 3.0,
-      description: "Externally discovered assets"
-    }
-  ],
-  lastUpdated: new Date().toISOString()
-};
+import { RefreshCw, Search, SlidersHorizontal, Share2, ZoomIn, ZoomOut, Maximize, AlertTriangle, Shield, Activity, Wifi, WifiOff } from 'lucide-react';
+import { topologyService } from '../services/topologyService';
+import type { TopologyData, TopologyNode } from '../services/topologyService';
 
 const Topology: React.FC = () => {
-  const [topologyData, setTopologyData] = useState(mockTopologyData);
-  const [viewMode, setViewMode] = useState<'network' | 'floor' | 'geographic' | 'cluster'>('network');
-  const [agentFilter, setAgentFilter] = useState<'all' | 'vulnerability' | 'endpoint' | 'network' | 'amass'>('all');
-  const [connectionFilter, setConnectionFilter] = useState<'all' | 'connected' | 'disconnected' | 'intermittent'>('all');
+  const [topologyData, setTopologyData] = useState<TopologyData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [networkHealth, setNetworkHealth] = useState<any>(null);
 
-  const handleRefresh = async () => {
-    setIsLoading(true);
+  useEffect(() => {
+    loadTopologyData();
+  }, []);
+
+  const loadTopologyData = async () => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      setIsLoading(true);
+      setError(null);
       
-      // Update mock data with some randomness
-      const updatedData = {
-        ...topologyData,
-        nodes: topologyData.nodes.map(node => ({
-          ...node,
-          riskScore: node.riskScore + (Math.random() > 0.7 ? Math.floor(Math.random() * 3) : 0),
-          metadata: {
-            ...node.metadata,
-            lastSeen: new Date()
-          }
-        })),
-        lastUpdated: new Date().toISOString()
-      };
+      const [topology, health] = await Promise.all([
+        topologyService.getTopologyData(),
+        topologyService.getNetworkHealth()
+      ]);
       
-      setTopologyData(updatedData);
-    } catch (error) {
-      console.error('Error refreshing topology data:', error);
+      setTopologyData(topology);
+      setNetworkHealth(health);
+    } catch (err) {
+      setError('Failed to load topology data');
+      console.error('Error loading topology:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleNodeClick = (node: any) => {
-    console.log('Node clicked:', node);
-    // Here you could open a detailed view, trigger a rescan, etc.
-    alert(`Clicked on ${node.name} (${node.type})`);
+  const handleRefresh = () => {
+    loadTopologyData();
+  };
+
+  const getNodeColor = (node: TopologyNode) => {
+    if (node.hasVulns) return 'bg-red-500 border-red-700';
+    if (node.status === 'offline') return 'bg-gray-400 border-gray-600';
+    
+    switch (node.type) {
+      case 'router': return 'bg-blue-500 border-blue-700';
+      case 'switch': return 'bg-yellow-500 border-yellow-700';
+      case 'server': return 'bg-purple-500 border-purple-700';
+      case 'workstation': return 'bg-green-500 border-green-700';
+      case 'agent': return 'bg-orange-500 border-orange-700';
+      default: return 'bg-gray-500 border-gray-700';
+    }
+  };
+
+  const getRiskColor = (riskScore: number) => {
+    if (riskScore >= 8) return 'text-red-600 bg-red-100';
+    if (riskScore >= 6) return 'text-orange-600 bg-orange-100';
+    if (riskScore >= 4) return 'text-yellow-600 bg-yellow-100';
+    return 'text-green-600 bg-green-100';
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
+    <div className="p-4 md:p-6 lg:p-8 font-sans bg-gray-100 min-h-screen">
       {/* Header */}
-      <div className="bg-black bg-opacity-80 backdrop-blur-sm border-b border-white border-opacity-10 p-4">
-        <h1 className="text-2xl font-bold text-cyan-400 mb-1">
-          Network Asset Discovery & Topology Visualizer
-        </h1>
-        <p className="text-gray-300 text-sm">
-          Real-time visualization of vulnerability management agents and discovered assets
-        </p>
-      </div>
-
-      {/* Main Content */}
-      <div className="relative h-screen">
-        {isLoading && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white bg-opacity-10 backdrop-blur-sm p-6 rounded-lg border border-white border-opacity-20">
-              <div className="flex items-center space-x-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
-                <span className="text-white">Refreshing topology data...</span>
+      <header className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-black text-black uppercase tracking-wider">Network Topology</h1>
+            <p className="text-sm text-gray-600 font-bold">Visualize your asset connections and security posture.</p>
+          </div>
+          {networkHealth && (
+            <div className="flex gap-4">
+              <div className="px-4 py-2 bg-white border-3 border-black rounded-lg shadow-neo-brutal-small">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-green-600" />
+                  <span className="font-bold text-green-600">{networkHealth.onlineNodes}</span>
+                  <span className="text-sm text-gray-600">Online</span>
+                </div>
+              </div>
+              <div className="px-4 py-2 bg-white border-3 border-black rounded-lg shadow-neo-brutal-small">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <span className="font-bold text-red-600">{networkHealth.vulnerableNodes}</span>
+                  <span className="text-sm text-gray-600">Vulnerable</span>
+                </div>
+              </div>
+              <div className="px-4 py-2 bg-white border-3 border-black rounded-lg shadow-neo-brutal-small">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-blue-600" />
+                  <span className="font-bold text-blue-600">{networkHealth.averageRiskScore.toFixed(1)}</span>
+                  <span className="text-sm text-gray-600">Avg Risk</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      </header>
 
-        <NetworkTopology
-          data={topologyData}
-          onNodeClick={handleNodeClick}
-          onRefresh={handleRefresh}
-          viewMode={viewMode}
-          agentFilter={agentFilter}
-          connectionFilter={connectionFilter}
-        />
+      {/* Main Content Area */}
+      <div className="flex flex-col lg:flex-row gap-6">
+
+        {/* Control Panel */}
+        <aside className="lg:w-1/4">
+          <div className="bg-white p-4 border-3 border-black rounded-lg shadow-neo-brutal">
+            <h2 className="text-lg font-black text-black uppercase mb-4">Controls</h2>
+            <div className="space-y-4">
+              <button
+                onClick={handleRefresh}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white font-bold uppercase tracking-wide rounded-lg border-3 border-black shadow-neo-brutal-small hover:shadow-neo-brutal-small-hover transition-all"
+              >
+                <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+                {isLoading ? 'Refreshing...' : 'Refresh'}
+              </button>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search assets..."
+                  className="w-full pl-10 pr-4 py-3 bg-gray-100 text-black font-bold rounded-lg border-3 border-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-200 text-black font-bold uppercase tracking-wide rounded-lg border-3 border-black shadow-neo-brutal-small hover:shadow-neo-brutal-small-hover transition-all">
+                <SlidersHorizontal className="h-5 w-5" />
+                Filters
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        {/* Topology Visualization */}
+        <main className="flex-1">
+          <div className="relative bg-white h-[600px] lg:h-full border-3 border-black rounded-lg shadow-neo-brutal p-4">
+            {/* Toolbar */}
+            <div className="absolute top-4 right-4 flex gap-2">
+              <button className="p-2 bg-gray-100 rounded-lg border-3 border-black shadow-neo-brutal-small"><ZoomIn className="h-5 w-5" /></button>
+              <button className="p-2 bg-gray-100 rounded-lg border-3 border-black shadow-neo-brutal-small"><ZoomOut className="h-5 w-5" /></button>
+              <button className="p-2 bg-gray-100 rounded-lg border-3 border-black shadow-neo-brutal-small"><Maximize className="h-5 w-5" /></button>
+              <button className="p-2 bg-gray-100 rounded-lg border-3 border-black shadow-neo-brutal-small"><Share2 className="h-5 w-5" /></button>
+            </div>
+            
+                   {/* Network Visualization */}
+                   <div className="w-full h-full relative">
+                     {error ? (
+                       <div className="flex items-center justify-center h-full">
+                         <div className="text-center">
+                           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                           <p className="text-red-600 font-bold">{error}</p>
+                           <button 
+                             onClick={handleRefresh}
+                             className="mt-4 px-4 py-2 bg-red-500 text-white border-3 border-black rounded-lg shadow-neo-brutal-small hover:shadow-neo-brutal-small-hover transition-all"
+                           >
+                             Retry
+                           </button>
+                         </div>
+                       </div>
+                     ) : topologyData ? (
+                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+                         {topologyData.nodes.map((node) => (
+                           <div
+                             key={node.id}
+                             className={`p-4 rounded-lg border-3 shadow-neo-brutal-small hover:shadow-neo-brutal-small-hover transition-all cursor-pointer ${getNodeColor(node)}`}
+                           >
+                             <div className="flex items-center justify-between mb-2">
+                               <div className="flex items-center gap-2">
+                                 {node.status === 'online' ? (
+                                   <Wifi className="h-4 w-4 text-green-600" />
+                                 ) : (
+                                   <WifiOff className="h-4 w-4 text-gray-400" />
+                                 )}
+                                 <span className="font-bold text-white text-sm">{node.name}</span>
+                               </div>
+                               <div className={`px-2 py-1 rounded text-xs font-bold ${getRiskColor(node.riskScore)}`}>
+                                 {node.riskScore.toFixed(1)}
+                               </div>
+                             </div>
+                             <div className="text-xs text-white/80 space-y-1">
+                               <div>IP: {node.ip}</div>
+                               <div>OS: {node.os}</div>
+                               {node.hasVulns && (
+                                 <div className="flex items-center gap-1">
+                                   <AlertTriangle className="h-3 w-3 text-red-300" />
+                                   <span>{node.vulnerabilityCount} vulns</span>
+                                   {node.criticalVulns > 0 && (
+                                     <span className="text-red-300 font-bold">({node.criticalVulns} critical)</span>
+                                   )}
+                                 </div>
+                               )}
+                               {node.location && (
+                                 <div className="text-white/60">
+                                   {node.location.city}, {node.location.country}
+                                 </div>
+                               )}
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     ) : (
+                       <div className="flex items-center justify-center h-full">
+                         <div className="text-center">
+                           <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-orange-500" />
+                           <p className="text-gray-600 font-bold">Loading network topology...</p>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+
+            {/* Legend */}
+            <div className="absolute bottom-4 left-4 bg-white p-3 border-3 border-black rounded-lg shadow-neo-brutal-small">
+              <h3 className="font-black uppercase mb-2">Legend</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border-2 border-black"></div>Router</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-black"></div>Switch</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-500 border-2 border-black"></div>Server</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500 border-2 border-black"></div>Workstation</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-orange-500 border-2 border-black"></div>Agent</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500 border-2 border-black"></div>Vulnerable</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gray-400 border-2 border-black"></div>Offline</div>
+              </div>
+            </div>
+
+            {isLoading && (
+              <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
+                <p className="text-black font-bold text-lg">Loading Topology...</p>
+              </div>
+            )}
+          </div>
+        </main>
+
       </div>
     </div>
   );

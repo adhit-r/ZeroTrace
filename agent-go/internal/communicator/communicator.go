@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	"zerotrace/agent/internal/config"
 	"zerotrace/agent/internal/models"
+	"zerotrace/agent/internal/scanner"
 )
 
 // Communicator handles communication with the API
@@ -29,6 +31,9 @@ func NewCommunicator(cfg *config.Config) *Communicator {
 
 // SendResults sends scan results to the API
 func (c *Communicator) SendResults(result *models.ScanResult) error {
+	log.Printf("[SendResults] Starting to send results for agent %s", c.config.AgentID)
+	log.Printf("[SendResults] Result contains %d dependencies and %d vulnerabilities", len(result.Dependencies), len(result.Vulnerabilities))
+	
 	// Prepare request payload
 	payload := map[string]any{
 		"agent_id": c.config.AgentID,
@@ -46,6 +51,7 @@ func (c *Communicator) SendResults(result *models.ScanResult) error {
 
 	// Create request
 	url := fmt.Sprintf("%s/api/agents/results", c.config.APIEndpoint)
+	log.Printf("[SendResults] Sending request to: %s", url)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -56,17 +62,23 @@ func (c *Communicator) SendResults(result *models.ScanResult) error {
 	req.Header.Set("User-Agent", "ZeroTrace-Agent/1.0")
 
 	// Send request
+	log.Printf("[SendResults] Sending HTTP request...")
 	resp, err := c.client.Do(req)
 	if err != nil {
+		log.Printf("[SendResults] HTTP request failed: %v", err)
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
+	log.Printf("[SendResults] Received response with status: %d", resp.StatusCode)
+
 	// Check response status
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		log.Printf("[SendResults] API returned status %d for results", resp.StatusCode)
 		return fmt.Errorf("API returned status %d", resp.StatusCode)
 	}
 
+	log.Printf("[SendResults] Results sent successfully")
 	return nil
 }
 
@@ -200,23 +212,24 @@ func (c *Communicator) SendHeartbeat(cpuUsage, memoryUsage float64, metadata map
 // RegisterAgent registers the agent with the API
 func (c *Communicator) RegisterAgent() error {
 	// Prepare registration payload
-	registration := map[string]any{
-		"agent_id": c.config.AgentID,
-		"name":     "ZeroTrace Agent",
-		"version":  "1.0.0",
-		"hostname": c.config.Hostname,
-		"os":       c.config.OS,
+	payload := map[string]any{
+		"id":              c.config.AgentID,
+		"name":            "Go Agent",
+		"version":         "0.1.0",
+		"organization_id": c.config.OrganizationID,
+		"hostname":        c.config.Hostname,
+		"os":              c.config.OS,
 	}
 
-	// Marshal to JSON
-	jsonData, err := json.Marshal(registration)
+	// Marshal payload to JSON
+	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal registration: %w", err)
 	}
 
 	// Create request
 	url := fmt.Sprintf("%s/api/agents/register", c.config.APIEndpoint)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		return fmt.Errorf("failed to create registration request: %w", err)
 	}
@@ -371,5 +384,76 @@ func (c *Communicator) SendHeartbeatWithCredential(cpuUsage, memoryUsage float64
 		return fmt.Errorf("API returned status %d for heartbeat", resp.StatusCode)
 	}
 
+	return nil
+}
+
+// SendSystemInfo sends system information to the API
+func (c *Communicator) SendSystemInfo(systemInfo *scanner.SystemInfo) error {
+	log.Printf("[SendSystemInfo] Starting to send system information for agent %s", c.config.AgentID)
+
+	// Prepare request payload
+	payload := map[string]any{
+		"agent_id":    c.config.AgentID,
+		"system_info": systemInfo,
+		"metadata": map[string]interface{}{
+			"os_name":          systemInfo.OSName,
+			"os_version":       systemInfo.OSVersion,
+			"os_build":         systemInfo.OSBuild,
+			"kernel_version":   systemInfo.KernelVersion,
+			"platform":         systemInfo.Platform,
+			"cpu_model":        systemInfo.CPUModel,
+			"cpu_cores":        systemInfo.CPUCores,
+			"memory_total_gb":  systemInfo.MemoryTotalGB,
+			"storage_total_gb": systemInfo.StorageTotalGB,
+			"gpu_model":        systemInfo.GPUModel,
+			"serial_number":    systemInfo.SerialNumber,
+			"ip_address":       systemInfo.IPAddress,
+			"mac_address":      systemInfo.MACAddress,
+			"city":             systemInfo.City,
+			"region":           systemInfo.Region,
+			"country":          systemInfo.Country,
+			"timezone":         systemInfo.Timezone,
+			"hostname":         systemInfo.Hostname,
+			"risk_score":       systemInfo.RiskScore,
+			"tags":             systemInfo.Tags,
+		},
+	}
+
+	// Marshal to JSON
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal system info: %w", err)
+	}
+
+	// Create request
+	url := fmt.Sprintf("%s/api/agents/system-info", c.config.APIEndpoint)
+	log.Printf("[SendSystemInfo] Sending request to: %s", url)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", c.config.APIKey)
+
+	// Send request
+	log.Printf("[SendSystemInfo] Sending HTTP request...")
+	resp, err := c.client.Do(req)
+	if err != nil {
+		log.Printf("[SendSystemInfo] HTTP request failed: %v", err)
+		return fmt.Errorf("failed to send system info: %w", err)
+	}
+	defer resp.Body.Close()
+
+	log.Printf("[SendSystemInfo] Received response with status: %d", resp.StatusCode)
+
+	// Check response status
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[SendSystemInfo] API returned status %d for system info", resp.StatusCode)
+		return fmt.Errorf("API returned status %d for system info", resp.StatusCode)
+	}
+
+	log.Printf("[SendSystemInfo] System information sent successfully")
 	return nil
 }

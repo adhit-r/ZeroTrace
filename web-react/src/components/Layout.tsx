@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useUser, UserButton, useClerk } from '@clerk/clerk-react';
 import { 
   Home, 
   Server, 
@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 
 const Layout: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -133,12 +134,12 @@ const Layout: React.FC = () => {
                 </div>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-bold text-black">{user?.name || 'ADMIN'}</p>
-                <p className="text-xs text-gray-600">{user?.email || 'admin@zerotrace.com'}</p>
+                <p className="text-sm font-bold text-black">{user?.fullName || user?.username || 'USER'}</p>
+                <p className="text-xs text-gray-600">{user?.primaryEmailAddress?.emailAddress || 'user@zerotrace.com'}</p>
               </div>
             </div>
             <button
-              onClick={logout}
+              onClick={() => signOut()}
               className="w-full p-2 bg-red-100 text-red-800 border-2 border-red-300 rounded text-sm font-bold uppercase tracking-wider hover:bg-red-200 transition-colors"
             >
               <LogOut className="mr-2 h-4 w-4 inline-block" />
@@ -203,12 +204,12 @@ const Layout: React.FC = () => {
                 </div>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-bold text-black">{user?.name || 'ADMIN'}</p>
-                <p className="text-xs text-gray-600">{user?.email || 'admin@zerotrace.com'}</p>
+                <p className="text-sm font-bold text-black">{user?.fullName || user?.username || 'USER'}</p>
+                <p className="text-xs text-gray-600">{user?.primaryEmailAddress?.emailAddress || 'user@zerotrace.com'}</p>
               </div>
             </div>
             <button
-              onClick={logout}
+              onClick={() => signOut()}
               className="w-full p-2 bg-red-100 text-red-800 border-2 border-red-300 rounded text-sm font-bold uppercase tracking-wider hover:bg-red-200 transition-colors"
             >
               <LogOut className="mr-2 h-4 w-4 inline-block" />

@@ -1,6 +1,9 @@
 package services
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -17,33 +20,25 @@ type AgentService struct {
 
 // NewAgentService creates a new agent service
 func NewAgentService() *AgentService {
-	as := &AgentService{
+	return &AgentService{
 		agents: make(map[uuid.UUID]*models.Agent),
 	}
-	as.StartCleanupRoutine()
-	return as
 }
 
-// RegisterAgent registers a new agent
-func (as *AgentService) RegisterAgent(agentID uuid.UUID, organizationID uuid.UUID, name, version, hostname, os string) *models.Agent {
+// RegisterAgent registers a new agent or updates an existing one
+func (as *AgentService) RegisterAgent(agent models.Agent) (*models.Agent, error) {
 	as.mutex.Lock()
 	defer as.mutex.Unlock()
 
-	agent := &models.Agent{
-		ID:             agentID,
-		OrganizationID: organizationID,
-		Name:           name,
-		Status:         "active",
-		Version:        version,
-		LastSeen:       time.Now(),
-		Hostname:       hostname,
-		OS:             os,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+	// If agent ID is not provided, generate a new one
+	if agent.ID == uuid.Nil {
+		agent.ID = uuid.New()
 	}
 
-	as.agents[agentID] = agent
-	return agent
+	agent.LastSeen = time.Now()
+	as.agents[agent.ID] = &agent
+	log.Printf("Agent registered or updated: %s", agent.ID)
+	return &agent, nil
 }
 
 // UpdateAgentHeartbeat updates agent heartbeat
@@ -71,7 +66,22 @@ func (as *AgentService) UpdateAgentHeartbeat(heartbeat models.AgentHeartbeat) er
 	agent.CPUUsage = heartbeat.CPUUsage
 	agent.MemoryUsage = heartbeat.MemoryUsage
 	agent.Status = heartbeat.Status
-	agent.Metadata = heartbeat.Metadata
+
+	// Log metadata before merge
+	log.Printf("[UpdateAgentHeartbeat] Metadata BEFORE merge: %v", getMetadataKeys(agent.Metadata))
+	log.Printf("[UpdateAgentHeartbeat] Heartbeat metadata: %v", heartbeat.Metadata)
+
+	// Merge heartbeat metadata instead of overwriting
+	if agent.Metadata == nil {
+		agent.Metadata = make(map[string]interface{})
+	}
+	for k, v := range heartbeat.Metadata {
+		agent.Metadata[k] = v
+	}
+
+	// Log metadata after merge
+	log.Printf("[UpdateAgentHeartbeat] Metadata AFTER merge: %v", getMetadataKeys(agent.Metadata))
+
 	agent.UpdatedAt = time.Now()
 
 	return nil
@@ -107,6 +117,10 @@ func (as *AgentService) GetAllAgents() []*models.Agent {
 
 	var agents []*models.Agent
 	for _, agent := range as.agents {
+		log.Printf("[GetAllAgents] Agent %s metadata keys: %v", agent.ID, getMetadataKeys(agent.Metadata))
+		if deps, ok := agent.Metadata["dependencies"]; ok {
+			log.Printf("[GetAllAgents] Dependencies type: %T, value: %v", deps, deps)
+		}
 		agents = append(agents, agent)
 	}
 	return agents
@@ -242,22 +256,30 @@ func (as *AgentService) StartCleanupRoutine() {
 }
 
 // UpdateAgentResults updates agent with scan results
-func (as *AgentService) UpdateAgentResults(agentID string, results []models.AgentScanResult, metadata map[string]interface{}) {
+func (as *AgentService) UpdateAgentResults(agentID string, results []models.AgentScanResult, metadata map[string]interface{}) error {
 	as.mutex.Lock()
 	defer as.mutex.Unlock()
 
+	log.Printf("[UpdateAgentResults] Received agent ID: '%s' (length: %d)", agentID, len(agentID))
+
 	agentUUID, err := uuid.Parse(agentID)
 	if err != nil {
-		return
+		log.Printf("[UpdateAgentResults] Invalid agent ID format: %s, error: %v", agentID, err)
+		return fmt.Errorf("invalid agent ID format: %w", err)
 	}
 
 	agent, exists := as.agents[agentUUID]
 	if !exists {
-		return
+		log.Printf("[UpdateAgentResults] Agent not found: %s", agentID)
+		return fmt.Errorf("agent not found: %s", agentID)
 	}
 
 	// Update agent with scan results
 	agent.LastSeen = time.Now()
+	agent.UpdatedAt = time.Now()
+
+	log.Printf("[UpdateAgentResults] Updating agent %s with %d scan results", agentID, len(results))
+	log.Printf("[UpdateAgentResults] Results length: %d", len(results))
 
 	// Initialize metadata if nil
 	if agent.Metadata == nil {
@@ -265,7 +287,19 @@ func (as *AgentService) UpdateAgentResults(agentID string, results []models.Agen
 	}
 
 	// Store scan results in metadata
+	log.Printf("[UpdateAgentResults] Checking if len(results) > 0: %d > 0 = %t", len(results), len(results) > 0)
 	if len(results) > 0 {
+		// Get existing dependencies and vulnerabilities to preserve them
+		var existingDependencies []models.Dependency
+		var existingVulnerabilities []models.Vulnerability
+
+		if deps, ok := agent.Metadata["dependencies"].([]models.Dependency); ok {
+			existingDependencies = deps
+		}
+		if vulns, ok := agent.Metadata["vulnerabilities"].([]models.Vulnerability); ok {
+			existingVulnerabilities = vulns
+		}
+
 		// Count total vulnerabilities
 		totalVulns := 0
 		criticalVulns := 0
@@ -274,18 +308,18 @@ func (as *AgentService) UpdateAgentResults(agentID string, results []models.Agen
 		lowVulns := 0
 		totalAssets := 0
 
-		// Collect all dependencies and vulnerabilities
-		var allDependencies []models.Dependency
-		var allVulnerabilities []models.Vulnerability
+		// Collect all dependencies and vulnerabilities from new results
+		var newDependencies []models.Dependency
+		var newVulnerabilities []models.Vulnerability
 
 		for _, result := range results {
 			// Count dependencies as assets (agent sends Dependencies)
 			totalAssets += len(result.Dependencies)
-			allDependencies = append(allDependencies, result.Dependencies...)
+			newDependencies = append(newDependencies, result.Dependencies...)
 
 			for _, vuln := range result.Vulnerabilities {
 				totalVulns++
-				allVulnerabilities = append(allVulnerabilities, vuln)
+				newVulnerabilities = append(newVulnerabilities, vuln)
 				switch vuln.Severity {
 				case "critical":
 					criticalVulns++
@@ -299,9 +333,15 @@ func (as *AgentService) UpdateAgentResults(agentID string, results []models.Agen
 			}
 		}
 
+		// Merge with existing data
+		allDependencies := append(existingDependencies, newDependencies...)
+		allVulnerabilities := append(existingVulnerabilities, newVulnerabilities...)
+
 		// Store actual data arrays
+		log.Printf("[UpdateAgentResults] Storing %d dependencies and %d vulnerabilities in metadata (existing: %d deps, %d vulns)", len(allDependencies), len(allVulnerabilities), len(existingDependencies), len(existingVulnerabilities))
 		agent.Metadata["dependencies"] = allDependencies
 		agent.Metadata["vulnerabilities"] = allVulnerabilities
+		log.Printf("[UpdateAgentResults] Dependencies stored successfully")
 
 		// Store counts in metadata
 		agent.Metadata["total_vulnerabilities"] = totalVulns
@@ -311,14 +351,36 @@ func (as *AgentService) UpdateAgentResults(agentID string, results []models.Agen
 		agent.Metadata["low_vulnerabilities"] = lowVulns
 		agent.Metadata["total_assets"] = totalAssets
 		agent.Metadata["last_scan_time"] = time.Now().Format(time.RFC3339)
-	}
 
-	// Update with provided metadata
-	if metadata != nil {
-		for k, v := range metadata {
-			agent.Metadata[k] = v
+		// Start async enrichment if we have dependencies
+		if len(allDependencies) > 0 {
+			log.Printf("[UpdateAgentResults] Starting async enrichment for agent %s with %d applications", agentID, len(allDependencies))
+			// TODO: Call enrichment service asynchronously
+			// This will be implemented when we integrate the enrichment service
 		}
 	}
+
+	// Update with provided metadata (but preserve dependencies and vulnerabilities)
+	if metadata != nil {
+		for k, v := range metadata {
+			// Don't overwrite dependencies and vulnerabilities that we just stored
+			if k != "dependencies" && k != "vulnerabilities" {
+				agent.Metadata[k] = v
+			}
+		}
+	}
+
+	log.Printf("[UpdateAgentResults] Final metadata keys: %v", getMetadataKeys(agent.Metadata))
+	return nil
+}
+
+// Helper function to get metadata keys for debugging
+func getMetadataKeys(metadata map[string]interface{}) []string {
+	keys := make([]string, 0, len(metadata))
+	for k := range metadata {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // UpdateAgentStatus updates agent status
@@ -342,4 +404,184 @@ func (as *AgentService) UpdateAgentStatus(agentID string, status string, metadat
 	if metadata != nil {
 		agent.Metadata = metadata
 	}
+}
+
+// UpdateAgentSystemInfo updates agent with system information
+func (as *AgentService) UpdateAgentSystemInfo(agentID string, systemInfo map[string]interface{}) error {
+	as.mutex.Lock()
+	defer as.mutex.Unlock()
+
+	agentUUID, err := uuid.Parse(agentID)
+	if err != nil {
+		return fmt.Errorf("invalid agent ID format: %w", err)
+	}
+
+	agent, exists := as.agents[agentUUID]
+	if !exists {
+		return fmt.Errorf("agent not found: %s", agentID)
+	}
+
+	// Update system information fields
+	if osName, ok := systemInfo["os_name"].(string); ok {
+		agent.OSName = osName
+	}
+	if osVersion, ok := systemInfo["os_version"].(string); ok {
+		agent.OSVersion = osVersion
+	}
+	if osBuild, ok := systemInfo["os_build"].(string); ok {
+		agent.OSBuild = osBuild
+	}
+	if kernelVersion, ok := systemInfo["kernel_version"].(string); ok {
+		agent.KernelVersion = kernelVersion
+	}
+	if cpuModel, ok := systemInfo["cpu_model"].(string); ok {
+		agent.CPUModel = cpuModel
+	}
+	if cpuCores, ok := systemInfo["cpu_cores"].(int); ok {
+		agent.CPUCores = cpuCores
+	}
+	if memoryTotalGB, ok := systemInfo["memory_total_gb"].(float64); ok {
+		agent.MemoryTotalGB = memoryTotalGB
+	}
+	if storageTotalGB, ok := systemInfo["storage_total_gb"].(float64); ok {
+		agent.StorageTotalGB = storageTotalGB
+	}
+	if gpuModel, ok := systemInfo["gpu_model"].(string); ok {
+		agent.GPUModel = gpuModel
+	}
+	if serialNumber, ok := systemInfo["serial_number"].(string); ok {
+		agent.SerialNumber = serialNumber
+	}
+	if platform, ok := systemInfo["platform"].(string); ok {
+		agent.Platform = platform
+	}
+	if macAddress, ok := systemInfo["mac_address"].(string); ok {
+		agent.MACAddress = macAddress
+	}
+	if city, ok := systemInfo["city"].(string); ok {
+		agent.City = city
+	}
+	if region, ok := systemInfo["region"].(string); ok {
+		agent.Region = region
+	}
+	if country, ok := systemInfo["country"].(string); ok {
+		agent.Country = country
+	}
+	if timezone, ok := systemInfo["timezone"].(string); ok {
+		agent.Timezone = timezone
+	}
+	if riskScore, ok := systemInfo["risk_score"].(float64); ok {
+		agent.RiskScore = riskScore
+	}
+	if tags, ok := systemInfo["tags"].([]string); ok {
+		// Convert tags array to JSON string
+		if tagsJSON, err := json.Marshal(tags); err == nil {
+			agent.Tags = string(tagsJSON)
+		}
+	}
+
+	agent.LastSeen = time.Now()
+	agent.UpdatedAt = time.Now()
+
+	log.Printf("[UpdateAgentSystemInfo] Updated system info for agent %s", agentID)
+	return nil
+}
+
+// UpdateAgentMetadata updates agent metadata
+func (as *AgentService) UpdateAgentMetadata(agentID string, metadata map[string]interface{}) error {
+	as.mutex.Lock()
+	defer as.mutex.Unlock()
+
+	agentUUID, err := uuid.Parse(agentID)
+	if err != nil {
+		return fmt.Errorf("invalid agent ID: %v", err)
+	}
+
+	agent, exists := as.agents[agentUUID]
+	if !exists {
+		return fmt.Errorf("agent not found: %s", agentID)
+	}
+
+	// Update metadata fields
+	if osName, ok := metadata["os_name"].(string); ok {
+		agent.OS = osName
+	}
+	if osVersion, ok := metadata["os_version"].(string); ok {
+		agent.OSVersion = osVersion
+	}
+	if hostname, ok := metadata["hostname"].(string); ok {
+		agent.Hostname = hostname
+	}
+	if ipAddress, ok := metadata["ip_address"].(string); ok {
+		agent.IPAddress = ipAddress
+	}
+	if macAddress, ok := metadata["mac_address"].(string); ok {
+		agent.MACAddress = macAddress
+	}
+	if serialNumber, ok := metadata["serial_number"].(string); ok {
+		agent.SerialNumber = serialNumber
+	}
+	if city, ok := metadata["city"].(string); ok {
+		agent.City = city
+	}
+	if region, ok := metadata["region"].(string); ok {
+		agent.Region = region
+	}
+	if country, ok := metadata["country"].(string); ok {
+		agent.Country = country
+	}
+	if timezone, ok := metadata["timezone"].(string); ok {
+		agent.Timezone = timezone
+	}
+	if riskScore, ok := metadata["risk_score"].(float64); ok {
+		agent.RiskScore = riskScore
+	}
+	if tags, ok := metadata["tags"].([]string); ok {
+		// Convert tags array to JSON string
+		if tagsJSON, err := json.Marshal(tags); err == nil {
+			agent.Tags = string(tagsJSON)
+		}
+	}
+
+	// Update hardware fields
+	if cpuModel, ok := metadata["cpu_model"].(string); ok {
+		agent.CPUModel = cpuModel
+	}
+	if cpuCores, ok := metadata["cpu_cores"].(int); ok {
+		agent.CPUCores = cpuCores
+	}
+	if memoryTotalGB, ok := metadata["memory_total_gb"].(float64); ok {
+		agent.MemoryTotalGB = memoryTotalGB
+	}
+	if storageTotalGB, ok := metadata["storage_total_gb"].(float64); ok {
+		agent.StorageTotalGB = storageTotalGB
+	}
+	if gpuModel, ok := metadata["gpu_model"].(string); ok {
+		agent.GPUModel = gpuModel
+	}
+	if platform, ok := metadata["platform"].(string); ok {
+		agent.Platform = platform
+	}
+	if osBuild, ok := metadata["os_build"].(string); ok {
+		agent.OSBuild = osBuild
+	}
+	if kernelVersion, ok := metadata["kernel_version"].(string); ok {
+		agent.KernelVersion = kernelVersion
+	}
+
+	// Update the agent's metadata field with all the new information
+	if agent.Metadata == nil {
+		agent.Metadata = make(map[string]interface{})
+	}
+
+	// Merge new metadata with existing metadata
+	for key, value := range metadata {
+		agent.Metadata[key] = value
+	}
+
+	agent.LastSeen = time.Now()
+	agent.UpdatedAt = time.Now()
+
+	log.Printf("[UpdateAgentMetadata] Updated metadata for agent %s", agentID)
+	return nil
 }

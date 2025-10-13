@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"bytes"
+	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -120,6 +123,9 @@ func AgentHeartbeat(agentService *services.AgentService) gin.HandlerFunc {
 			heartbeat.Timestamp = time.Now()
 		}
 
+		// Debug: log heartbeat metadata
+		log.Printf("[Heartbeat Handler] Heartbeat metadata: %v", heartbeat.Metadata)
+
 		err := agentService.UpdateAgentHeartbeat(heartbeat)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, models.APIResponse{
@@ -145,51 +151,74 @@ func AgentHeartbeat(agentService *services.AgentService) gin.HandlerFunc {
 // RegisterAgent handles agent registration
 func RegisterAgent(agentService *services.AgentService) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Temporary struct to bind the request payload with string IDs
 		var req struct {
-			AgentID  uuid.UUID `json:"agent_id" binding:"required"`
-			Name     string    `json:"name" binding:"required"`
-			Version  string    `json:"version" binding:"required"`
-			Hostname string    `json:"hostname" binding:"required"`
-			OS       string    `json:"os" binding:"required"`
+			ID             string `json:"id"`
+			CompanyID      string `json:"company_id"`
+			OrganizationID string `json:"organization_id"`
+			Name           string `json:"name"`
+			Status         string `json:"status"`
+			Version        string `json:"version"`
+			Hostname       string `json:"hostname"`
+			OS             string `json:"os"`
 		}
 
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "INVALID_REGISTRATION",
-					Message: "Invalid registration data",
-					Details: err.Error(),
-				},
-				Timestamp: time.Now(),
-			})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
 			return
 		}
 
-		// For public endpoint, use a default company ID
-		companyUUID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+		// Parse string IDs into UUIDs
+		agentUUID, err := uuid.Parse(req.ID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid agent ID format"})
+			return
+		}
 
-		agent := agentService.RegisterAgent(
-			req.AgentID,
-			companyUUID,
-			req.Name,
-			req.Version,
-			req.Hostname,
-			req.OS,
-		)
+		orgUUID, err := uuid.Parse(req.OrganizationID)
+		if err != nil {
+			// If OrganizationID is missing or invalid, we can decide how to handle it.
+			// For now, let's return an error.
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid organization ID format"})
+			return
+		}
 
-		c.JSON(http.StatusCreated, models.APIResponse{
-			Success:   true,
-			Data:      agent,
-			Message:   "Agent registered successfully",
-			Timestamp: time.Now(),
-		})
+		// Create the agent model
+		agent := models.Agent{
+			ID:             agentUUID,
+			OrganizationID: orgUUID,
+			Name:           req.Name,
+			Status:         "active", // Set initial status
+			Version:        req.Version,
+			Hostname:       req.Hostname,
+			OS:             req.OS,
+		}
+
+		// Use a default company ID for now
+		defaultCompanyUUID, _ := uuid.Parse("00000000-0000-0000-0000-000000000001")
+		agent.CompanyID = defaultCompanyUUID
+
+		registeredAgent, err := agentService.RegisterAgent(agent)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register agent"})
+			return
+		}
+		c.JSON(http.StatusOK, registeredAgent)
 	}
 }
 
 // AgentResults handles scan results from agents
 func AgentResults(agentService *services.AgentService) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Printf("[AgentResults] *** REQUEST RECEIVED *** from %s", c.ClientIP())
+
+		// Log raw request body for debugging
+		bodyBytes, _ := c.GetRawData()
+		log.Printf("[AgentResults] Received request from agent, body length: %d bytes", len(bodyBytes))
+
+		// Restore body for binding
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
 		var req struct {
 			AgentID  string                   `json:"agent_id" binding:"required"`
 			Results  []models.AgentScanResult `json:"results"`
@@ -197,16 +226,29 @@ func AgentResults(agentService *services.AgentService) gin.HandlerFunc {
 		}
 
 		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Printf("[AgentResults] JSON binding error: %v", err)
+			log.Printf("[AgentResults] Raw body: %s", string(bodyBytes))
 			c.JSON(http.StatusBadRequest, models.APIResponse{
 				Success:   false,
-				Message:   "Invalid request body",
+				Message:   "Invalid request body: " + err.Error(),
 				Timestamp: time.Now(),
 			})
 			return
 		}
 
+		log.Printf("[AgentResults] Successfully parsed request for agent %s with %d results", req.AgentID, len(req.Results))
+
 		// Update agent with results directly (AgentScanResult format)
-		agentService.UpdateAgentResults(req.AgentID, req.Results, req.Metadata)
+		err := agentService.UpdateAgentResults(req.AgentID, req.Results, req.Metadata)
+		if err != nil {
+			log.Printf("[AgentResults] Failed to update agent results: %v", err)
+			c.JSON(http.StatusInternalServerError, models.APIResponse{
+				Success:   false,
+				Message:   "Failed to update agent results: " + err.Error(),
+				Timestamp: time.Now(),
+			})
+			return
+		}
 
 		c.JSON(http.StatusOK, models.APIResponse{
 			Success:   true,
@@ -255,7 +297,11 @@ func GetPublicDashboardOverview(agentService *services.AgentService) gin.Handler
 		totalAssets := 0
 		onlineAgents := 0
 		vulnerableAssets := 0
-		criticalVulnerabilities := 0
+		criticalVulns := 0
+		highVulns := 0
+		mediumVulns := 0
+		lowVulns := 0
+		totalVulns := 0
 		lastScan := time.Time{}
 
 		for _, agent := range agents {
@@ -267,24 +313,54 @@ func GetPublicDashboardOverview(agentService *services.AgentService) gin.Handler
 			// Count actual scanned assets from agent metadata
 			if agent.Metadata != nil {
 				// Count total assets scanned by this agent
-				if totalAssetsFromAgent, ok := agent.Metadata["total_assets"]; ok {
+				if totalAssetsFromAgent, ok := agent.Metadata["total_assets"]; ok && totalAssetsFromAgent != nil {
 					if count, ok := totalAssetsFromAgent.(float64); ok {
 						totalAssets += int(count)
 					}
 				}
 
-				// Count vulnerable assets
-				if vulns, ok := agent.Metadata["vulnerabilities_found"]; ok {
-					if count, ok := vulns.(float64); ok && count > 0 {
-						vulnerableAssets++
+				// Count vulnerabilities by severity
+				agentCritical := 0
+				agentHigh := 0
+				agentMedium := 0
+				agentLow := 0
+				agentTotal := 0
+
+				// Handle null values properly - if field doesn't exist or is null, treat as 0
+				if critical, ok := agent.Metadata["critical_vulnerabilities"]; ok && critical != nil {
+					if count, ok := critical.(float64); ok {
+						agentCritical = int(count)
+						criticalVulns += agentCritical
+					}
+				}
+				if high, ok := agent.Metadata["high_vulnerabilities"]; ok && high != nil {
+					if count, ok := high.(float64); ok {
+						agentHigh = int(count)
+						highVulns += agentHigh
+					}
+				}
+				if medium, ok := agent.Metadata["medium_vulnerabilities"]; ok && medium != nil {
+					if count, ok := medium.(float64); ok {
+						agentMedium = int(count)
+						mediumVulns += agentMedium
+					}
+				}
+				if low, ok := agent.Metadata["low_vulnerabilities"]; ok && low != nil {
+					if count, ok := low.(float64); ok {
+						agentLow = int(count)
+						lowVulns += agentLow
+					}
+				}
+				if total, ok := agent.Metadata["total_vulnerabilities"]; ok && total != nil {
+					if count, ok := total.(float64); ok {
+						agentTotal = int(count)
+						totalVulns += agentTotal
 					}
 				}
 
-				// Count critical vulnerabilities
-				if critical, ok := agent.Metadata["critical_vulnerabilities"]; ok {
-					if count, ok := critical.(float64); ok {
-						criticalVulnerabilities += int(count)
-					}
+				// Count vulnerable assets (agents with vulnerabilities)
+				if agentTotal > 0 {
+					vulnerableAssets++
 				}
 			}
 
@@ -299,18 +375,18 @@ func GetPublicDashboardOverview(agentService *services.AgentService) gin.Handler
 			"assets": map[string]interface{}{
 				"total":      totalAssets,
 				"vulnerable": vulnerableAssets,
-				"critical":   criticalVulnerabilities,
-				"high":       0, // Placeholder
-				"medium":     0, // Placeholder
-				"low":        0, // Placeholder
+				"critical":   criticalVulns,
+				"high":       highVulns,
+				"medium":     mediumVulns,
+				"low":        lowVulns,
 				"lastScan":   lastScan.Format(time.RFC3339),
 			},
 			"vulnerabilities": map[string]interface{}{
-				"total":    criticalVulnerabilities,
-				"critical": criticalVulnerabilities,
-				"high":     0, // Placeholder
-				"medium":   0, // Placeholder
-				"low":      0, // Placeholder
+				"total":    totalVulns,
+				"critical": criticalVulns,
+				"high":     highVulns,
+				"medium":   mediumVulns,
+				"low":      lowVulns,
 			},
 			"agents": map[string]interface{}{
 				"total":  len(agents),
@@ -336,6 +412,46 @@ func GetPublicAgentStats(agentService *services.AgentService) gin.HandlerFunc {
 			Success:   true,
 			Data:      stats,
 			Message:   "Agent statistics retrieved successfully",
+			Timestamp: time.Now(),
+		})
+	}
+}
+
+// SystemInfoRequest represents the system info request payload
+type SystemInfoRequest struct {
+	AgentID    string                 `json:"agent_id" binding:"required"`
+	SystemInfo map[string]interface{} `json:"system_info"`
+	Metadata   map[string]interface{} `json:"metadata"`
+}
+
+// UpdateSystemInfo updates agent system information
+func UpdateSystemInfo(agentService *services.AgentService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req SystemInfoRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, models.APIResponse{
+				Success:   false,
+				Message:   "Invalid request payload",
+				Timestamp: time.Now(),
+			})
+			return
+		}
+
+		// Update agent metadata with system information
+		err := agentService.UpdateAgentMetadata(req.AgentID, req.Metadata)
+		if err != nil {
+			log.Printf("Error updating agent metadata: %v", err)
+			c.JSON(http.StatusInternalServerError, models.APIResponse{
+				Success:   false,
+				Message:   "Failed to update system information",
+				Timestamp: time.Now(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success:   true,
+			Message:   "System information updated successfully",
 			Timestamp: time.Now(),
 		})
 	}

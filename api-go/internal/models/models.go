@@ -118,7 +118,7 @@ const (
 
 // Vulnerability represents a vulnerability
 type Vulnerability struct {
-	ID               uuid.UUID      `json:"id" db:"id"`
+	ID               string         `json:"id" db:"id"`
 	ScanID           uuid.UUID      `json:"scan_id" db:"scan_id"`
 	CompanyID        uuid.UUID      `json:"company_id" db:"company_id"`
 	OrganizationID   uuid.UUID      `json:"organization_id" db:"organization_id"`
@@ -159,21 +159,42 @@ const (
 
 // Agent represents an active agent
 type Agent struct {
-	ID             uuid.UUID      `json:"id" db:"id"`
-	CompanyID      uuid.UUID      `json:"company_id" db:"company_id"`
-	OrganizationID uuid.UUID      `json:"organization_id" db:"organization_id"`
-	Name           string         `json:"name" db:"name"`
-	Status         string         `json:"status" db:"status"`
-	Version        string         `json:"version" db:"version"`
-	LastSeen       time.Time      `json:"last_seen" db:"last_seen"`
-	CPUUsage       float64        `json:"cpu_usage" db:"cpu_usage"`
-	MemoryUsage    float64        `json:"memory_usage" db:"memory_usage"`
-	IPAddress      string         `json:"ip_address" db:"ip_address"`
-	Hostname       string         `json:"hostname" db:"hostname"`
-	OS             string         `json:"os" db:"os"`
-	Metadata       map[string]any `json:"metadata" db:"metadata" gorm:"type:jsonb"`
-	CreatedAt      time.Time      `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at" db:"updated_at"`
+	ID             uuid.UUID `json:"id" db:"id"`
+	CompanyID      uuid.UUID `json:"company_id" db:"company_id"`
+	OrganizationID uuid.UUID `json:"organization_id" db:"organization_id"`
+	Name           string    `json:"name" db:"name"`
+	Status         string    `json:"status" db:"status"`
+	Version        string    `json:"version" db:"version"`
+	LastSeen       time.Time `json:"last_seen" db:"last_seen"`
+	CPUUsage       float64   `json:"cpu_usage" db:"cpu_usage"`
+	MemoryUsage    float64   `json:"memory_usage" db:"memory_usage"`
+	IPAddress      string    `json:"ip_address" db:"ip_address"`
+	Hostname       string    `json:"hostname" db:"hostname"`
+	OS             string    `json:"os" db:"os"`
+
+	// Enhanced System Information
+	OSName         string  `json:"os_name" db:"os_name"`
+	OSVersion      string  `json:"os_version" db:"os_version"`
+	OSBuild        string  `json:"os_build" db:"os_build"`
+	KernelVersion  string  `json:"kernel_version" db:"kernel_version"`
+	CPUModel       string  `json:"cpu_model" db:"cpu_model"`
+	CPUCores       int     `json:"cpu_cores" db:"cpu_cores"`
+	MemoryTotalGB  float64 `json:"memory_total_gb" db:"memory_total_gb"`
+	StorageTotalGB float64 `json:"storage_total_gb" db:"storage_total_gb"`
+	GPUModel       string  `json:"gpu_model" db:"gpu_model"`
+	SerialNumber   string  `json:"serial_number" db:"serial_number"`
+	Platform       string  `json:"platform" db:"platform"`
+	MACAddress     string  `json:"mac_address" db:"mac_address"`
+	City           string  `json:"city" db:"city"`
+	Region         string  `json:"region" db:"region"`
+	Country        string  `json:"country" db:"country"`
+	Timezone       string  `json:"timezone" db:"timezone"`
+	RiskScore      float64 `json:"risk_score" db:"risk_score"`
+	Tags           string  `json:"tags" db:"tags"` // JSON array as string
+
+	Metadata  map[string]any `json:"metadata" db:"metadata" gorm:"type:jsonb"`
+	CreatedAt time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at" db:"updated_at"`
 }
 
 // AgentStatus represents the current status of an agent

@@ -93,81 +93,38 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, onClose, className =
     const fetchAssetData = async () => {
       setLoading(true);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockData: AssetDetailData = {
-        id: assetId,
-        hostname: 'web-server-01',
-        ip: '192.168.1.100',
-        branch: 'Headquarters NYC',
-        location: 'New York, NY',
-        owner: 'IT Team',
-        businessCriticality: 'critical',
-        tags: ['web', 'production', 'nginx'],
-        lastSeen: '2025-01-09T10:30:00Z',
-        agentStatus: 'online',
-        vulnerabilities: [
-          {
-            id: 'vuln-001',
-            cve: 'CVE-2024-1234',
-            title: 'Apache HTTP Server Remote Code Execution',
-            description: 'A critical vulnerability in Apache HTTP Server allows remote attackers to execute arbitrary code.',
-            severity: 'critical',
-            cvss: 9.8,
-            exploitability: 'exploitable',
-            status: 'open',
-            published: '2025-01-05T00:00:00Z',
-            suggestedFixes: ['Update to Apache 2.4.58', 'Apply security patch APACHE-2024-001'],
-            references: ['https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-1234']
-          },
-          {
-            id: 'vuln-002',
-            cve: 'CVE-2024-5678',
-            title: 'Linux Kernel Privilege Escalation',
-            description: 'A vulnerability in the Linux kernel allows local users to escalate privileges.',
-            severity: 'high',
-            cvss: 7.8,
-            exploitability: 'poc',
-            status: 'open',
-            published: '2025-01-03T00:00:00Z',
-            suggestedFixes: ['Update kernel to version 5.15.0-91', 'Apply kernel patch KERNEL-2024-002'],
-            references: ['https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-5678']
+      try {
+        // TODO: Implement actual API call to fetch asset details
+        // For now, show empty/placeholder data until API is implemented
+        const emptyData: AssetDetailData = {
+          id: assetId,
+          hostname: 'Loading...',
+          ip: '',
+          branch: '',
+          location: '',
+          owner: '',
+          businessCriticality: 'medium',
+          tags: [],
+          lastSeen: new Date().toISOString(),
+          agentStatus: 'unknown',
+          vulnerabilities: [],
+          complianceScore: 0,
+          riskScore: 0,
+          suggestedFixes: 0,
+          metadata: {},
+          scanHistory: [],
+          networkInfo: {
+            interfaces: [],
+            openPorts: []
           }
-        ],
-        complianceScore: 78,
-        riskScore: 85,
-        suggestedFixes: 7,
-        metadata: {
-          os: 'Ubuntu 22.04 LTS',
-          architecture: 'x86_64',
-          kernel: '5.15.0-89-generic',
-          uptime: '15 days, 3 hours',
-          memory: '16 GB',
-          cpu: 'Intel Xeon E5-2680 v4',
-          disk: '500 GB SSD'
-        },
-        scanHistory: [
-          { timestamp: '2025-01-09T10:30:00Z', status: 'completed', vulnerabilitiesFound: 2, duration: '5m 23s' },
-          { timestamp: '2025-01-08T10:30:00Z', status: 'completed', vulnerabilitiesFound: 1, duration: '4m 45s' },
-          { timestamp: '2025-01-07T10:30:00Z', status: 'completed', vulnerabilitiesFound: 3, duration: '6m 12s' }
-        ],
-        networkInfo: {
-          interfaces: [
-            { name: 'eth0', ip: '192.168.1.100', mac: '00:1a:2b:3c:4d:5e', status: 'up' },
-            { name: 'lo', ip: '127.0.0.1', mac: '00:00:00:00:00:00', status: 'up' }
-          ],
-          openPorts: [
-            { port: 22, protocol: 'tcp', service: 'ssh', status: 'open' },
-            { port: 80, protocol: 'tcp', service: 'http', status: 'open' },
-            { port: 443, protocol: 'tcp', service: 'https', status: 'open' },
-            { port: 3306, protocol: 'tcp', service: 'mysql', status: 'open' }
-          ]
-        }
-      };
-      
-      setAssetData(mockData);
-      setLoading(false);
+        };
+        
+        setAssetData(emptyData);
+      } catch (error) {
+        console.error('Failed to fetch asset data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchAssetData();

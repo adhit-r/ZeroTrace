@@ -28,7 +28,7 @@ type Config struct {
 
 	// JWT configuration (for Clerk)
 	ClerkJWTVerificationKey string
-	JWTExpiry              time.Duration
+	JWTExpiry               time.Duration
 
 	// Rate limiting
 	RateLimitRequests int
@@ -65,7 +65,7 @@ func Load() *Config {
 
 		// JWT (for Clerk)
 		ClerkJWTVerificationKey: getEnv("CLERK_JWT_VERIFICATION_KEY", "dev-clerk-key-change-in-production"),
-		JWTExpiry:              getEnvAsDuration("JWT_EXPIRY", "24h"),
+		JWTExpiry:               getEnvAsDuration("JWT_EXPIRY", "24h"),
 
 		// Rate limiting
 		RateLimitRequests: getEnvAsInt("RATE_LIMIT_REQUESTS", 100),

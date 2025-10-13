@@ -4,201 +4,83 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
+
+	"zerotrace/api/internal/models"
 )
 
-// EnrichmentService handles communication with the Python enrichment server
+// EnrichmentService handles async enrichment of applications
 type EnrichmentService struct {
-	baseURL    string
-	httpClient *http.Client
+	enrichmentURL string
+	httpClient    *http.Client
 }
 
 // NewEnrichmentService creates a new enrichment service
-func NewEnrichmentService(baseURL string) *EnrichmentService {
+func NewEnrichmentService(enrichmentURL string) *EnrichmentService {
 	return &EnrichmentService{
-		baseURL: baseURL,
+		enrichmentURL: enrichmentURL,
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 120 * time.Second, // Longer timeout for API-level enrichment
 		},
 	}
 }
 
-// SoftwareItem represents a software item to be enriched
-type SoftwareItem struct {
-	Name        string `json:"name"`
-	Version     string `json:"version"`
-	PackageType string `json:"package_type,omitempty"`
-	Path        string `json:"path,omitempty"`
+// EnrichApplicationsAsync enriches applications asynchronously
+func (es *EnrichmentService) EnrichApplicationsAsync(agentID string, dependencies []models.Dependency) {
+	go func() {
+		log.Printf("[EnrichmentService] Starting async enrichment for agent %s with %d applications", agentID, len(dependencies))
+
+		// Convert dependencies to enrichment format
+		softwareItems := make([]map[string]interface{}, len(dependencies))
+		for i, dep := range dependencies {
+			softwareItems[i] = map[string]interface{}{
+				"name":    dep.Name,
+				"version": dep.Version,
+				"type":    dep.Type,
+			}
+		}
+
+		// Prepare enrichment request
+		request := map[string]interface{}{
+			"software": softwareItems,
+		}
+
+		// Send to enrichment service
+		jsonData, err := json.Marshal(request)
+		if err != nil {
+			log.Printf("[EnrichmentService] Failed to marshal enrichment request: %v", err)
+			return
+		}
+
+		url := fmt.Sprintf("%s/enrich/software", es.enrichmentURL)
+		resp, err := es.httpClient.Post(url, "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			log.Printf("[EnrichmentService] Failed to call enrichment service: %v", err)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			log.Printf("[EnrichmentService] Enrichment service returned status %d", resp.StatusCode)
+			return
+		}
+
+		// Parse response
+		var enrichmentResponse struct {
+			Vulnerabilities []models.Vulnerability `json:"vulnerabilities"`
+		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&enrichmentResponse); err != nil {
+			log.Printf("[EnrichmentService] Failed to decode enrichment response: %v", err)
+			return
+		}
+
+		log.Printf("[EnrichmentService] Enrichment completed for agent %s: found %d vulnerabilities",
+			agentID, len(enrichmentResponse.Vulnerabilities))
+
+		// TODO: Update agent metadata with enriched vulnerabilities
+		// This would require access to the agent service
+	}()
 }
-
-// EnrichedSoftware represents enriched software with CVE data
-type EnrichedSoftware struct {
-	SoftwareItem
-	CVEs               []CVE  `json:"cves"`
-	VulnerabilityCount int    `json:"vulnerability_count"`
-	EnrichedAt         string `json:"enriched_at"`
-	Error              string `json:"error,omitempty"`
-}
-
-// CVE represents a Common Vulnerability and Exposure
-type CVE struct {
-	ID            string  `json:"id"`
-	Description   string  `json:"description"`
-	Severity      string  `json:"severity"`
-	CVSSScore     float64 `json:"cvss_score"`
-	PublishedDate string  `json:"published_date"`
-	LastModified  string  `json:"last_modified"`
-	Source        string  `json:"source"`
-}
-
-// EnrichmentResponse represents the response from the enrichment service
-type EnrichmentResponse struct {
-	Success bool               `json:"success"`
-	Data    []EnrichedSoftware `json:"data"`
-	Message string             `json:"message"`
-}
-
-// EnrichSoftware enriches a list of software items with CVE data
-func (es *EnrichmentService) EnrichSoftware(software []SoftwareItem) ([]EnrichedSoftware, error) {
-	// Prepare request
-	requestBody, err := json.Marshal(software)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal software data: %w", err)
-	}
-
-	// Make request to enrichment service
-	url := fmt.Sprintf("%s/enrich/software", es.baseURL)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send request
-	resp, err := es.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request to enrichment service: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Check response status
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("enrichment service returned status %d", resp.StatusCode)
-	}
-
-	// Parse response
-	var enrichmentResp EnrichmentResponse
-	if err := json.NewDecoder(resp.Body).Decode(&enrichmentResp); err != nil {
-		return nil, fmt.Errorf("failed to decode enrichment response: %w", err)
-	}
-
-	if !enrichmentResp.Success {
-		return nil, fmt.Errorf("enrichment service error: %s", enrichmentResp.Message)
-	}
-
-	return enrichmentResp.Data, nil
-}
-
-// EnrichSoftwareBatch starts a background enrichment job
-func (es *EnrichmentService) EnrichSoftwareBatch(software []SoftwareItem) (string, error) {
-	// Prepare request
-	requestBody, err := json.Marshal(software)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal software data: %w", err)
-	}
-
-	// Make request to enrichment service
-	url := fmt.Sprintf("%s/enrich/batch", es.baseURL)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send request
-	resp, err := es.httpClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request to enrichment service: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Check response status
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("enrichment service returned status %d", resp.StatusCode)
-	}
-
-	// Parse response
-	var batchResp struct {
-		Success bool   `json:"success"`
-		Message string `json:"message"`
-		JobID   string `json:"job_id,omitempty"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&batchResp); err != nil {
-		return "", fmt.Errorf("failed to decode batch response: %w", err)
-	}
-
-	if !batchResp.Success {
-		return "", fmt.Errorf("enrichment service error: %s", batchResp.Message)
-	}
-
-	return batchResp.JobID, nil
-}
-
-// GetEnrichmentStatus gets the status of an enrichment job
-func (es *EnrichmentService) GetEnrichmentStatus(jobID string) (map[string]interface{}, error) {
-	// Make request to enrichment service
-	url := fmt.Sprintf("%s/enrich/status/%s", es.baseURL, jobID)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Send request
-	resp, err := es.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request to enrichment service: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Check response status
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("enrichment service returned status %d", resp.StatusCode)
-	}
-
-	// Parse response
-	var status map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
-		return nil, fmt.Errorf("failed to decode status response: %w", err)
-	}
-
-	return status, nil
-}
-
-// HealthCheck checks if the enrichment service is healthy
-func (es *EnrichmentService) HealthCheck() error {
-	// Make request to enrichment service
-	url := fmt.Sprintf("%s/health", es.baseURL)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create health check request: %w", err)
-	}
-
-	// Send request
-	resp, err := es.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send health check request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Check response status
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("enrichment service health check returned status %d", resp.StatusCode)
-	}
-
-	return nil
-}
-

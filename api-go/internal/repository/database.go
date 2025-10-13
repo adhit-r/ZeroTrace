@@ -65,6 +65,7 @@ func (d *Database) AutoMigrate() error {
 	err := d.DB.AutoMigrate(
 		&models.User{},
 		&models.Company{},
+		&models.Organization{},
 		&models.Scan{},
 		&models.Vulnerability{},
 		&models.Agent{},
