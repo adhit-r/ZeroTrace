@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -11,6 +12,15 @@ import (
 	"zerotrace/agent/internal/config"
 	"zerotrace/agent/internal/models"
 	"zerotrace/agent/internal/scanner"
+)
+
+const (
+	registerEndpoint    = "/api/agents/register"
+	heartbeatEndpoint   = "/api/agents/heartbeat"
+	resultsEndpoint     = "/api/agents/results"
+	systemInfoEndpoint  = "/api/agents/system-info"
+	enrollEndpoint      = "/api/enrollment/enroll"
+	healthCheckEndpoint = "/health" // Health check endpoint
 )
 
 // Communicator handles communication with the API
@@ -33,7 +43,7 @@ func NewCommunicator(cfg *config.Config) *Communicator {
 func (c *Communicator) SendResults(result *models.ScanResult) error {
 	log.Printf("[SendResults] Starting to send results for agent %s", c.config.AgentID)
 	log.Printf("[SendResults] Result contains %d dependencies and %d vulnerabilities", len(result.Dependencies), len(result.Vulnerabilities))
-	
+
 	// Prepare request payload
 	payload := map[string]any{
 		"agent_id": c.config.AgentID,
@@ -387,73 +397,64 @@ func (c *Communicator) SendHeartbeatWithCredential(cpuUsage, memoryUsage float64
 	return nil
 }
 
-// SendSystemInfo sends system information to the API
+// SendSystemInfo sends system information to the API server
 func (c *Communicator) SendSystemInfo(systemInfo *scanner.SystemInfo) error {
-	log.Printf("[SendSystemInfo] Starting to send system information for agent %s", c.config.AgentID)
+	url := c.config.APIEndpoint + systemInfoEndpoint
 
-	// Prepare request payload
-	payload := map[string]any{
-		"agent_id":    c.config.AgentID,
-		"system_info": systemInfo,
-		"metadata": map[string]interface{}{
-			"os_name":          systemInfo.OSName,
-			"os_version":       systemInfo.OSVersion,
-			"os_build":         systemInfo.OSBuild,
-			"kernel_version":   systemInfo.KernelVersion,
-			"platform":         systemInfo.Platform,
-			"cpu_model":        systemInfo.CPUModel,
-			"cpu_cores":        systemInfo.CPUCores,
-			"memory_total_gb":  systemInfo.MemoryTotalGB,
-			"storage_total_gb": systemInfo.StorageTotalGB,
-			"gpu_model":        systemInfo.GPUModel,
-			"serial_number":    systemInfo.SerialNumber,
-			"ip_address":       systemInfo.IPAddress,
-			"mac_address":      systemInfo.MACAddress,
-			"city":             systemInfo.City,
-			"region":           systemInfo.Region,
-			"country":          systemInfo.Country,
-			"timezone":         systemInfo.Timezone,
-			"hostname":         systemInfo.Hostname,
-			"risk_score":       systemInfo.RiskScore,
-			"tags":             systemInfo.Tags,
-		},
-	}
-
-	// Marshal to JSON
-	jsonData, err := json.Marshal(payload)
+	payload, err := json.Marshal(systemInfo)
 	if err != nil {
 		return fmt.Errorf("failed to marshal system info: %w", err)
 	}
 
-	// Create request
-	url := fmt.Sprintf("%s/api/agents/system-info", c.config.APIEndpoint)
-	log.Printf("[SendSystemInfo] Sending request to: %s", url)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create system info request: %w", err)
 	}
-
-	// Set headers
+	c.setAuthHeaders(req)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-API-Key", c.config.APIKey)
 
-	// Send request
-	log.Printf("[SendSystemInfo] Sending HTTP request...")
 	resp, err := c.client.Do(req)
 	if err != nil {
-		log.Printf("[SendSystemInfo] HTTP request failed: %v", err)
 		return fmt.Errorf("failed to send system info: %w", err)
 	}
 	defer resp.Body.Close()
 
-	log.Printf("[SendSystemInfo] Received response with status: %d", resp.StatusCode)
-
-	// Check response status
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[SendSystemInfo] API returned status %d for system info", resp.StatusCode)
-		return fmt.Errorf("API returned status %d for system info", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("API returned status %d for system info: %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("[SendSystemInfo] System information sent successfully")
+	return nil
+}
+
+// setAuthHeaders sets authentication headers for requests
+func (c *Communicator) setAuthHeaders(req *http.Request) {
+	if c.config.APIKey != "" {
+		req.Header.Set("X-API-Key", c.config.APIKey)
+	}
+	if c.config.AgentID != "" {
+		req.Header.Set("X-Agent-ID", c.config.AgentID)
+	}
+}
+
+// CheckAPIStatus performs a health check against the API.
+func (c *Communicator) CheckAPIStatus() error {
+	url := c.config.APIEndpoint + healthCheckEndpoint
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create health check request: %w", err)
+	}
+	req.Header.Set("User-Agent", "ZeroTrace-Agent/1.0")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to perform health check: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API health check failed with status: %s", resp.Status)
+	}
+
 	return nil
 }

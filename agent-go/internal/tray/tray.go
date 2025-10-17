@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"time"
 
+	"zerotrace/agent/internal/communicator"
 	"zerotrace/agent/internal/monitor"
 
 	"fyne.io/systray"
@@ -14,23 +15,27 @@ import (
 
 // TrayManager handles the system tray icon and menu
 type TrayManager struct {
-	statusChan chan string
-	cpuChan    chan float64
-	memChan    chan float64
-	quitChan   chan bool
-	monitor    *monitor.Monitor
-	platform   PlatformOperations
+	statusChan   chan string
+	cpuChan      chan float64
+	memChan      chan float64
+	quitChan     chan bool
+	monitor      *monitor.Monitor
+	platform     PlatformOperations
+	communicator *communicator.Communicator // Add communicator
+	apiConnected bool                       // Track API connection status
 }
 
 // NewTrayManager creates a new tray manager
-func NewTrayManager() *TrayManager {
+func NewTrayManager(comm *communicator.Communicator) *TrayManager {
 	return &TrayManager{
-		statusChan: make(chan string, 1),
-		cpuChan:    make(chan float64, 1),
-		memChan:    make(chan float64, 1),
-		quitChan:   make(chan bool, 1),
-		monitor:    monitor.NewMonitor(),
-		platform:   GetPlatformOperations(),
+		statusChan:   make(chan string, 1),
+		cpuChan:      make(chan float64, 1),
+		memChan:      make(chan float64, 1),
+		quitChan:     make(chan bool, 1),
+		monitor:      monitor.NewMonitor(),
+		platform:     GetPlatformOperations(),
+		communicator: comm,
+		apiConnected: false,
 	}
 }
 
@@ -42,6 +47,16 @@ func (tm *TrayManager) Start() {
 	tm.monitor.Start()
 
 	go func() {
+		// Try to run systray on all platforms, including macOS
+		// with proper error handling
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Systray crashed on %s: %v", runtime.GOOS, r)
+				log.Println("Agent will continue running without tray icon")
+			}
+		}()
+
+		log.Printf("Attempting to start systray on %s", runtime.GOOS)
 		systray.Run(tm.onReady, tm.onExit)
 	}()
 }
@@ -105,23 +120,53 @@ func (tm *TrayManager) monitorAndUpdate(mStatus, mCPU, mMem *systray.MenuItem) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
+	apiCheckTicker := time.NewTicker(30 * time.Second) // Check API status every 30 seconds
+	defer apiCheckTicker.Stop()
+
+	// Perform an initial API check right away
+	tm.checkAPIStatus()
+
 	for {
 		select {
 		case <-ticker.C:
-			// Update status
-			status := tm.getAgentStatus()
-			mStatus.SetTitle(fmt.Sprintf("🔄 %s", status))
+			cpuUsage := tm.monitor.GetCPUUsage()
+			memUsage := tm.monitor.GetMemoryUsage()
 
-			// Update CPU usage
-			cpu := tm.getCPUUsage()
-			mCPU.SetTitle(fmt.Sprintf("📊 CPU: %.1f%%", cpu))
+			// Update menu items
+			if tm.apiConnected {
+				mStatus.SetTitle("Status: Connected")
+			} else {
+				mStatus.SetTitle("Status: Disconnected")
+			}
+			mCPU.SetTitle(fmt.Sprintf("CPU: %.1f%%", cpuUsage))
+			mMem.SetTitle(fmt.Sprintf("Memory: %.1f%%", memUsage))
 
-			// Update memory usage
-			mem := tm.getMemoryUsage()
-			mMem.SetTitle(fmt.Sprintf("💾 Memory: %.1f MB", mem))
+		case <-apiCheckTicker.C:
+			tm.checkAPIStatus()
 
 		case <-tm.quitChan:
 			return
+		}
+	}
+}
+
+// checkAPIStatus checks the API connection and updates the tray icon.
+func (tm *TrayManager) checkAPIStatus() {
+	err := tm.communicator.CheckAPIStatus()
+	if err != nil {
+		if tm.apiConnected {
+			log.Println("Connection to API lost.")
+			systray.SetIcon(GetRedIcon()) // Red icon for connection error
+			tm.apiConnected = false
+		} else {
+			// If already disconnected, ensure icon is red
+			systray.SetIcon(GetRedIcon())
+		}
+	} else {
+		if !tm.apiConnected {
+			log.Println("Successfully connected to API.")
+			systray.SetIcon(GetGreenIcon()) // Green icon for connected
+			tm.apiConnected = true
 		}
 	}
 }
@@ -158,9 +203,14 @@ func (tm *TrayManager) checkAPIConnectivity() bool {
 	return cmd.Run() == nil
 }
 
-// showStatus displays agent status notification
+// showStatus displays the current status in a notification
 func (tm *TrayManager) showStatus() {
-	status := tm.getAgentStatus()
+	var status string
+	if tm.apiConnected {
+		status = "Connected to API"
+	} else {
+		status = "Disconnected from API"
+	}
 	tm.showNotification("ZeroTrace Agent", "Status", status)
 }
 

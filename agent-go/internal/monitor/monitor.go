@@ -141,3 +141,15 @@ func (m *Monitor) getAgentMetrics(metrics *Metrics) {
 func (m *Monitor) GetUpdateChannel() <-chan Metrics {
 	return m.updateChan
 }
+
+// GetCPUUsage returns the current CPU usage percentage
+func (m *Monitor) GetCPUUsage() float64 {
+	metrics := m.GetMetrics()
+	return metrics.SystemCPU
+}
+
+// GetMemoryUsage returns the current memory usage percentage
+func (m *Monitor) GetMemoryUsage() float64 {
+	metrics := m.GetMetrics()
+	return metrics.SystemMemory
+}

@@ -36,14 +36,17 @@ func (stm *SimpleTrayManager) Start() {
 	stm.monitor.Start()
 
 	go func() {
-		if runtime.GOOS == "darwin" {
-			log.Println("Systray temporarily disabled on macOS due to native crash. Agent running without tray icon.")
-			// For macOS, we'll just keep the goroutine alive without systray.Run()
-			// In a real scenario, we'd use a different tray library or fix the systray issue.
-			select {}
-		} else {
-			systray.Run(stm.onReady, stm.onExit)
-		}
+		// Try to run systray on all platforms, including macOS
+		// with proper error handling
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Systray crashed on %s: %v", runtime.GOOS, r)
+				log.Println("Agent will continue running without tray icon")
+			}
+		}()
+
+		log.Printf("Attempting to start systray on %s", runtime.GOOS)
+		systray.Run(stm.onReady, stm.onExit)
 	}()
 }
 

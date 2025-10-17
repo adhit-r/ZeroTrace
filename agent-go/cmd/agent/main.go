@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -28,12 +29,25 @@ func main() {
 	cfg := config.Load()
 
 	// Initialize components
-	scanner := scanner.NewSoftwareScanner(cfg) // Use software scanner instead of code scanner
-	processor := processor.NewProcessor(cfg)
+	softwareScanner := scanner.NewSoftwareScanner(cfg)
+	systemScanner := scanner.NewSystemScanner(cfg) // Create system scanner
+	processor := processor.NewProcessor(cfg, "http://localhost:5000")
 	communicator := communicator.NewCommunicator(cfg)
 
-	// Initialize simple tray manager (MDM-friendly)
-	trayManager := tray.NewSimpleTrayManager()
+	// Initialize tray manager - disable tray on macOS due to library issues
+	var trayManager interface {
+		Start()
+		Stop()
+	}
+
+	if runtime.GOOS == "darwin" {
+		// Use macOS-specific tray manager (no-op for now)
+		trayManager = tray.NewMacOSTrayManager()
+	} else {
+		// Use standard tray manager for Windows/Linux
+		trayManager = tray.NewSimpleTrayManager()
+	}
+
 	trayManager.Start()
 
 	testTray := flag.Bool("test-tray", false, "Run in tray test mode")
@@ -88,17 +102,16 @@ func main() {
 				return
 			default:
 				// Scan for installed software
-				results, err := scanner.Scan()
+				swResults, err := softwareScanner.Scan()
 				if err != nil {
-					log.Printf("Scan error: %v", err)
+					log.Printf("Software scan error: %v", err)
 					time.Sleep(30 * time.Second)
 					continue
 				}
-
-				log.Printf("Found %d installed applications", len(results.Dependencies))
+				log.Printf("Found %d installed applications", len(swResults.Dependencies))
 
 				// Process results
-				processedResults, err := processor.Process(results)
+				processedResults, err := processor.Process(swResults)
 				if err != nil {
 					log.Printf("Processing error: %v", err)
 					continue
@@ -108,12 +121,31 @@ func main() {
 				if err := communicator.SendResults(processedResults); err != nil {
 					log.Printf("Communication error: %v", err)
 				} else {
-					log.Printf("Successfully sent scan results to API")
+					log.Printf("Successfully sent software scan results to API")
 				}
 
 				// Wait before next scan
 				log.Printf("Next scan in %v", cfg.ScanInterval)
 				time.Sleep(cfg.ScanInterval)
+			}
+		}
+	}()
+
+	// Start system info scanning in a goroutine
+	go func() {
+		// Perform an initial scan right away
+		sendSystemInfo(ctx, systemScanner, communicator)
+
+		// Then scan on a longer interval
+		ticker := time.NewTicker(1 * time.Hour) // Scan system info every hour
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				sendSystemInfo(ctx, systemScanner, communicator)
 			}
 		}
 	}()
@@ -176,5 +208,20 @@ func main() {
 		log.Println("Forced shutdown")
 	case <-time.After(5 * time.Second):
 		log.Println("Graceful shutdown completed")
+	}
+}
+
+func sendSystemInfo(ctx context.Context, systemScanner *scanner.SystemScanner, communicator *communicator.Communicator) {
+	log.Println("Scanning for system information...")
+	sysInfo, err := systemScanner.Scan()
+	if err != nil {
+		log.Printf("System info scan error: %v", err)
+		return
+	}
+
+	if err := communicator.SendSystemInfo(sysInfo); err != nil {
+		log.Printf("Failed to send system info: %v", err)
+	} else {
+		log.Println("Successfully sent system information to API.")
 	}
 }
