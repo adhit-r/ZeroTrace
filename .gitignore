@@ -72,6 +72,9 @@ go.work
 *.temp
 .cache/
 
+# Archive directory (old/unused code)
+.archive/
+
 # Playwright
 .playwright-mcp/
 test-results/
