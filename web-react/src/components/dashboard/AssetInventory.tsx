@@ -4,9 +4,7 @@ import {
   Filter, 
   Download, 
   MoreHorizontal, 
-  AlertTriangle, 
   Shield, 
-  Clock, 
   CheckCircle,
   X,
   ChevronDown,
@@ -38,7 +36,6 @@ interface Asset {
 interface AssetInventoryProps {
   assets: Asset[];
   loading?: boolean;
-  userRole: string;
   onBulkAction: (action: string, assetIds: string[]) => void;
   onAssetSelect: (assetId: string) => void;
   className?: string;
@@ -47,7 +44,6 @@ interface AssetInventoryProps {
 const AssetInventory: React.FC<AssetInventoryProps> = ({
   assets,
   loading = false,
-  userRole,
   onBulkAction,
   onAssetSelect,
   className = ''

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   Shield, 
   AlertTriangle, 
-  CheckCircle, 
   TrendingUp, 
   TrendingDown,
   Clock,
@@ -13,7 +12,6 @@ import {
   Eye,
   RefreshCw
 } from 'lucide-react';
-import { dashboardService } from '../services/dashboardService';
 import { agentService } from '../services/agentService';
 
 // Import charting library and new components
@@ -30,8 +28,11 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { mockLineChartData, mockDoughnutChartData, mockBarChartData } from '../components/dashboard/mockChartData';
+// Removed mock chart data - using real data only
 import TopVulnerableAssets from '../components/dashboard/TopVulnerableAssets';
+// import InnovativeDashboard from '../components/dashboard/InnovativeDashboard';
+import RealTimeMonitoring from '../components/dashboard/RealTimeMonitoring';
+import VulnerabilityTrendAnalysis from '../components/dashboard/VulnerabilityTrendAnalysis';
 
 ChartJS.register(
   CategoryScale,
@@ -65,7 +66,7 @@ interface Vulnerability {
 }
 
 interface RecentActivity {
-  id: number;
+  id: string;
   type: string;
   message: string;
   time: string;
@@ -153,7 +154,7 @@ const useDashboardData = () => {
           const vulns = agent.metadata.vulnerabilities;
           totalVulnerabilities += vulns.length;
           
-          vulns.forEach(vuln => {
+          vulns.forEach((vuln: any) => {
             switch(vuln.severity) {
               case 'critical':
                 criticalVulns++;
@@ -179,26 +180,28 @@ const useDashboardData = () => {
       console.log('Dashboard: Assets total:', agents.length);
       console.log('Dashboard: Vulnerability counts:', { totalVulnerabilities, criticalVulns, highVulns, mediumVulns, lowVulns, vulnerableAssets });
       
-      // Calculate additional metrics
-      let totalApplications = 0;
-      let totalDependencies = 0;
-      let avgRiskScore = 0;
-      let lastScanTime = null;
-      
-      agents.forEach(agent => {
-        if (agent.metadata?.dependencies) {
-          totalDependencies += agent.metadata.dependencies.length;
-        }
-        if (agent.metadata?.applications) {
-          totalApplications += agent.metadata.applications.length;
-        }
-        if (agent.risk_score !== undefined) {
-          avgRiskScore += agent.risk_score;
-        }
-        if (agent.last_scan_time && (!lastScanTime || new Date(agent.last_scan_time) > new Date(lastScanTime))) {
-          lastScanTime = agent.last_scan_time;
-        }
-      });
+            // Calculate additional metrics
+            let totalApplications = 0;
+            let totalDependencies = 0;
+            let avgRiskScore = 0;
+            let lastScanTime: string | null = null;
+            
+            agents.forEach(agent => {
+              if (agent.metadata?.dependencies) {
+                totalDependencies += agent.metadata.dependencies.length;
+              }
+              if (agent.metadata?.applications) {
+                totalApplications += agent.metadata.applications.length;
+              }
+              if ((agent as any).risk_score !== undefined) {
+                avgRiskScore += (agent as any).risk_score;
+              }
+              if ((agent as any).last_scan_time && (!lastScanTime || new Date((agent as any).last_scan_time) > new Date(lastScanTime))) {
+                lastScanTime = (agent as any).last_scan_time;
+              }
+            });
+
+            // No agents - will show empty state
       
       avgRiskScore = agents.length > 0 ? avgRiskScore / agents.length : 0;
       
@@ -217,21 +220,13 @@ const useDashboardData = () => {
         lastScanTime
       });
       
-      // Create real-time chart data
+      // Create dynamic chart data based on real data
       const vulnerabilityTrendData = {
         labels: ['Last 7 Days', 'Last 6 Days', 'Last 5 Days', 'Last 4 Days', 'Last 3 Days', 'Last 2 Days', 'Today'],
         datasets: [
           {
             label: 'Vulnerabilities Found',
-            data: [
-              Math.floor(Math.random() * 20) + 5,
-              Math.floor(Math.random() * 20) + 5,
-              Math.floor(Math.random() * 20) + 5,
-              Math.floor(Math.random() * 20) + 5,
-              Math.floor(Math.random() * 20) + 5,
-              Math.floor(Math.random() * 20) + 5,
-              totalVulnerabilities
-            ],
+            data: [0, 0, 0, 0, 0, 0, totalVulnerabilities], // Only show real data
             fill: false,
             backgroundColor: 'rgb(255, 99, 132)',
             borderColor: 'rgba(255, 99, 132, 0.8)',
@@ -274,24 +269,14 @@ const useDashboardData = () => {
         datasets: [
           {
             label: 'Patched',
-            data: [
-              Math.floor(Math.random() * 30) + 10,
-              Math.floor(Math.random() * 30) + 10,
-              Math.floor(Math.random() * 30) + 10,
-              Math.floor(Math.random() * 30) + 10
-            ],
+            data: [0, 0, 0, 0], // No hardcoded data
             backgroundColor: 'rgba(75, 192, 192, 0.8)',
             borderColor: 'rgba(0, 0, 0, 1)',
             borderWidth: 3
           },
           {
             label: 'Outstanding',
-            data: [
-              Math.floor(Math.random() * 15) + 5,
-              Math.floor(Math.random() * 15) + 5,
-              Math.floor(Math.random() * 15) + 5,
-              Math.floor(Math.random() * 15) + 5
-            ],
+            data: [0, 0, 0, 0], // No hardcoded data
             backgroundColor: 'rgba(255, 99, 132, 0.8)',
             borderColor: 'rgba(0, 0, 0, 1)',
             borderWidth: 3
@@ -309,10 +294,10 @@ const useDashboardData = () => {
           high: highVulns,
           medium: mediumVulns,
           low: lowVulns,
-          lastScan: agents.length > 0 ? agents[0].last_scan_time : null
+          lastScan: agents.length > 0 ? (agents[0] as any).last_scan_time : null
         },
         vulnerabilities: agents.flatMap(agent => 
-          agent.metadata?.vulnerabilities?.map(vuln => ({
+          agent.metadata?.vulnerabilities?.map((vuln: any) => ({
             id: vuln.id,
             name: vuln.title,
             severity: vuln.severity,
@@ -324,14 +309,14 @@ const useDashboardData = () => {
           id: `activity-${agent.id}`,
           type: 'scan',
           message: `Scan completed on ${agent.hostname || agent.id} - Found ${agent.metadata?.vulnerabilities?.length || 0} vulnerabilities`,
-          time: agent.last_scan_time ? new Date(agent.last_scan_time).toLocaleString() : 'Unknown'
+          time: (agent as any).last_scan_time ? new Date((agent as any).last_scan_time).toLocaleString() : 'Unknown'
         })).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5),
         topVulnerableAssets: agents
           .filter(agent => agent.metadata?.vulnerabilities && agent.metadata.vulnerabilities.length > 0)
           .map(agent => ({
             name: agent.hostname || agent.id,
-            vulnerabilities: agent.metadata.vulnerabilities.length,
-            critical: agent.metadata.vulnerabilities.filter(v => v.severity === 'critical').length
+            vulnerabilities: agent.metadata!.vulnerabilities.length,
+            critical: agent.metadata!.vulnerabilities.filter((v: any) => v.severity === 'critical').length
           }))
           .sort((a, b) => b.vulnerabilities - a.vulnerabilities)
           .slice(0, 5),
@@ -370,7 +355,6 @@ const Dashboard: React.FC = () => {
   const vulnerabilities = data?.vulnerabilities;
   const recentActivity = data?.recentActivity;
   const topVulnerableAssets = data?.topVulnerableAssets;
-  const scanStatus = data?.scanStatus;
   const [isScanning, setIsScanning] = useState(false);
 
   const startScan = async () => {
@@ -707,22 +691,40 @@ The agent will automatically register with the ZeroTrace API.
           </div>
         </div>
 
+        {/* Enhanced Dashboard Components */}
+        <div className="space-y-6">
+          {/* Innovative Dashboard */}
+          {/* <InnovativeDashboard /> */}
+          
+          {/* Real-time Monitoring */}
+          <RealTimeMonitoring />
+          
+          {/* Vulnerability Trend Analysis */}
+          <VulnerabilityTrendAnalysis />
+        </div>
+
         {/* Charts and Top Assets */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Vulnerability Trend */}
           <div className="lg:col-span-2 p-6 bg-white border-3 border-black rounded-lg shadow-neo-brutal">
             <h2 className="text-xl font-black text-black uppercase mb-4">Vulnerability Trend</h2>
-            <div className="h-64">
-              <Line data={data.vulnerabilityTrendData || mockLineChartData.data} options={mockLineChartData.options} />
-            </div>
+                  <div className="h-64">
+                    <Line data={data.vulnerabilityTrendData} options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                    }} />
+                  </div>
           </div>
 
           {/* Vulnerabilities by Severity */}
           <div className="p-6 bg-white border-3 border-black rounded-lg shadow-neo-brutal">
             <h2 className="text-xl font-black text-black uppercase mb-4">By Severity</h2>
-            <div className="h-64 flex items-center justify-center">
-              <Doughnut data={data.severityBreakdownData || mockDoughnutChartData.data} options={mockDoughnutChartData.options} />
-            </div>
+                  <div className="h-64 flex items-center justify-center">
+                    <Doughnut data={data.severityBreakdownData} options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                    }} />
+                  </div>
           </div>
         </div>
 
@@ -735,9 +737,17 @@ The agent will automatically register with the ZeroTrace API.
           {/* Remediation Progress */}
           <div className="p-6 bg-white border-3 border-black rounded-lg shadow-neo-brutal">
             <h2 className="text-xl font-black text-black uppercase mb-4">Remediation</h2>
-            <div className="h-64">
-                <Bar data={data.remediationProgressData || mockBarChartData.data} options={mockBarChartData.options} />
-          </div>
+                  <div className="h-64">
+                      <Bar data={data.remediationProgressData} options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                          },
+                        },
+                      }} />
+                </div>
         </div>
       </div>
 

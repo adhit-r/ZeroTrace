@@ -473,10 +473,12 @@ p {
 .shadow-inner { box-shadow: var(--shadow-inner); }
 
 /* Neubrutalist Shadow Utilities */
+.shadow-neubrutalist { box-shadow: var(--shadow-neubrutalist-md); }
 .shadow-neubrutalist-sm { box-shadow: var(--shadow-neubrutalist-sm); }
 .shadow-neubrutalist-md { box-shadow: var(--shadow-neubrutalist-md); }
 .shadow-neubrutalist-lg { box-shadow: var(--shadow-neubrutalist-lg); }
 .shadow-neubrutalist-xl { box-shadow: var(--shadow-neubrutalist-xl); }
+.shadow-neubrutalist-hover:hover { box-shadow: var(--shadow-neubrutalist-lg); }
 
 /* Spacing Utilities */
 .p-0 { padding: var(--spacing-0); }

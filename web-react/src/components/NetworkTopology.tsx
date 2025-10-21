@@ -134,7 +134,7 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({
     feMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
     // Create force simulation
-    const simulation = d3.forceSimulation(data.nodes)
+    const simulation = d3.forceSimulation(data.nodes as any)
       .force("link", d3.forceLink(data.links).id((d: any) => d.id).distance(100))
       .force("charge", d3.forceManyBody().strength(-300))
       .force("center", d3.forceCenter(width / 2, height / 2))
@@ -172,7 +172,7 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({
         d3.select(this).style("stroke-width", "1.5px");
         hideTooltip();
       })
-      .on("click", function(event, d) {
+      .on("click", function(d) {
         handleNodeClick(d);
       })
       .call(d3.drag()

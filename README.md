@@ -51,6 +51,38 @@ ZeroTrace is a high-performance, enterprise-grade vulnerability detection and ma
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
+## ⚡ **Fast Package Managers**
+
+ZeroTrace uses high-performance package managers for maximum development speed:
+
+- **🚀 Bun**: Drop-in replacement for npm (3-5x faster installs)
+- **🐍 uv**: Drop-in replacement for pip (10-100x faster installs)
+
+### Quick Setup
+```bash
+# Run the fast setup script
+./setup-fast.sh
+
+# Or manually:
+cd web-react && bun install          # Instead of npm install
+cd ../enrichment-python && uv pip install -r requirements.txt  # Instead of pip install
+```
+
+### Development Commands
+```bash
+# Frontend
+cd web-react
+bun run dev        # Start dev server
+bun run build      # Build for production
+bun add <package>  # Add dependency
+
+# Backend (Python)
+cd enrichment-python
+uv pip install <package>    # Install package
+uv pip sync                 # Sync with requirements.txt
+uv run python app/main.py   # Run with virtual env
+```
+
 ## 🚀 **Quick Start**
 
 ### **Prerequisites**

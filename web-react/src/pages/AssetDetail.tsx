@@ -3,25 +3,20 @@ import { useParams } from 'react-router-dom';
 import {
   Server,
   Cpu,
-  HardDrive,
-  MemoryStick,
-  Monitor,
   MapPin,
-  Shield,
   AlertTriangle,
-  CheckCircle,
-  Clock,
-  Activity,
-  Wifi,
-  Globe,
+  Zap,
   Tag,
   RefreshCw,
   Download,
   Eye,
   Settings,
   BarChart3,
-  Zap
+  Clock,
+  Monitor,
+  Wifi
 } from 'lucide-react';
+import { api } from '@/services/api';
 
 interface AssetDetailData {
   id: string;
@@ -66,8 +61,13 @@ interface AssetDetailData {
     name: string;
     version: string;
     vendor: string;
+    type: string;
     path?: string;
   }>;
+  cpuUsage?: number;
+  memoryUsage?: number;
+  lastScanTime?: string;
+  enrichedVulnerabilities?: any[];
 }
 
 const AssetDetail: React.FC = () => {
@@ -80,50 +80,59 @@ const AssetDetail: React.FC = () => {
     fetchAssetDetail();
   }, [id]);
 
+  // Poll live metrics every 5s if metadata fields exist
+  useEffect(() => {
+    if (!asset) return;
+    const interval = setInterval(async () => {
+      try {
+        const resp = await api.get('/api/agents/');
+        const agentsData = resp.data;
+        const agent = (agentsData?.data || []).find((a: any) => a.id === id);
+        if (!agent) return;
+        const cpu = agent.metadata?.cpu_usage ?? asset.cpuUsage;
+        const mem = agent.metadata?.memory_usage ?? asset.memoryUsage;
+        const lastScan = agent.metadata?.last_scan_time ?? asset.lastScanTime;
+        setAsset(prev => prev ? ({ ...prev, cpuUsage: cpu, memoryUsage: mem, lastScanTime: lastScan }) : prev);
+      } catch {}
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [asset, id]);
+
   const fetchAssetDetail = async () => {
     try {
       setLoading(true);
-      
-      // Fetch real agent data from API
-      const response = await fetch(`http://localhost:8080/api/agents/`);
-      const agentsData = await response.json();
-      
+      const response = await api.get('/api/agents/');
+      const agentsData = response.data;
       if (!agentsData.success || !agentsData.data) {
         throw new Error('Failed to fetch agents data');
       }
-      
-      // Find the specific agent by ID
       const agent = agentsData.data.find((a: any) => a.id === id);
-      
       if (!agent) {
         throw new Error('Agent not found');
       }
-      
-      
-      // Transform API data to AssetDetailData format
-      // Check both main agent fields and metadata for system information
+
       const assetData: AssetDetailData = {
         id: agent.id,
-        hostname: agent.hostname || 'Unknown',
-        ipAddress: agent.ip_address || 'Unknown',
-        macAddress: agent.mac_address || agent.metadata?.mac_address || 'Unknown',
-        osName: agent.os || agent.metadata?.os_name || 'Unknown',
-        osVersion: agent.os_version || agent.metadata?.os_version || 'Unknown',
-        osBuild: agent.metadata?.os_build || 'Unknown',
-        kernelVersion: agent.metadata?.kernel_version || 'Unknown',
-        cpuModel: agent.metadata?.cpu_model || 'Unknown',
-        cpuCores: agent.metadata?.cpu_cores || 0,
-        memoryTotalGB: agent.metadata?.memory_total_gb || 0,
-        storageTotalGB: agent.metadata?.storage_total_gb || 0,
-        gpuModel: agent.metadata?.gpu_model || 'Unknown',
-        serialNumber: agent.serial_number || agent.metadata?.serial_number || 'Unknown',
-        platform: agent.metadata?.platform || 'Unknown',
-        city: agent.city || agent.metadata?.city || 'Unknown',
-        region: agent.region || agent.metadata?.region || 'Unknown',
-        country: agent.country || agent.metadata?.country || 'Unknown',
-        timezone: agent.timezone || agent.metadata?.timezone || 'Unknown',
-        riskScore: agent.risk_score || agent.metadata?.risk_score || 0,
-        tags: agent.metadata?.tags || [],
+        hostname: agent.hostname || agent.name || 'ZeroTrace Agent',
+        ipAddress: agent.ip_address || 'Not Available',
+        macAddress: agent.mac_address || 'Not Available',
+        osName: agent.os || agent.os_name || 'Not Available',
+        osVersion: agent.os_version || 'Not Available',
+        osBuild: agent.os_build || 'Not Available',
+        kernelVersion: agent.kernel_version || 'Not Available',
+        cpuModel: agent.cpu_model || 'Not Available',
+        cpuCores: agent.cpu_cores || 0,
+        memoryTotalGB: agent.memory_total_gb || 0,
+        storageTotalGB: agent.storage_total_gb || 0,
+        gpuModel: agent.gpu_model || 'Not Available',
+        serialNumber: agent.serial_number || 'Not Available',
+        platform: agent.platform || 'macOS',
+        city: agent.city || 'Not Available',
+        region: agent.region || 'Not Available',
+        country: agent.country || 'Not Available',
+        timezone: agent.timezone || 'Not Available',
+        riskScore: agent.risk_score || 0,
+        tags: agent.tags ? agent.tags.split(',').filter((t: string) => t.trim()) : [],
         lastSeen: agent.last_seen || new Date().toISOString(),
         status: agent.status || 'unknown',
         vulnerabilities: {
@@ -134,16 +143,20 @@ const AssetDetail: React.FC = () => {
           low: agent.metadata?.low_vulnerabilities || 0
         },
         applications: {
-          total: agent.metadata?.total_applications || 0,
+          total: agent.metadata?.applications_processed || agent.metadata?.total_assets || (agent.metadata?.dependencies?.length || 0),
           vulnerable: agent.metadata?.vulnerable_applications || 0
         },
         configuration: {
           total: agent.metadata?.total_config_checks || 0,
           issues: agent.metadata?.config_issues || 0
         },
-        installedApps: agent.metadata?.dependencies || []
+        installedApps: agent.metadata?.dependencies || [],
+        cpuUsage: agent.metadata?.cpu_usage,
+        memoryUsage: agent.metadata?.memory_usage,
+        lastScanTime: agent.metadata?.last_scan_time,
+        enrichedVulnerabilities: Array.isArray(agent.metadata?.enriched_vulnerabilities) ? agent.metadata.enriched_vulnerabilities : []
       };
-      
+
       setAsset(assetData);
     } catch (err) {
       setError('Failed to fetch asset details');
@@ -280,9 +293,9 @@ const AssetDetail: React.FC = () => {
                 <Clock className="h-6 w-6 text-green-600" />
               </div>
               <div className="text-right">
-                <div className="text-sm font-bold text-green-600">Last Seen</div>
+                <div className="text-sm font-bold text-green-600">Last Scan</div>
                 <div className="text-xs text-gray-600">
-                  {new Date(asset.lastSeen).toLocaleString()}
+                  {asset.lastScanTime ? new Date(asset.lastScanTime).toLocaleString() : (asset.lastSeen ? new Date(asset.lastSeen).toLocaleString() : 'Not Available')}
                 </div>
               </div>
             </div>
@@ -291,6 +304,11 @@ const AssetDetail: React.FC = () => {
                 {asset.status.toUpperCase()}
               </span>
             </div>
+            {(asset.cpuUsage != null || asset.memoryUsage != null) && (
+              <div className="mt-2 text-xs text-gray-600">
+                CPU: <span className="font-bold">{asset.cpuUsage?.toFixed?.(1) ?? asset.cpuUsage ?? '--'}%</span> • Memory: <span className="font-bold">{asset.memoryUsage?.toFixed?.(1) ?? asset.memoryUsage ?? '--'}%</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -392,6 +410,42 @@ const AssetDetail: React.FC = () => {
           </div>
         </div>
 
+        {/* Vulnerability Breakdown (Enriched) */}
+        <div className="p-6 bg-white border-3 border-black rounded-lg shadow-neo-brutal">
+          <h2 className="text-xl font-black text-black uppercase mb-4 flex items-center gap-2">
+            <AlertTriangle className="h-6 w-6" />
+            Vulnerability Breakdown
+          </h2>
+          {asset.enrichedVulnerabilities && asset.enrichedVulnerabilities.length > 0 ? (
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left border-b-2 border-black">
+                    <th className="py-2 pr-2">CVE</th>
+                    <th className="py-2 pr-2">Severity</th>
+                    <th className="py-2 pr-2">Package</th>
+                    <th className="py-2 pr-2">Version</th>
+                    <th className="py-2 pr-2">CVSS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {asset.enrichedVulnerabilities.map((v: any, i: number) => (
+                    <tr key={i} className="border-b border-gray-200">
+                      <td className="py-2 pr-2 font-mono">{v.cve_id || v.id}</td>
+                      <td className="py-2 pr-2 font-bold">{v.severity || v.Severity || '-'}</td>
+                      <td className="py-2 pr-2">{v.package_name || v.PackageName || '-'}</td>
+                      <td className="py-2 pr-2">{v.package_version || v.PackageVersion || '-'}</td>
+                      <td className="py-2 pr-2">{typeof v.cvss_score === 'number' ? v.cvss_score.toFixed(1) : (v.cvss_score || '-')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-gray-500">No enriched vulnerabilities available</div>
+          )}
+        </div>
+
         {/* Network & Location */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Network Information */}
@@ -440,6 +494,38 @@ const AssetDetail: React.FC = () => {
                 <span className="text-black font-bold">{asset.timezone}</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Installed Applications */}
+        <div className="p-6 bg-white border-3 border-black rounded-lg shadow-neo-brutal">
+          <h2 className="text-xl font-black text-black uppercase mb-4 flex items-center gap-2">
+            <Monitor className="h-6 w-6" />
+            Installed Applications ({asset.installedApps.length})
+          </h2>
+          <div className="max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {asset.installedApps.slice(0, 50).map((app, index) => (
+                <div
+                  key={index}
+                  className="p-3 bg-gray-50 border-2 border-gray-300 rounded shadow-neubrutal-sm hover:shadow-neubrutal-md transition-all duration-150"
+                >
+                  <div className="font-bold text-black text-sm mb-1">{app.name}</div>
+                  <div className="text-xs text-gray-600 mb-1">Version: {app.version === 'unknown' ? 'Latest' : app.version}</div>
+                  <div className="text-xs text-gray-500">Type: {app.type}</div>
+                  {app.vendor && (
+                    <div className="text-xs text-gray-500">Vendor: {app.vendor}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {asset.installedApps.length > 50 && (
+              <div className="mt-4 text-center">
+                <span className="text-sm text-gray-500">
+                  Showing first 50 of {asset.installedApps.length} applications
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

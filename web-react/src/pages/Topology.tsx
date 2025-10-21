@@ -1,61 +1,81 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Search, SlidersHorizontal, Share2, ZoomIn, ZoomOut, Maximize, AlertTriangle, Shield, Activity, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, Search, SlidersHorizontal, Share2, ZoomIn, ZoomOut, Maximize, Shield, Activity, AlertTriangle } from 'lucide-react';
 import { topologyService } from '../services/topologyService';
-import type { TopologyData, TopologyNode } from '../services/topologyService';
+import NetworkTopology from '../components/NetworkTopology';
+// import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+
+interface NetworkTopologyData {
+  nodes: any[];
+  links: any[];
+  id: string;
+  companyId: string;
+  clusters: any[];
+  lastUpdated: string;
+}
+
+interface NetworkHealth {
+  onlineNodes: number;
+  vulnerableNodes: number;
+  averageRiskScore: number;
+}
 
 const Topology: React.FC = () => {
-  const [topologyData, setTopologyData] = useState<TopologyData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState<NetworkTopologyData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [networkHealth, setNetworkHealth] = useState<any>(null);
+  const [health, setHealth] = useState<NetworkHealth | null>(null);
+  // const topologyRef = useRef<any>(null);
 
   useEffect(() => {
-    loadTopologyData();
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const topologyData = await topologyService.getTopologyData();
+        setData({ ...topologyData, id: '1', companyId: '1', clusters: [], lastUpdated: new Date().toISOString() });
+        
+        // Mock health data
+        setHealth({
+          onlineNodes: topologyData.nodes.filter((n: any) => n.status === 'online').length,
+          vulnerableNodes: topologyData.nodes.filter((n: any) => n.riskScore > 5).length,
+          averageRiskScore: topologyData.nodes.reduce((acc: any, n: any) => acc + n.riskScore, 0) / topologyData.nodes.length || 0
+        });
+
+      } catch (err) {
+        setError('Failed to load topology data. Please try again later.');
+        console.error('Error loading topology:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
-  const loadTopologyData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const [topology, health] = await Promise.all([
-        topologyService.getTopologyData(),
-        topologyService.getNetworkHealth()
-      ]);
-      
-      setTopologyData(topology);
-      setNetworkHealth(health);
-    } catch (err) {
-      setError('Failed to load topology data');
-      console.error('Error loading topology:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleRefresh = () => {
-    loadTopologyData();
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const topologyData = await topologyService.getTopologyData();
+        setData({ ...topologyData, id: '1', companyId: '1', clusters: [], lastUpdated: new Date().toISOString() });
+        
+        // Mock health data
+        setHealth({
+          onlineNodes: topologyData.nodes.filter((n: any) => n.status === 'online').length,
+          vulnerableNodes: topologyData.nodes.filter((n: any) => n.riskScore > 5).length,
+          averageRiskScore: topologyData.nodes.reduce((acc: any, n: any) => acc + n.riskScore, 0) / topologyData.nodes.length || 0
+        });
+
+      } catch (err) {
+        setError('Failed to load topology data. Please try again later.');
+        console.error('Error loading topology:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   };
 
-  const getNodeColor = (node: TopologyNode) => {
-    if (node.hasVulns) return 'bg-red-500 border-red-700';
-    if (node.status === 'offline') return 'bg-gray-400 border-gray-600';
-    
-    switch (node.type) {
-      case 'router': return 'bg-blue-500 border-blue-700';
-      case 'switch': return 'bg-yellow-500 border-yellow-700';
-      case 'server': return 'bg-purple-500 border-purple-700';
-      case 'workstation': return 'bg-green-500 border-green-700';
-      case 'agent': return 'bg-orange-500 border-orange-700';
-      default: return 'bg-gray-500 border-gray-700';
-    }
-  };
-
-  const getRiskColor = (riskScore: number) => {
-    if (riskScore >= 8) return 'text-red-600 bg-red-100';
-    if (riskScore >= 6) return 'text-orange-600 bg-orange-100';
-    if (riskScore >= 4) return 'text-yellow-600 bg-yellow-100';
-    return 'text-green-600 bg-green-100';
+  const handleNodeClick = () => {
+    // Handle node click
   };
 
   return (
@@ -67,26 +87,26 @@ const Topology: React.FC = () => {
             <h1 className="text-3xl font-black text-black uppercase tracking-wider">Network Topology</h1>
             <p className="text-sm text-gray-600 font-bold">Visualize your asset connections and security posture.</p>
           </div>
-          {networkHealth && (
+          {health && (
             <div className="flex gap-4">
               <div className="px-4 py-2 bg-white border-3 border-black rounded-lg shadow-neo-brutal-small">
                 <div className="flex items-center gap-2">
                   <Activity className="h-4 w-4 text-green-600" />
-                  <span className="font-bold text-green-600">{networkHealth.onlineNodes}</span>
+                  <span className="font-bold text-green-600">{health.onlineNodes}</span>
                   <span className="text-sm text-gray-600">Online</span>
                 </div>
               </div>
               <div className="px-4 py-2 bg-white border-3 border-black rounded-lg shadow-neo-brutal-small">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <span className="font-bold text-red-600">{networkHealth.vulnerableNodes}</span>
+                  <span className="font-bold text-red-600">{health.vulnerableNodes}</span>
                   <span className="text-sm text-gray-600">Vulnerable</span>
                 </div>
               </div>
               <div className="px-4 py-2 bg-white border-3 border-black rounded-lg shadow-neo-brutal-small">
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-blue-600" />
-                  <span className="font-bold text-blue-600">{networkHealth.averageRiskScore.toFixed(1)}</span>
+                  <span className="font-bold text-blue-600">{health.averageRiskScore.toFixed(1)}</span>
                   <span className="text-sm text-gray-600">Avg Risk</span>
                 </div>
               </div>
@@ -107,8 +127,8 @@ const Topology: React.FC = () => {
                 onClick={handleRefresh}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white font-bold uppercase tracking-wide rounded-lg border-3 border-black shadow-neo-brutal-small hover:shadow-neo-brutal-small-hover transition-all"
               >
-                <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
-                {isLoading ? 'Refreshing...' : 'Refresh'}
+                <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Refreshing...' : 'Refresh'}
               </button>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -152,47 +172,11 @@ const Topology: React.FC = () => {
                            </button>
                          </div>
                        </div>
-                     ) : topologyData ? (
-                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-                         {topologyData.nodes.map((node) => (
-                           <div
-                             key={node.id}
-                             className={`p-4 rounded-lg border-3 shadow-neo-brutal-small hover:shadow-neo-brutal-small-hover transition-all cursor-pointer ${getNodeColor(node)}`}
-                           >
-                             <div className="flex items-center justify-between mb-2">
-                               <div className="flex items-center gap-2">
-                                 {node.status === 'online' ? (
-                                   <Wifi className="h-4 w-4 text-green-600" />
-                                 ) : (
-                                   <WifiOff className="h-4 w-4 text-gray-400" />
-                                 )}
-                                 <span className="font-bold text-white text-sm">{node.name}</span>
-                               </div>
-                               <div className={`px-2 py-1 rounded text-xs font-bold ${getRiskColor(node.riskScore)}`}>
-                                 {node.riskScore.toFixed(1)}
-                               </div>
-                             </div>
-                             <div className="text-xs text-white/80 space-y-1">
-                               <div>IP: {node.ip}</div>
-                               <div>OS: {node.os}</div>
-                               {node.hasVulns && (
-                                 <div className="flex items-center gap-1">
-                                   <AlertTriangle className="h-3 w-3 text-red-300" />
-                                   <span>{node.vulnerabilityCount} vulns</span>
-                                   {node.criticalVulns > 0 && (
-                                     <span className="text-red-300 font-bold">({node.criticalVulns} critical)</span>
-                                   )}
-                                 </div>
-                               )}
-                               {node.location && (
-                                 <div className="text-white/60">
-                                   {node.location.city}, {node.location.country}
-                                 </div>
-                               )}
-                             </div>
-                           </div>
-                         ))}
-                       </div>
+                     ) : data ? (
+                  <NetworkTopology
+                    data={data}
+                    onNodeClick={handleNodeClick}
+                  />
                      ) : (
                        <div className="flex items-center justify-center h-full">
                          <div className="text-center">
@@ -217,7 +201,7 @@ const Topology: React.FC = () => {
               </div>
             </div>
 
-            {isLoading && (
+            {loading && (
               <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
                 <p className="text-black font-bold text-lg">Loading Topology...</p>
               </div>

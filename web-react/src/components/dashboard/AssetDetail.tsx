@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   AlertTriangle, 
-  Shield, 
-  Clock, 
-  CheckCircle, 
   X, 
-  Download, 
   ExternalLink,
-  TrendingUp,
   Activity,
   HardDrive,
   Network,
-  User,
   Tag,
   Calendar,
   Zap
@@ -94,11 +88,61 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, onClose, className =
       setLoading(true);
       
       try {
-        // TODO: Implement actual API call to fetch asset details
-        // For now, show empty/placeholder data until API is implemented
-        const emptyData: AssetDetailData = {
+        // Fetch real agent data from API
+        const response = await fetch(`http://localhost:8080/api/agents/`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch agent data');
+        }
+        
+        const result = await response.json();
+        const agents = result.data || [];
+        
+        // Find the specific agent by ID
+        const agent = agents.find((a: any) => a.id === assetId);
+        
+        if (!agent) {
+          throw new Error('Agent not found');
+        }
+        
+        // Transform API data to AssetDetailData format
+        const assetData: AssetDetailData = {
+          id: agent.id,
+          hostname: agent.hostname || 'Unknown',
+          ip: agent.ip_address || 'Unknown',
+          branch: agent.metadata?.branch || 'Unknown',
+          location: `${agent.city || 'Unknown'}, ${agent.region || 'Unknown'}`,
+          owner: agent.metadata?.owner || 'Unknown',
+          businessCriticality: agent.metadata?.business_criticality || 'medium',
+          tags: agent.metadata?.tags || [],
+          lastSeen: agent.last_seen || new Date().toISOString(),
+          agentStatus: agent.status === 'online' ? 'online' : 'offline',
+          vulnerabilities: agent.metadata?.vulnerabilities || [],
+          complianceScore: agent.metadata?.compliance_score || 0,
+          riskScore: agent.risk_score || 0,
+          suggestedFixes: agent.metadata?.suggested_fixes || 0,
+          metadata: {
+            os: agent.os || 'Unknown',
+            architecture: agent.metadata?.architecture || 'Unknown',
+            kernel: agent.metadata?.kernel_version || 'Unknown',
+            uptime: agent.metadata?.uptime || 'Unknown',
+            memory: `${agent.metadata?.memory_total_gb || 0}GB`,
+            cpu: agent.metadata?.cpu_model || 'Unknown',
+            disk: `${agent.metadata?.storage_total_gb || 0}GB`
+          },
+          scanHistory: agent.metadata?.scan_history || [],
+          networkInfo: {
+            interfaces: agent.metadata?.network_interfaces || [],
+            openPorts: agent.metadata?.open_ports || []
+          }
+        };
+        
+        setAssetData(assetData);
+      } catch (error) {
+        console.error('Failed to fetch asset data:', error);
+        // Set fallback data
+        const fallbackData: AssetDetailData = {
           id: assetId,
-          hostname: 'Loading...',
+          hostname: 'Error loading data',
           ip: '',
           branch: '',
           location: '',
@@ -106,22 +150,21 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, onClose, className =
           businessCriticality: 'medium',
           tags: [],
           lastSeen: new Date().toISOString(),
-          agentStatus: 'unknown',
+          agentStatus: 'offline',
           vulnerabilities: [],
           complianceScore: 0,
           riskScore: 0,
           suggestedFixes: 0,
-          metadata: {},
+          metadata: {
+            os: '', architecture: '', kernel: '', uptime: '', memory: '', cpu: '', disk: ''
+          },
           scanHistory: [],
           networkInfo: {
             interfaces: [],
             openPorts: []
           }
         };
-        
-        setAssetData(emptyData);
-      } catch (error) {
-        console.error('Failed to fetch asset data:', error);
+        setAssetData(fallbackData);
       } finally {
         setLoading(false);
       }

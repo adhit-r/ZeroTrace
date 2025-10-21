@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Server, 
-  Activity, 
   Cpu, 
   HardDrive, 
   Wifi, 
@@ -10,11 +9,9 @@ import {
   Eye,
   Settings,
   RefreshCw,
-  Terminal,
-  AlertTriangle,
-  CheckCircle,
   Clock,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { agentService } from '../services/agentService';
 

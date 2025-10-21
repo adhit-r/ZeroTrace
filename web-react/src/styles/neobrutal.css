@@ -1,0 +1,426 @@
+/* Neobrutal Design System for ZeroTrace */
+
+/* Base Neobrutal Styles */
+.neobrutal-card {
+  border: 4px solid #000;
+  box-shadow: 8px 8px 0px #000;
+  background: #fff;
+  border-radius: 0;
+}
+
+.neobrutal-button {
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  background: #fff;
+  color: #000;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 0;
+  transition: all 0.1s ease;
+}
+
+.neobrutal-button:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #000;
+}
+
+.neobrutal-button:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px #000;
+}
+
+.neobrutal-button.primary {
+  background: #000;
+  color: #fff;
+}
+
+.neobrutal-button.secondary {
+  background: #fff;
+  color: #000;
+  border-color: #000;
+}
+
+.neobrutal-button.danger {
+  background: #ff0000;
+  color: #fff;
+  border-color: #000;
+}
+
+.neobrutal-input {
+  border: 3px solid #000;
+  box-shadow: 2px 2px 0px #000;
+  background: #fff;
+  border-radius: 0;
+  font-weight: 600;
+}
+
+.neobrutal-input:focus {
+  outline: none;
+  box-shadow: 4px 4px 0px #000;
+  transform: translate(-1px, -1px);
+}
+
+.neobrutal-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #000;
+  box-shadow: 2px 2px 0px #000;
+  background: #fff;
+  border-radius: 0;
+  accent-color: #000;
+}
+
+.neobrutal-badge {
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0px #000;
+  background: #fff;
+  color: #000;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 0;
+  font-size: 0.75rem;
+}
+
+.neobrutal-badge.primary {
+  background: #000;
+  color: #fff;
+}
+
+.neobrutal-badge.secondary {
+  background: #fff;
+  color: #000;
+}
+
+/* Neobrutal Typography */
+.neobrutal-title {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #000;
+}
+
+.neobrutal-subtitle {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #000;
+}
+
+.neobrutal-text {
+  font-weight: 600;
+  color: #000;
+}
+
+/* Neobrutal Layout */
+.neobrutal-container {
+  border: 4px solid #000;
+  box-shadow: 8px 8px 0px #000;
+  background: #fff;
+  padding: 2rem;
+}
+
+.neobrutal-section {
+  border: 2px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  background: #fff;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Neobrutal Status Indicators */
+.neobrutal-status {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: 3px solid #000;
+  box-shadow: 3px 3px 0px #000;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 0;
+}
+
+.neobrutal-status.success {
+  background: #00ff00;
+  color: #000;
+}
+
+.neobrutal-status.warning {
+  background: #ffff00;
+  color: #000;
+}
+
+.neobrutal-status.error {
+  background: #ff0000;
+  color: #fff;
+}
+
+.neobrutal-status.info {
+  background: #00ffff;
+  color: #000;
+}
+
+/* Neobrutal Progress Bars */
+.neobrutal-progress {
+  border: 3px solid #000;
+  box-shadow: 2px 2px 0px #000;
+  background: #fff;
+  height: 2rem;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.neobrutal-progress-bar {
+  background: #000;
+  height: 100%;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.neobrutal-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.1) 2px,
+    rgba(255, 255, 255, 0.1) 4px
+  );
+}
+
+/* Neobrutal Tables */
+.neobrutal-table {
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  background: #fff;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.neobrutal-table th {
+  background: #000;
+  color: #fff;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1rem;
+  border-bottom: 3px solid #000;
+}
+
+.neobrutal-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #000;
+  font-weight: 600;
+}
+
+.neobrutal-table tr:nth-child(even) {
+  background: #f8f8f8;
+}
+
+.neobrutal-table tr:hover {
+  background: #e8e8e8;
+}
+
+/* Neobrutal Forms */
+.neobrutal-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.neobrutal-form-label {
+  display: block;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+  color: #000;
+}
+
+.neobrutal-form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 3px solid #000;
+  box-shadow: 2px 2px 0px #000;
+  background: #fff;
+  font-weight: 600;
+  border-radius: 0;
+}
+
+.neobrutal-form-input:focus {
+  outline: none;
+  box-shadow: 4px 4px 0px #000;
+  transform: translate(-1px, -1px);
+}
+
+.neobrutal-form-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 3px solid #000;
+  box-shadow: 2px 2px 0px #000;
+  background: #fff;
+  font-weight: 600;
+  border-radius: 0;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+.neobrutal-form-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 3px solid #000;
+  box-shadow: 2px 2px 0px #000;
+  background: #fff;
+  font-weight: 600;
+  border-radius: 0;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.neobrutal-form-textarea:focus {
+  outline: none;
+  box-shadow: 4px 4px 0px #000;
+  transform: translate(-1px, -1px);
+}
+
+/* Neobrutal Navigation */
+.neobrutal-nav {
+  border-bottom: 4px solid #000;
+  background: #fff;
+  box-shadow: 0 4px 0px #000;
+}
+
+.neobrutal-nav-item {
+  display: inline-block;
+  padding: 1rem 1.5rem;
+  border-right: 2px solid #000;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #000;
+  text-decoration: none;
+  transition: all 0.1s ease;
+}
+
+.neobrutal-nav-item:hover {
+  background: #000;
+  color: #fff;
+}
+
+.neobrutal-nav-item.active {
+  background: #000;
+  color: #fff;
+}
+
+/* Neobrutal Alerts */
+.neobrutal-alert {
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  background: #fff;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0;
+}
+
+.neobrutal-alert.success {
+  background: #00ff00;
+  color: #000;
+}
+
+.neobrutal-alert.warning {
+  background: #ffff00;
+  color: #000;
+}
+
+.neobrutal-alert.error {
+  background: #ff0000;
+  color: #fff;
+}
+
+.neobrutal-alert.info {
+  background: #00ffff;
+  color: #000;
+}
+
+/* Neobrutal Modals */
+.neobrutal-modal {
+  border: 4px solid #000;
+  box-shadow: 8px 8px 0px #000;
+  background: #fff;
+  border-radius: 0;
+}
+
+.neobrutal-modal-header {
+  border-bottom: 3px solid #000;
+  background: #000;
+  color: #fff;
+  padding: 1rem;
+}
+
+.neobrutal-modal-title {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.neobrutal-modal-body {
+  padding: 1.5rem;
+}
+
+.neobrutal-modal-footer {
+  border-top: 3px solid #000;
+  background: #f8f8f8;
+  padding: 1rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+/* Neobrutal Animations */
+@keyframes neobrutal-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.neobrutal-bounce {
+  animation: neobrutal-bounce 0.5s ease-in-out;
+}
+
+@keyframes neobrutal-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.neobrutal-shake {
+  animation: neobrutal-shake 0.3s ease-in-out;
+}
+
+/* Neobrutal Responsive */
+@media (max-width: 768px) {
+  .neobrutal-card {
+    border-width: 2px;
+    box-shadow: 4px 4px 0px #000;
+  }
+  
+  .neobrutal-button {
+    border-width: 2px;
+    box-shadow: 2px 2px 0px #000;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .neobrutal-input {
+    border-width: 2px;
+    box-shadow: 1px 1px 0px #000;
+  }
+}
