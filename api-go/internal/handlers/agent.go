@@ -208,7 +208,7 @@ func RegisterAgent(agentService *services.AgentService) gin.HandlerFunc {
 }
 
 // AgentResults handles scan results from agents
-func AgentResults(agentService *services.AgentService) gin.HandlerFunc {
+func AgentResults(agentService *services.AgentService, enrichmentService *services.EnrichmentService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Printf("[AgentResults] *** REQUEST RECEIVED *** from %s", c.ClientIP())
 
@@ -238,7 +238,31 @@ func AgentResults(agentService *services.AgentService) gin.HandlerFunc {
 
 		log.Printf("[AgentResults] Successfully parsed request for agent %s with %d results", req.AgentID, len(req.Results))
 
-		// Update agent with results directly (AgentScanResult format)
+		// Extract dependencies from scan results for enrichment
+		var allDependencies []models.Dependency
+		for _, result := range req.Results {
+			allDependencies = append(allDependencies, result.Dependencies...)
+		}
+
+		// Enrich dependencies with CVE data
+		if len(allDependencies) > 0 {
+			log.Printf("[AgentResults] Enriching %d dependencies with CVE data", len(allDependencies))
+			enrichedVulns, err := enrichmentService.EnrichDependencies(allDependencies)
+			if err != nil {
+				log.Printf("[AgentResults] Enrichment failed: %v", err)
+				// Continue without enrichment rather than failing
+			} else {
+				log.Printf("[AgentResults] Found %d vulnerabilities from enrichment", len(enrichedVulns))
+				// Store enriched vulnerabilities in metadata
+				if req.Metadata == nil {
+					req.Metadata = make(map[string]interface{})
+				}
+				req.Metadata["enriched_vulnerabilities"] = enrichedVulns
+				req.Metadata["enrichment_timestamp"] = time.Now()
+			}
+		}
+
+		// Update agent with results (including enriched vulnerabilities)
 		err := agentService.UpdateAgentResults(req.AgentID, req.Results, req.Metadata)
 		if err != nil {
 			log.Printf("[AgentResults] Failed to update agent results: %v", err)
@@ -295,6 +319,7 @@ func GetPublicDashboardOverview(agentService *services.AgentService) gin.Handler
 
 		// Calculate dashboard metrics
 		totalAssets := 0
+		totalApplications := 0
 		onlineAgents := 0
 		vulnerableAssets := 0
 		criticalVulns := 0
@@ -310,12 +335,17 @@ func GetPublicDashboardOverview(agentService *services.AgentService) gin.Handler
 				onlineAgents++
 			}
 
-			// Count actual scanned assets from agent metadata
+			// Count actual assets (devices/systems) - each agent represents one asset
+			if agent.Hostname != "" {
+				totalAssets++
+			}
+
+			// Count applications from agent metadata
 			if agent.Metadata != nil {
-				// Count total assets scanned by this agent
-				if totalAssetsFromAgent, ok := agent.Metadata["total_assets"]; ok && totalAssetsFromAgent != nil {
-					if count, ok := totalAssetsFromAgent.(float64); ok {
-						totalAssets += int(count)
+				// Count applications processed by this agent
+				if applicationsProcessed, ok := agent.Metadata["applications_processed"]; ok && applicationsProcessed != nil {
+					if count, ok := applicationsProcessed.(float64); ok {
+						totalApplications += int(count)
 					}
 				}
 
@@ -381,6 +411,9 @@ func GetPublicDashboardOverview(agentService *services.AgentService) gin.Handler
 				"low":        lowVulns,
 				"lastScan":   lastScan.Format(time.RFC3339),
 			},
+			"applications": map[string]interface{}{
+				"total": totalApplications,
+			},
 			"vulnerabilities": map[string]interface{}{
 				"total":    totalVulns,
 				"critical": criticalVulns,
@@ -437,10 +470,10 @@ func UpdateSystemInfo(agentService *services.AgentService) gin.HandlerFunc {
 			return
 		}
 
-		// Update agent metadata with system information
-		err := agentService.UpdateAgentMetadata(req.AgentID, req.Metadata)
+		// Update agent with system information
+		err := agentService.UpdateAgentSystemInfo(req.AgentID, req.SystemInfo)
 		if err != nil {
-			log.Printf("Error updating agent metadata: %v", err)
+			log.Printf("Error updating agent system info: %v", err)
 			c.JSON(http.StatusInternalServerError, models.APIResponse{
 				Success:   false,
 				Message:   "Failed to update system information",

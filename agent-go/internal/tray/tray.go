@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"zerotrace/agent/internal/communicator"
+	"zerotrace/agent/internal/config"
 	"zerotrace/agent/internal/monitor"
 
 	"fyne.io/systray"
@@ -26,7 +27,7 @@ type TrayManager struct {
 }
 
 // NewTrayManager creates a new tray manager
-func NewTrayManager(comm *communicator.Communicator) *TrayManager {
+func NewTrayManager(cfg *config.Config) *TrayManager {
 	return &TrayManager{
 		statusChan:   make(chan string, 1),
 		cpuChan:      make(chan float64, 1),
@@ -34,7 +35,7 @@ func NewTrayManager(comm *communicator.Communicator) *TrayManager {
 		quitChan:     make(chan bool, 1),
 		monitor:      monitor.NewMonitor(),
 		platform:     GetPlatformOperations(),
-		communicator: comm,
+		communicator: communicator.NewCommunicator(cfg),
 		apiConnected: false,
 	}
 }

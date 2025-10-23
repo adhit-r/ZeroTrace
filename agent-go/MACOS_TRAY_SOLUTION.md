@@ -100,3 +100,4 @@ Since the tray icon has issues on macOS, you can:
 4. **Report results** if problems persist
 
 The agent will function completely even without the tray icon on macOS!
+

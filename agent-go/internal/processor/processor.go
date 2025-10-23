@@ -4,21 +4,18 @@ import (
 	"time"
 
 	"zerotrace/agent/internal/config"
-	"zerotrace/agent/internal/enrichment"
 	"zerotrace/agent/internal/models"
 )
 
 // Processor handles scan result processing
 type Processor struct {
-	config           *config.Config
-	enrichmentClient *enrichment.Client
+	config *config.Config
 }
 
 // NewProcessor creates a new processor instance
-func NewProcessor(cfg *config.Config, enrichmentURL string) *Processor {
+func NewProcessor(cfg *config.Config) *Processor {
 	return &Processor{
-		config:           cfg,
-		enrichmentClient: enrichment.NewClient(enrichmentURL),
+		config: cfg,
 	}
 }
 
@@ -27,16 +24,18 @@ func (p *Processor) Process(result *models.ScanResult) (*models.ScanResult, erro
 	// Add processing metadata
 	result.Metadata["processed_at"] = time.Now()
 	result.Metadata["processor_version"] = "1.0.0"
+	result.Metadata["agent_id"] = p.config.AgentID
 
-	// Note: Enrichment moved to API level for better performance
-	// Agent now sends raw dependencies to API, which handles enrichment asynchronously
+	// Agent sends raw dependencies to API
+	// API handles enrichment asynchronously via Python enrichment service
+	// No local enrichment processing needed
 
-	// Process vulnerabilities
+	// Process vulnerabilities (if any from local scanning)
 	for i := range result.Vulnerabilities {
 		p.processVulnerability(&result.Vulnerabilities[i])
 	}
 
-	// Process dependencies
+	// Process dependencies (add metadata only)
 	for i := range result.Dependencies {
 		p.processDependency(&result.Dependencies[i])
 	}

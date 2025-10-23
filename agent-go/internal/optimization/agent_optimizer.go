@@ -75,11 +75,11 @@ func NewAgentOptimizer(logger *zap.Logger) *AgentOptimizer {
 	return &AgentOptimizer{
 		logger: logger,
 
-		// Conservative resource limits
-		maxCPUPercent:     5.0,             // Max 5% CPU usage
-		maxMemoryMB:       50,              // Max 50MB memory
-		scanInterval:      24 * time.Hour,  // Scan once per day
-		heartbeatInterval: 5 * time.Minute, // Heartbeat every 5 minutes
+		// Optimized resource limits for better performance
+		maxCPUPercent:     10.0,            // Increased to 10% for better scanning
+		maxMemoryMB:       100,             // Increased to 100MB for caching
+		scanInterval:      6 * time.Hour,   // Scan every 6 hours for better coverage
+		heartbeatInterval: 2 * time.Minute, // More frequent heartbeats
 
 		// Enable all optimizations
 		adaptiveScanning:     true,

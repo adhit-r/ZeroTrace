@@ -9,7 +9,9 @@ import json
 import logging
 from typing import List, Dict, Optional
 from datetime import datetime
+import time
 import os
+from .ai_matching.cpe_matcher import cpe_matcher
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +26,8 @@ class CVEEnrichmentService:
             'cve_search': 'https://cve.circl.lu/api/search'
         }
         self.local_cve_data = self.load_local_cve_data()
+        self.cache = {}  # In-memory cache for recent searches
+        self.cache_ttl = 3600  # 1 hour cache TTL
         
     def load_local_cve_data(self) -> List[Dict]:
         """Load CVE data from local file"""
@@ -45,27 +49,50 @@ class CVEEnrichmentService:
         """
         Enrich software list with CVE data
         """
+        import time
+        start_time = time.time()
         enriched_results = []
         
         for software in software_list:
+            software_start = time.time()
             try:
                 # Extract software info
                 name = software.get('name', '')
                 version = software.get('version', '')
                 
-                # Search for CVEs
-                cves = await self.search_cves(name, version)
+                # Get CPE identifier for better matching with enhanced version support
+                cpe_start = time.time()
+                cpe_identifier = cpe_matcher.get_cpe_for_software(name, version, software.get('vendor'))
+                cpe_duration = time.time() - cpe_start
                 
-                # Enrich software data
+                # Get detailed CPE matches for confidence scoring
+                cpe_matches = cpe_matcher.match_software_to_cpe(name, version, software.get('vendor'))
+                best_cpe_match = cpe_matches[0] if cpe_matches else None
+                
+                # Search for CVEs
+                cve_search_start = time.time()
+                cves = await self.search_cves(name, version, cpe_identifier)
+                cve_search_duration = time.time() - cve_search_start
+                
+                # Enrich software data with enhanced CPE information
                 enriched_software = {
                     **software,
                     'cves': cves,
                     'vulnerability_count': len(cves),
-                    'enriched_at': datetime.utcnow().isoformat()
+                    'cpe_identifier': cpe_identifier,
+                    'cpe_confidence': best_cpe_match.get('confidence', 'UNKNOWN') if best_cpe_match else 'UNKNOWN',
+                    'cpe_version_match': best_cpe_match.get('version_match', False) if best_cpe_match else False,
+                    'cpe_similarity_score': best_cpe_match.get('similarity_score', 0.0) if best_cpe_match else 0.0,
+                    'enriched_at': datetime.utcnow().isoformat(),
+                    'performance_metrics': {
+                        'cpe_matching_duration_ms': cpe_duration * 1000,
+                        'cve_search_duration_ms': cve_search_duration * 1000,
+                        'software_processing_duration_ms': (time.time() - software_start) * 1000
+                    }
                 }
                 
                 enriched_results.append(enriched_software)
-                logger.info(f"Enriched {name} {version} with {len(cves)} CVEs")
+                logger.info(f"Enriched {name} {version} with {len(cves)} CVEs in {cve_search_duration:.3f}s")
                 
             except Exception as e:
                 logger.error(f"Error enriching {software.get('name', 'unknown')}: {e}")
@@ -74,38 +101,56 @@ class CVEEnrichmentService:
                     'cves': [],
                     'vulnerability_count': 0,
                     'enriched_at': datetime.utcnow().isoformat(),
-                    'error': str(e)
+                    'error': str(e),
+                    'performance_metrics': {
+                        'software_processing_duration_ms': (time.time() - software_start) * 1000
+                    }
                 })
+        
+        total_duration = time.time() - start_time
+        logger.info(f"Enriched {len(software_list)} software items in {total_duration:.3f}s")
         
         return enriched_results
     
-    async def search_cves(self, software_name: str, version: str = None) -> List[Dict]:
+    async def search_cves(self, software_name: str, version: str = None, cpe_identifier: str = None) -> List[Dict]:
         """
-        Search for CVEs related to software
+        Search for CVEs related to software using hybrid approach with caching
         """
+        # Check cache first
+        cache_key = f"{software_name}_{version or 'any'}_{cpe_identifier or 'none'}"
+        if cache_key in self.cache:
+            cached_data = self.cache[cache_key]
+            if time.time() - cached_data['timestamp'] < self.cache_ttl:
+                logger.info(f"Found {len(cached_data['cves'])} CVEs in cache for {software_name}")
+                return cached_data['cves']
+        
         cves = []
+        search_method = "local"
         
         # First, search local CVE database
         local_cves = self.search_local_cve_data(software_name, version)
-        cves.extend(local_cves)
-        
-        # If we found local CVEs, return them (faster and more reliable)
         if local_cves:
             logger.info(f"Found {len(local_cves)} CVEs in local database for {software_name}")
-            return local_cves
-        
-        # Fallback to online sources if no local data
-        logger.info(f"No local CVEs found for {software_name}, searching online sources...")
-        tasks = [
-            self.search_nvd(software_name, version),
-            self.search_cve_search(software_name, version)
-        ]
-        
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        for result in results:
-            if isinstance(result, list):
-                cves.extend(result)
+            cves.extend(local_cves)
+        else:
+            # Fallback to online sources if no local data
+            logger.info(f"No local CVEs found for {software_name}, searching online sources...")
+            search_method = "online"
+            
+            tasks = [
+                self.search_nvd(software_name, version),
+                self.search_cve_search(software_name, version)
+            ]
+            
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            for result in results:
+                if isinstance(result, list):
+                    cves.extend(result)
+            
+            # Cache online results locally for future use
+            if cves:
+                await self._cache_online_results(software_name, version, cves)
         
         # Remove duplicates based on CVE ID
         unique_cves = {}
@@ -114,7 +159,19 @@ class CVEEnrichmentService:
             if cve_id and cve_id not in unique_cves:
                 unique_cves[cve_id] = cve
         
-        return list(unique_cves.values())
+        # Add search metadata
+        final_cves = list(unique_cves.values())
+        for cve in final_cves:
+            cve['search_method'] = search_method
+            cve['searched_at'] = datetime.utcnow().isoformat()
+        
+        # Cache results
+        self.cache[cache_key] = {
+            'cves': final_cves,
+            'timestamp': time.time()
+        }
+        
+        return final_cves
     
     def search_local_cve_data(self, software_name: str, version: str = None) -> List[Dict]:
         """
@@ -344,6 +401,37 @@ class CVEEnrichmentService:
             return 'MEDIUM'
         else:
             return 'LOW'
+    
+    async def _cache_online_results(self, software_name: str, version: str, cves: List[Dict]):
+        """
+        Cache online search results locally for future use
+        """
+        try:
+            cache_file = self.data_dir / 'cve_cache.json'
+            
+            # Load existing cache
+            cache_data = {}
+            if cache_file.exists():
+                with open(cache_file, 'r') as f:
+                    cache_data = json.load(f)
+            
+            # Add new results to cache
+            cache_key = f"{software_name}_{version or 'any'}"
+            cache_data[cache_key] = {
+                'cves': cves,
+                'cached_at': datetime.utcnow().isoformat(),
+                'software_name': software_name,
+                'version': version
+            }
+            
+            # Save updated cache
+            with open(cache_file, 'w') as f:
+                json.dump(cache_data, f, indent=2)
+            
+            logger.info(f"Cached {len(cves)} CVEs for {software_name} {version}")
+            
+        except Exception as e:
+            logger.error(f"Error caching online results: {e}")
 
 # Global instance
 cve_service = CVEEnrichmentService()

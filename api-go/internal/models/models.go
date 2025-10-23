@@ -212,6 +212,7 @@ type AgentStatus struct {
 type AgentHeartbeat struct {
 	AgentID        uuid.UUID      `json:"agent_id"`
 	OrganizationID uuid.UUID      `json:"organization_id"`
+	AgentName      string         `json:"agent_name"`
 	Status         string         `json:"status"`
 	CPUUsage       float64        `json:"cpu_usage"`
 	MemoryUsage    float64        `json:"memory_usage"`
@@ -366,4 +367,62 @@ type HealthCheckResponse struct {
 	Status    string            `json:"status"`
 	Timestamp time.Time         `json:"timestamp"`
 	Services  map[string]string `json:"services"`
+}
+
+// Organization Profile Models
+
+// OrganizationProfile represents an organization's security profile and settings
+type OrganizationProfile struct {
+	ID                   uuid.UUID      `json:"id" db:"id"`
+	OrganizationID       uuid.UUID      `json:"organization_id" db:"organization_id"`
+	Industry             string         `json:"industry" db:"industry"`
+	RiskTolerance        RiskTolerance  `json:"risk_tolerance" db:"risk_tolerance"`
+	TechStack            TechStack      `json:"tech_stack" db:"tech_stack" gorm:"type:jsonb"`
+	ComplianceFrameworks []string       `json:"compliance_frameworks" db:"compliance_frameworks" gorm:"type:jsonb"`
+	SecurityPolicies     map[string]any `json:"security_policies" db:"security_policies" gorm:"type:jsonb"`
+	RiskWeights          map[string]any `json:"risk_weights" db:"risk_weights" gorm:"type:jsonb"`
+	CreatedAt            time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt            time.Time      `json:"updated_at" db:"updated_at"`
+}
+
+// RiskTolerance represents organization's risk tolerance level
+type RiskTolerance string
+
+const (
+	RiskToleranceConservative RiskTolerance = "CONSERVATIVE"
+	RiskToleranceModerate     RiskTolerance = "MODERATE"
+	RiskToleranceAggressive   RiskTolerance = "AGGRESSIVE"
+)
+
+// TechStack represents organization's technology stack
+type TechStack struct {
+	Languages        []string `json:"languages"`
+	Frameworks       []string `json:"frameworks"`
+	Databases        []string `json:"databases"`
+	CloudProviders   []string `json:"cloud_providers"`
+	OperatingSystems []string `json:"operating_systems"`
+	Containers       []string `json:"containers"`
+	DevTools         []string `json:"dev_tools"`
+	SecurityTools    []string `json:"security_tools"`
+}
+
+// CreateOrganizationProfileRequest represents request to create organization profile
+type CreateOrganizationProfileRequest struct {
+	OrganizationID       uuid.UUID      `json:"organization_id" binding:"required"`
+	Industry             string         `json:"industry" binding:"required"`
+	RiskTolerance        RiskTolerance  `json:"risk_tolerance" binding:"required"`
+	TechStack            TechStack      `json:"tech_stack" binding:"required"`
+	ComplianceFrameworks []string       `json:"compliance_frameworks"`
+	SecurityPolicies     map[string]any `json:"security_policies"`
+	RiskWeights          map[string]any `json:"risk_weights"`
+}
+
+// UpdateOrganizationProfileRequest represents request to update organization profile
+type UpdateOrganizationProfileRequest struct {
+	Industry             *string        `json:"industry,omitempty"`
+	RiskTolerance        *RiskTolerance `json:"risk_tolerance,omitempty"`
+	TechStack            *TechStack     `json:"tech_stack,omitempty"`
+	ComplianceFrameworks *[]string      `json:"compliance_frameworks,omitempty"`
+	SecurityPolicies     map[string]any `json:"security_policies,omitempty"`
+	RiskWeights          map[string]any `json:"risk_weights,omitempty"`
 }

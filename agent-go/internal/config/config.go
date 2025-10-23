@@ -26,6 +26,7 @@ type Config struct {
 	EnrollmentToken string `json:"enrollment_token"`
 	AgentCredential string `json:"agent_credential"`
 	OrganizationID  string `json:"organization_id"`
+	AgentName       string `json:"agent_name"`
 
 	// Company-specific Configuration (legacy - will be replaced by enrollment)
 	CompanyID   string `json:"company_id"`
@@ -46,8 +47,16 @@ type Config struct {
 	ScanInterval    time.Duration `json:"scan_interval"`
 	ScanDepth       int           `json:"scan_depth"`
 	MaxFileSize     int64         `json:"max_file_size"`
+	MaxFileSizeMB   int           `json:"max_file_size_mb"`
+	MaxWorkers      int           `json:"max_workers"`
+	ScanTimeout     time.Duration `json:"scan_timeout"`
 	ExcludePatterns []string      `json:"exclude_patterns"`
 	IncludePatterns []string      `json:"include_patterns"`
+
+	// AI/ML Configuration
+	FairnessThreshold    float64 `json:"fairness_threshold"`
+	DataQualityThreshold float64 `json:"data_quality_threshold"`
+	RiskThreshold        float64 `json:"risk_threshold"`
 
 	// Database Configuration
 	DBHost     string `json:"db_host"`
@@ -81,6 +90,7 @@ func Load() *Config {
 		EnrollmentToken: getEnv("ENROLLMENT_TOKEN", ""),
 		AgentCredential: getEnv("AGENT_CREDENTIAL", ""),
 		OrganizationID:  getEnv("ZEROTRACE_ORGANIZATION_ID", ""),
+		AgentName:       getEnv("AGENT_NAME", getHostname()),
 
 		// Company-specific Configuration (legacy)
 		CompanyID:   getEnv("COMPANY_ID", ""),
@@ -101,8 +111,16 @@ func Load() *Config {
 		ScanInterval:    5 * time.Minute,  // Default 5 minutes
 		ScanDepth:       3,                // Default depth 3
 		MaxFileSize:     10 * 1024 * 1024, // 10MB default
+		MaxFileSizeMB:   10,               // 10MB default
+		MaxWorkers:      4,                // Default 4 workers
+		ScanTimeout:     30 * time.Minute, // Default 30 minutes
 		ExcludePatterns: []string{".git", "node_modules", ".DS_Store", "*.log"},
 		IncludePatterns: []string{".go", ".py", ".js", ".ts", ".java", ".php", ".rb", ".rs", ".cpp", ".c", ".cs"},
+
+		// AI/ML Configuration
+		FairnessThreshold:    0.8, // Default 80% fairness threshold
+		DataQualityThreshold: 0.7, // Default 70% data quality threshold
+		RiskThreshold:        0.6, // Default 60% risk threshold
 
 		// Database Configuration
 		DBHost:     getEnv("DB_HOST", "localhost"),

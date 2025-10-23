@@ -66,3 +66,4 @@ func (mtm *MacOSTrayManager) Stop() {
 	default:
 	}
 }
+

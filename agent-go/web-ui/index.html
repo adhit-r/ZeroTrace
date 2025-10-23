@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZeroTrace Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+        
+        .title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+        
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-left: 5px solid #28a745;
+        }
+        
+        .status-card.warning {
+            border-left-color: #ffc107;
+        }
+        
+        .status-card.error {
+            border-left-color: #dc3545;
+        }
+        
+        .status-title {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-value {
+            color: #666;
+            font-size: 1rem;
+        }
+        
+        .progress-section {
+            margin: 2rem 0;
+        }
+        
+        .progress-title {
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .progress-text {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .vulnerability-status {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .vulnerability-status.safe {
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+        
+        .vulnerability-status.warning {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+        }
+        
+        .vulnerability-status.danger {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🛡️</div>
+        <h1 class="title">ZeroTrace Agent</h1>
+        <p class="subtitle">Security Vulnerability Scanner</p>
+        
+        <div class="status-card" id="agentStatus">
+            <div class="status-title">Agent Status</div>
+            <div class="status-value" id="statusValue">Initializing...</div>
+        </div>
+        
+        <div class="progress-section" id="progressSection" style="display: none;">
+            <div class="progress-title">Scanning Progress</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="progress-text" id="progressText">Preparing scan...</div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="appsScanned">0</div>
+                <div class="stat-label">Applications</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="vulnsFound">0</div>
+                <div class="stat-label">Vulnerabilities</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="lastScan">--</div>
+                <div class="stat-label">Last Scan</div>
+            </div>
+        </div>
+        
+        <div class="vulnerability-status" id="vulnerabilityStatus">
+            <div class="status-title">Security Status</div>
+            <div class="status-value" id="securityStatus">Analyzing system...</div>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="startScan()">Start Scan</button>
+            <a href="http://localhost:5173" class="btn btn-secondary" target="_blank">Open Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        let scanInProgress = false;
+        let scanInterval;
+        
+        // Initialize the agent UI
+        function init() {
+            updateStatus('Connected', 'success');
+            loadAgentData();
+            startAutoRefresh();
+        }
+        
+        // Update agent status
+        function updateStatus(message, type = 'info') {
+            const statusCard = document.getElementById('agentStatus');
+            const statusValue = document.getElementById('statusValue');
+            
+            statusValue.textContent = message;
+            statusCard.className = `status-card ${type}`;
+        }
+        
+        // Load agent data from API
+        async function loadAgentData() {
+            try {
+                const response = await fetch('http://localhost:8080/api/agents/');
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    const agent = data.data[0];
+                    updateAgentInfo(agent);
+                }
+            } catch (error) {
+                console.error('Failed to load agent data:', error);
+                updateStatus('Connection Error', 'error');
+            }
+        }
+        
+        // Update agent information
+        function updateAgentInfo(agent) {
+            // Update stats
+            document.getElementById('appsScanned').textContent = agent.metadata?.dependencies?.length || 0;
+            document.getElementById('vulnsFound').textContent = agent.metadata?.total_vulnerabilities || 0;
+            
+            // Update last scan time
+            const lastSeen = new Date(agent.last_seen);
+            document.getElementById('lastScan').textContent = lastSeen.toLocaleTimeString();
+            
+            // Update security status
+            const totalVulns = agent.metadata?.total_vulnerabilities || 0;
+            const criticalVulns = agent.metadata?.critical_vulnerabilities || 0;
+            const highVulns = agent.metadata?.high_vulnerabilities || 0;
+            
+            updateSecurityStatus(totalVulns, criticalVulns, highVulns);
+            
+            // Update agent status
+            if (agent.metadata?.processing_status === 'processing') {
+                updateStatus('Scanning in progress...', 'warning');
+                showProgress();
+            } else if (totalVulns > 0) {
+                updateStatus(`Found ${totalVulns} vulnerabilities`, 'warning');
+            } else {
+                updateStatus('System secure', 'success');
+            }
+        }
+        
+        // Update security status
+        function updateSecurityStatus(total, critical, high) {
+            const statusDiv = document.getElementById('vulnerabilityStatus');
+            const statusText = document.getElementById('securityStatus');
+            
+            if (critical > 0) {
+                statusDiv.className = 'vulnerability-status danger';
+                statusText.textContent = `⚠️ ${critical} critical vulnerabilities found`;
+            } else if (high > 0) {
+                statusDiv.className = 'vulnerability-status warning';
+                statusText.textContent = `⚠️ ${high} high-severity vulnerabilities found`;
+            } else if (total > 0) {
+                statusDiv.className = 'vulnerability-status warning';
+                statusText.textContent = `ℹ️ ${total} vulnerabilities found`;
+            } else {
+                statusDiv.className = 'vulnerability-status safe';
+                statusText.textContent = '✅ No vulnerabilities found - System is secure!';
+            }
+        }
+        
+        // Show progress section
+        function showProgress() {
+            document.getElementById('progressSection').style.display = 'block';
+            updateProgress(0, 'Starting scan...');
+        }
+        
+        // Update progress
+        function updateProgress(percentage, message) {
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+            document.getElementById('progressText').textContent = message;
+        }
+        
+        // Start scan
+        function startScan() {
+            if (scanInProgress) return;
+            
+            scanInProgress = true;
+            updateStatus('Starting scan...', 'warning');
+            showProgress();
+            
+            // Simulate scan progress
+            let progress = 0;
+            scanInterval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(scanInterval);
+                    scanInProgress = false;
+                    updateStatus('Scan completed', 'success');
+                    updateProgress(100, 'Scan completed!');
+                    setTimeout(() => {
+                        document.getElementById('progressSection').style.display = 'none';
+                        loadAgentData();
+                    }, 2000);
+                } else {
+                    updateProgress(progress, `Scanning... ${Math.round(progress)}%`);
+                }
+            }, 500);
+        }
+        
+        // Start auto-refresh
+        function startAutoRefresh() {
+            setInterval(loadAgentData, 5000); // Refresh every 5 seconds
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

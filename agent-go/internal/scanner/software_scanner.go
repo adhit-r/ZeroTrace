@@ -171,8 +171,30 @@ func (s *SoftwareScanner) extractMacOSAppInfo(appPath string) models.InstalledAp
 	// Try to get version from Info.plist
 	infoPlistPath := filepath.Join(appPath, "Contents", "Info.plist")
 	if _, err := os.Stat(infoPlistPath); err == nil {
-		// In a real implementation, we'd parse the plist file
-		// For now, we'll use a simple approach
+		// Extract version using plutil command
+		cmd := exec.Command("plutil", "-p", infoPlistPath)
+		output, err := cmd.Output()
+		if err == nil {
+			// Parse the plist output to find CFBundleShortVersionString
+			lines := strings.Split(string(output), "\n")
+			for _, line := range lines {
+				if strings.Contains(line, "CFBundleShortVersionString") {
+					// Extract version from line like: "CFBundleShortVersionString" => "1.7.52"
+					parts := strings.Split(line, "=>")
+					if len(parts) > 1 {
+						version := strings.TrimSpace(parts[1])
+						version = strings.Trim(version, "\"")
+						version = strings.TrimSpace(version)
+						app.Version = version
+						break
+					}
+				}
+			}
+		}
+		if app.Version == "" {
+			app.Version = "unknown"
+		}
+	} else {
 		app.Version = "unknown"
 	}
 

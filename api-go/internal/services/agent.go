@@ -52,7 +52,7 @@ func (as *AgentService) UpdateAgentHeartbeat(heartbeat models.AgentHeartbeat) er
 		agent = &models.Agent{
 			ID:             heartbeat.AgentID,
 			OrganizationID: heartbeat.OrganizationID,
-			Name:           "Unknown Agent",
+			Name:           heartbeat.AgentName,
 			Status:         "active",
 			LastSeen:       time.Now(),
 			CreatedAt:      time.Now(),
@@ -411,6 +411,8 @@ func (as *AgentService) UpdateAgentSystemInfo(agentID string, systemInfo map[str
 	as.mutex.Lock()
 	defer as.mutex.Unlock()
 
+	log.Printf("[UpdateAgentSystemInfo] Received system info for agent %s: %+v", agentID, systemInfo)
+
 	agentUUID, err := uuid.Parse(agentID)
 	if err != nil {
 		return fmt.Errorf("invalid agent ID format: %w", err)
@@ -418,11 +420,20 @@ func (as *AgentService) UpdateAgentSystemInfo(agentID string, systemInfo map[str
 
 	agent, exists := as.agents[agentUUID]
 	if !exists {
+		log.Printf("[UpdateAgentSystemInfo] Agent not found: %s", agentID)
 		return fmt.Errorf("agent not found: %s", agentID)
 	}
 
+	log.Printf("[UpdateAgentSystemInfo] Found agent, current hostname: %s, new hostname: %v", agent.Hostname, systemInfo["hostname"])
+
 	// Update system information fields
+	if hostname, ok := systemInfo["hostname"].(string); ok {
+		log.Printf("[UpdateAgentSystemInfo] Setting hostname to: %s", hostname)
+		agent.Hostname = hostname
+	}
 	if osName, ok := systemInfo["os_name"].(string); ok {
+		log.Printf("[UpdateAgentSystemInfo] Setting OS to: %s", osName)
+		agent.OS = osName
 		agent.OSName = osName
 	}
 	if osVersion, ok := systemInfo["os_version"].(string); ok {
@@ -437,8 +448,8 @@ func (as *AgentService) UpdateAgentSystemInfo(agentID string, systemInfo map[str
 	if cpuModel, ok := systemInfo["cpu_model"].(string); ok {
 		agent.CPUModel = cpuModel
 	}
-	if cpuCores, ok := systemInfo["cpu_cores"].(int); ok {
-		agent.CPUCores = cpuCores
+	if cpuCores, ok := systemInfo["cpu_cores"].(float64); ok {
+		agent.CPUCores = int(cpuCores)
 	}
 	if memoryTotalGB, ok := systemInfo["memory_total_gb"].(float64); ok {
 		agent.MemoryTotalGB = memoryTotalGB
@@ -483,7 +494,10 @@ func (as *AgentService) UpdateAgentSystemInfo(agentID string, systemInfo map[str
 	agent.LastSeen = time.Now()
 	agent.UpdatedAt = time.Now()
 
-	log.Printf("[UpdateAgentSystemInfo] Updated system info for agent %s", agentID)
+	// Update the agent in the map to ensure changes persist
+	as.agents[agentUUID] = agent
+
+	log.Printf("[UpdateAgentSystemInfo] Updated system info for agent %s - hostname: %s, os: %s, cpu: %s", agentID, agent.Hostname, agent.OS, agent.CPUModel)
 	return nil
 }
 

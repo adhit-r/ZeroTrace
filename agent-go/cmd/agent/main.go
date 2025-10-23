@@ -31,18 +31,18 @@ func main() {
 	// Initialize components
 	softwareScanner := scanner.NewSoftwareScanner(cfg)
 	systemScanner := scanner.NewSystemScanner(cfg) // Create system scanner
-	processor := processor.NewProcessor(cfg, "http://localhost:5000")
+	processor := processor.NewProcessor(cfg)       // No enrichment URL needed
 	communicator := communicator.NewCommunicator(cfg)
 
-	// Initialize tray manager - disable tray on macOS due to library issues
+	// Initialize tray manager - use Go implementation
 	var trayManager interface {
 		Start()
 		Stop()
 	}
 
 	if runtime.GOOS == "darwin" {
-		// Use macOS-specific tray manager (no-op for now)
-		trayManager = tray.NewMacOSTrayManager()
+		// Use Go-based tray for macOS
+		trayManager = tray.NewTrayManager(cfg)
 	} else {
 		// Use standard tray manager for Windows/Linux
 		trayManager = tray.NewSimpleTrayManager()

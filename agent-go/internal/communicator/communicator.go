@@ -178,12 +178,14 @@ func (c *Communicator) GetScanTasks() ([]map[string]any, error) {
 func (c *Communicator) SendHeartbeat(cpuUsage, memoryUsage float64, metadata map[string]any) error {
 	// Prepare heartbeat payload
 	heartbeat := map[string]any{
-		"agent_id":     c.config.AgentID,
-		"status":       "online",
-		"cpu_usage":    cpuUsage,
-		"memory_usage": memoryUsage,
-		"metadata":     metadata,
-		"timestamp":    time.Now(),
+		"agent_id":        c.config.AgentID,
+		"organization_id": c.config.OrganizationID,
+		"agent_name":      c.config.AgentName,
+		"status":          "online",
+		"cpu_usage":       cpuUsage,
+		"memory_usage":    memoryUsage,
+		"metadata":        metadata,
+		"timestamp":       time.Now(),
 	}
 
 	// Marshal to JSON
@@ -401,12 +403,42 @@ func (c *Communicator) SendHeartbeatWithCredential(cpuUsage, memoryUsage float64
 func (c *Communicator) SendSystemInfo(systemInfo *scanner.SystemInfo) error {
 	url := c.config.APIEndpoint + systemInfoEndpoint
 
-	payload, err := json.Marshal(systemInfo)
+	// Convert SystemInfo to the expected API format
+	payload := map[string]interface{}{
+		"agent_id": c.config.AgentID,
+		"system_info": map[string]interface{}{
+			"hostname":         systemInfo.Hostname,
+			"os_name":          systemInfo.OSName,
+			"os_version":       systemInfo.OSVersion,
+			"os_build":         systemInfo.OSBuild,
+			"kernel_version":   systemInfo.KernelVersion,
+			"cpu_model":        systemInfo.CPUModel,
+			"cpu_cores":        systemInfo.CPUCores,
+			"memory_total_gb":  systemInfo.MemoryTotalGB,
+			"storage_total_gb": systemInfo.StorageTotalGB,
+			"gpu_model":        systemInfo.GPUModel,
+			"serial_number":    systemInfo.SerialNumber,
+			"platform":         systemInfo.Platform,
+			"ip_address":       systemInfo.IPAddress,
+			"mac_address":      systemInfo.MACAddress,
+			"city":             systemInfo.City,
+			"region":           systemInfo.Region,
+			"country":          systemInfo.Country,
+			"timezone":         systemInfo.Timezone,
+		},
+		"metadata": map[string]interface{}{
+			"risk_score": systemInfo.RiskScore,
+			"tags":       systemInfo.Tags,
+			"last_seen":  systemInfo.LastSeen,
+		},
+	}
+
+	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal system info: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create system info request: %w", err)
 	}

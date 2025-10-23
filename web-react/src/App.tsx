@@ -22,6 +22,11 @@ const AIAnalytics = React.lazy(() => import('./pages/AIAnalytics'));
 const RiskHeatmaps = React.lazy(() => import('./pages/RiskHeatmaps'));
 const SecurityMaturity = React.lazy(() => import('./pages/SecurityMaturity'));
 const Compliance = React.lazy(() => import('./pages/Compliance'));
+const TechStack = React.lazy(() => import('./pages/TechStack'));
+const ScanProcessing = React.lazy(() => import('./pages/ScanProcessing'));
+const VulnerabilityAnalysis = React.lazy(() => import('./pages/VulnerabilityAnalysis'));
+const ComplianceReports = React.lazy(() => import('./pages/ComplianceReports'));
+const ScannerDetails = React.lazy(() => import('./pages/ScannerDetails'));
 
 // Create a client
 const queryClient = new QueryClient({
@@ -44,8 +49,10 @@ function App() {
               <Route path="/agents" element={<LayoutMinimal><Agents /></LayoutMinimal>} />
               <Route path="/agents/:id" element={<LayoutMinimal><AssetDetail /></LayoutMinimal>} />
               <Route path="/vulnerabilities" element={<LayoutMinimal><Vulnerabilities /></LayoutMinimal>} />
+              <Route path="/vulnerabilities/:id/analysis" element={<LayoutMinimal><VulnerabilityAnalysis /></LayoutMinimal>} />
               <Route path="/security" element={<LayoutMinimal><SecurityDashboard /></LayoutMinimal>} />
               <Route path="/scans" element={<LayoutMinimal><Scans /></LayoutMinimal>} />
+              <Route path="/scan-processing" element={<LayoutMinimal><ScanProcessing /></LayoutMinimal>} />
               <Route path="/topology" element={<LayoutMinimal><Topology /></LayoutMinimal>} />
               <Route path="/settings" element={<LayoutMinimal><Settings /></LayoutMinimal>} />
               <Route path="/profile" element={<LayoutMinimal><Profile /></LayoutMinimal>} />
@@ -54,6 +61,9 @@ function App() {
               <Route path="/risk-heatmaps" element={<LayoutMinimal><RiskHeatmaps /></LayoutMinimal>} />
               <Route path="/security-maturity" element={<LayoutMinimal><SecurityMaturity /></LayoutMinimal>} />
               <Route path="/compliance" element={<LayoutMinimal><Compliance /></LayoutMinimal>} />
+              <Route path="/compliance/reports" element={<LayoutMinimal><ComplianceReports /></LayoutMinimal>} />
+              <Route path="/tech-stack" element={<LayoutMinimal><TechStack /></LayoutMinimal>} />
+              <Route path="/scanner-details" element={<LayoutMinimal><ScannerDetails /></LayoutMinimal>} />
             </Routes>
           </Suspense>
         </div>
