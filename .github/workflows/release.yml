@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Build API
+        working-directory: api-go
+        run: |
+          go mod download
+          GOOS=linux GOARCH=amd64 go build -o zerotrace-api-linux-amd64 cmd/api/main.go
+          GOOS=darwin GOARCH=amd64 go build -o zerotrace-api-darwin-amd64 cmd/api/main.go
+          GOOS=darwin GOARCH=arm64 go build -o zerotrace-api-darwin-arm64 cmd/api/main.go
+          GOOS=windows GOARCH=amd64 go build -o zerotrace-api-windows-amd64.exe cmd/api/main.go
+      
+      - name: Build Agent
+        working-directory: agent-go
+        run: |
+          go mod download
+          GOOS=linux GOARCH=amd64 go build -o zerotrace-agent-linux-amd64 cmd/agent-simple/main.go
+          GOOS=darwin GOARCH=amd64 go build -o zerotrace-agent-darwin-amd64 cmd/agent-simple/main.go
+          GOOS=darwin GOARCH=arm64 go build -o zerotrace-agent-darwin-arm64 cmd/agent-simple/main.go
+          GOOS=windows GOARCH=amd64 go build -o zerotrace-agent-windows-amd64.exe cmd/agent-simple/main.go
+      
+      - name: Create release archive
+        run: |
+          mkdir -p release
+          cp api-go/zerotrace-api-* release/
+          cp agent-go/zerotrace-agent-* release/
+          tar -czf zerotrace-${{ steps.version.outputs.version }}-binaries.tar.gz release/
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## ZeroTrace ${{ steps.version.outputs.version }}
+            
+            See [CHANGELOG.md](CHANGELOG.md) for details.
+            
+            ### Downloads
+            - API binaries (Linux, macOS, Windows)
+            - Agent binaries (Linux, macOS, Windows)
+            - Source code (zip/tar.gz)
+          files: |
+            zerotrace-*.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

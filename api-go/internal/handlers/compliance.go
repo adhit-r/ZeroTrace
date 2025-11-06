@@ -319,3 +319,4 @@ func (h *ComplianceHandler) countValidEvidence(evidenceItems []services.Evidence
 	}
 	return count
 }
+

@@ -226,3 +226,4 @@ func (h *HeatmapHandler) GetHeatmapRecommendations(c *gin.Context) {
 		},
 	})
 }
+

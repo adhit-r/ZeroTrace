@@ -1,9 +1,11 @@
-## 🚀 **Pull Request**
+## Pull Request
 
-### **Description**
+### Description
+
 A clear and concise description of the changes made.
 
-### **Type of Change**
+### Type of Change
+
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
@@ -13,7 +15,8 @@ A clear and concise description of the changes made.
 - [ ] Test updates
 - [ ] CI/CD changes
 
-### **Component**
+### Component
+
 - [ ] Go API
 - [ ] Python Enrichment
 - [ ] Agent
@@ -23,22 +26,26 @@ A clear and concise description of the changes made.
 - [ ] Documentation
 - [ ] Tests
 
-### **Issue Link**
+### Issue Link
+
 Closes #[issue number]
 
-### **Changes Made**
+### Changes Made
+
 - [ ] Change 1
 - [ ] Change 2
 - [ ] Change 3
 
-### **Testing**
+### Testing
+
 - [ ] Unit tests pass
 - [ ] Integration tests pass
 - [ ] Performance tests pass
 - [ ] Manual testing completed
 - [ ] Cross-platform testing (if applicable)
 
-### **Performance Impact**
+### Performance Impact
+
 - [ ] No performance impact
 - [ ] Performance improvement
 - [ ] Performance regression (explain below)
@@ -48,7 +55,8 @@ Closes #[issue number]
 - Memory usage: [before/after]
 - CPU usage: [before/after]
 
-### **Security Considerations**
+### Security Considerations
+
 - [ ] No security implications
 - [ ] Security improvement
 - [ ] Security concern (explain below)
@@ -56,14 +64,16 @@ Closes #[issue number]
 **Security Details**:
 [Explain any security implications]
 
-### **Breaking Changes**
+### Breaking Changes
+
 - [ ] No breaking changes
 - [ ] Breaking changes (explain below)
 
 **Breaking Changes Details**:
 [Explain any breaking changes and migration steps]
 
-### **Documentation**
+### Documentation
+
 - [ ] No documentation changes needed
 - [ ] Documentation updated
 - [ ] Documentation needs to be updated (explain below)
@@ -71,10 +81,12 @@ Closes #[issue number]
 **Documentation Details**:
 [Explain what documentation needs to be updated]
 
-### **Screenshots** (if applicable)
+### Screenshots (if applicable)
+
 [Add screenshots for UI changes]
 
-### **Checklist**
+### Checklist
+
 - [ ] Code follows project style guidelines
 - [ ] Self-review completed
 - [ ] Code is commented where necessary
@@ -83,11 +95,3 @@ Closes #[issue number]
 - [ ] All tests pass
 - [ ] No new warnings
 - [ ] Performance impact assessed
-- [ ] Security implications considered
-
-### **Additional Notes**
-[Any additional information that reviewers should know]
-
----
-
-**Pull Request Template Version**: 1.0

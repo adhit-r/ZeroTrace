@@ -741,3 +741,4 @@ class ContinuousComplianceMonitor:
 
 # Global continuous compliance monitor instance
 continuous_compliance_monitor = ContinuousComplianceMonitor()
+

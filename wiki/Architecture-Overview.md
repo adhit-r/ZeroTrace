@@ -2,7 +2,7 @@
 
 ZeroTrace is a comprehensive vulnerability detection and management platform designed for enterprise-scale deployment. This document provides a detailed overview of the system architecture.
 
-## 🏗️ **System Architecture**
+## System Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -39,9 +39,10 @@ ZeroTrace is a comprehensive vulnerability detection and management platform des
                     └───────────────────────────┘
 ```
 
-## 🔧 **Core Components**
+## Core Components
 
-### **1. ZeroTrace Agent**
+### 1. ZeroTrace Agent
+
 - **Language**: Go
 - **Purpose**: System scanning and data collection
 - **Deployment**: Universal binary for all organizations
@@ -53,7 +54,8 @@ ZeroTrace is a comprehensive vulnerability detection and management platform des
   - Heartbeat mechanism
   - Enrollment token support
 
-### **2. Go API Gateway**
+### 2. Go API Gateway
+
 - **Language**: Go (Gin framework)
 - **Purpose**: Primary API server and request handling
 - **Features**:
@@ -64,7 +66,8 @@ ZeroTrace is a comprehensive vulnerability detection and management platform des
   - Multi-level caching
   - Connection pooling
 
-### **3. Queue Processor**
+### 3. Queue Processor
+
 - **Language**: Go
 - **Purpose**: Batch processing and data management
 - **Features**:
@@ -74,7 +77,8 @@ ZeroTrace is a comprehensive vulnerability detection and management platform des
   - Metrics collection
   - Automatic cleanup
 
-### **4. Python Enrichment Service**
+### 4. Python Enrichment Service
+
 - **Language**: Python (FastAPI)
 - **Purpose**: CVE data enrichment and processing
 - **Features**:
@@ -84,7 +88,8 @@ ZeroTrace is a comprehensive vulnerability detection and management platform des
   - Circuit breakers and retry logic
   - Background tasks and monitoring
 
-### **5. PostgreSQL Database**
+### 5. PostgreSQL Database
+
 - **Purpose**: Primary data storage
 - **Features**:
   - Partitioning by company_id
@@ -93,7 +98,8 @@ ZeroTrace is a comprehensive vulnerability detection and management platform des
   - Automated cleanup
   - JSONB support for metadata
 
-### **6. React Web Dashboard**
+### 6. React Web Dashboard
+
 - **Language**: TypeScript/React
 - **Purpose**: User interface and data visualization
 - **Features**:
@@ -103,9 +109,10 @@ ZeroTrace is a comprehensive vulnerability detection and management platform des
   - Data querying with React Query
   - Enterprise-grade UI components
 
-## 🔄 **Data Flow**
+## Data Flow
 
-### **1. Agent Enrollment**
+### 1. Agent Enrollment
+
 ```
 Agent → Enrollment Token → Go API → Database
   ↓
@@ -114,7 +121,8 @@ Device Credential Issued
 Agent registers with credential
 ```
 
-### **2. Data Collection**
+### 2. Data Collection
+
 ```
 Agent → System Scan → App Data → Go API
   ↓
@@ -125,7 +133,8 @@ Python Enrichment → CVE Data
 Database Storage
 ```
 
-### **3. Data Retrieval**
+### 3. Data Retrieval
+
 ```
 React Dashboard → Go API → Database
   ↓
@@ -134,15 +143,17 @@ Real-time Updates via WebSocket
 UI Rendering with Terminal Theme
 ```
 
-## 🏢 **Multi-Organization Architecture**
+## Multi-Organization Architecture
 
-### **Universal Agent Design**
+### Universal Agent Design
+
 - Single binary for all organizations
 - Enrollment token for organization identification
 - Device credentials for long-term authentication
 - Backend enforcement of organization isolation
 
-### **Database Partitioning**
+### Database Partitioning
+
 ```sql
 -- Partitioned tables by company_id
 CREATE TABLE agents (
@@ -156,15 +167,17 @@ CREATE TABLE agents_company_1 PARTITION OF agents
 FOR VALUES WITH (modulus 10, remainder 0);
 ```
 
-### **API Scoping**
+### API Scoping
+
 - All API requests scoped by organization
 - Middleware enforces organization isolation
 - Rate limiting per organization
 - Caching with organization prefixes
 
-## 🚀 **Performance Optimizations**
+## Performance Optimizations
 
-### **Go API (100x Performance)**
+### Go API (100x Performance)
+
 - Connection pooling (database, Redis)
 - Multi-level caching (Memory, Redis, Memcached)
 - Query optimization with prepared statements
@@ -172,7 +185,8 @@ FOR VALUES WITH (modulus 10, remainder 0);
 - Batch processing capabilities
 - Memory optimization with GC tuning
 
-### **Python Enrichment (10,000x Performance)**
+### Python Enrichment (10,000x Performance)
+
 - `uvloop` for async I/O optimization
 - `orjson` for fast JSON processing
 - Connection pooling (10,000+ connections)
@@ -180,7 +194,8 @@ FOR VALUES WITH (modulus 10, remainder 0);
 - Load balancing across multiple endpoints
 - Memory monitoring and optimization
 
-### **Agent (Minimal CPU Usage)**
+### Agent (Minimal CPU Usage)
+
 - Adaptive scanning based on system load
 - Resource throttling
 - Background processing
@@ -188,9 +203,10 @@ FOR VALUES WITH (modulus 10, remainder 0);
 - Memory limits and GC tuning
 - Process priority adjustment
 
-## 📊 **Monitoring & Observability**
+## Monitoring & Observability
 
-### **Application Performance Monitoring (APM)**
+### Application Performance Monitoring (APM)
+
 - Prometheus metrics collection
 - Custom business metrics
 - System resource monitoring
@@ -198,46 +214,52 @@ FOR VALUES WITH (modulus 10, remainder 0);
 - Queue processing metrics
 - Cache hit/miss ratios
 
-### **Logging Strategy**
+### Logging Strategy
+
 - Structured logging with Zap (Go)
 - Structured logging with structlog (Python)
 - Centralized logging with ELK stack
 - Log correlation across services
 - Error tracking and alerting
 
-### **Health Checks**
+### Health Checks
+
 - Service health endpoints
 - Database connectivity checks
 - External service dependencies
 - Queue health monitoring
 - Cache health verification
 
-## 🔒 **Security Architecture**
+## Security Architecture
 
-### **Authentication & Authorization**
+### Authentication & Authorization
+
 - JWT-based authentication
 - Organization-scoped access control
 - Role-based permissions
 - Token expiration and rotation
 - Secure credential storage
 
-### **Data Protection**
+### Data Protection
+
 - Organization isolation at database level
 - Encrypted communication (HTTPS/WSS)
 - Secure credential transmission
 - Audit logging for all operations
 - Data retention policies
 
-### **Network Security**
+### Network Security
+
 - Rate limiting per organization
 - Input validation and sanitization
 - SQL injection prevention
 - XSS protection
 - CORS configuration
 
-## 🏗️ **Deployment Architecture**
+## Deployment Architecture
 
-### **Development Environment**
+### Development Environment
+
 ```
 Local Development:
 ├── Docker Compose (PostgreSQL, Redis)
@@ -247,7 +269,8 @@ Local Development:
 └── Agent (local binary)
 ```
 
-### **Production Environment**
+### Production Environment
+
 ```
 Production Deployment:
 ├── Load Balancer (Nginx)
@@ -259,7 +282,8 @@ Production Deployment:
 └── Logging Stack (ELK)
 ```
 
-### **MDM Deployment**
+### MDM Deployment
+
 ```
 Enterprise MDM:
 ├── Microsoft Intune
@@ -269,32 +293,36 @@ Enterprise MDM:
 └── Custom deployment scripts
 ```
 
-## 📈 **Scalability Features**
+## Scalability Features
 
-### **Horizontal Scaling**
+### Horizontal Scaling
+
 - Stateless API services
 - Multiple enrichment workers
 - Database read replicas
 - Redis clustering
 - Load balancer distribution
 
-### **Vertical Scaling**
+### Vertical Scaling
+
 - Resource optimization
 - Memory management
 - CPU utilization
 - I/O optimization
 - Cache efficiency
 
-### **Data Scaling**
+### Data Scaling
+
 - Database partitioning
 - Automated cleanup
 - Archive strategies
 - Index optimization
 - Query optimization
 
-## 🔧 **Configuration Management**
+## Configuration Management
 
-### **Environment Variables**
+### Environment Variables
+
 ```bash
 # API Configuration
 API_PORT=8080
@@ -319,16 +347,18 @@ ENRICHMENT_CACHE_TTL=3600
 ENRICHMENT_RATE_LIMIT=1000
 ```
 
-### **Feature Flags**
+### Feature Flags
+
 - A/B testing capabilities
 - Gradual feature rollouts
 - Environment-specific features
 - Performance monitoring toggles
 - Debug mode controls
 
-## 🚀 **Future Architecture**
+## Future Architecture
 
-### **Planned Enhancements**
+### Planned Enhancements
+
 - Microservices architecture
 - Event-driven architecture
 - GraphQL API
@@ -336,7 +366,8 @@ ENRICHMENT_RATE_LIMIT=1000
 - Advanced analytics
 - Machine learning integration
 
-### **Technology Evolution**
+### Technology Evolution
+
 - Kubernetes deployment
 - Service mesh (Istio)
 - Event streaming (Kafka)
@@ -346,5 +377,5 @@ ENRICHMENT_RATE_LIMIT=1000
 ---
 
 **Architecture Version**: 2.0.0  
-**Last Updated**: January 2024  
-**Next Review**: March 2024
+**Last Updated**: January 2025  
+**Next Review**: March 2025

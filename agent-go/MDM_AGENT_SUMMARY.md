@@ -1,8 +1,8 @@
 # ZeroTrace Agent - MDM Deployment Summary
 
-## 🧹 **Workspace Cleanup Completed**
+## Workspace Cleanup Completed
 
-### **✅ Removed Files**
+### Removed Files
 - `demo-terminal-ui.go` - Terminal UI demo
 - `internal/ui/terminal_ui.go` - Terminal UI implementation
 - `test-terminal-ui.sh` - Terminal UI test script
@@ -14,7 +14,7 @@
 - `agent` - Old agent binary
 - `zerotrace-agent` - Old agent binary
 
-### **✅ Cleaned Structure**
+### Cleaned Structure
 ```
 agent-go/
 ├── cmd/
@@ -34,23 +34,23 @@ agent-go/
 └── pkg/                # Shared packages
 ```
 
-## 🎯 **MDM-Ready Agent Features**
+## MDM-Ready Agent Features
 
-### **✅ Simple Agent (MDM Mode)**
+### Simple Agent (MDM Mode)
 - **No UI**: Silent operation for MDM deployment
 - **Data Collection**: Software scanning and vulnerability detection
 - **API Communication**: Heartbeat and results submission
 - **Enrollment System**: Universal agent with org isolation
 - **System Service**: Background operation via LaunchDaemon
 
-### **✅ Agent Capabilities**
+### Agent Capabilities
 - **Software Discovery**: Scans installed applications
 - **Vulnerability Detection**: CVE checking via Python enrichment
 - **System Monitoring**: CPU/Memory usage tracking
 - **API Integration**: Real-time data submission
 - **Organization Isolation**: Multi-tenant support
 
-## 📦 **MDM Deployment Packages**
+## MDM Deployment Packages
 
 ### **Generated Files**
 ```
@@ -66,7 +66,7 @@ mdm/dist/
 - **Post-install Scripts**: Automatic setup and cleanup
 - **Configuration**: MDM-managed settings
 
-## 🏢 **Supported MDM Platforms**
+## Supported MDM Platforms
 
 ### **Microsoft Intune**
 - Upload `.pkg` file as macOS app
@@ -90,7 +90,7 @@ mdm/dist/
 - Configuration management
 - Device targeting
 
-## 🔧 **Configuration**
+## Configuration
 
 ### **Required Environment Variables**
 ```bash
@@ -110,7 +110,7 @@ ZEROTRACE_LOG_LEVEL=info
 - **Organization ID**: Multi-tenant isolation
 - **Scan Settings**: Customizable intervals
 
-## 🚀 **Deployment Process**
+## Deployment Process
 
 ### **1. Build Packages**
 ```bash
@@ -140,28 +140,28 @@ sudo log show --predicate 'process == "zerotrace-agent"' --last 1h
 sudo defaults read /Library/Preferences/com.zerotrace.agent
 ```
 
-## 🎯 **Key Benefits**
+## Key Benefits
 
-### **Enterprise Ready**
-- ✅ **Silent Installation**: No user interaction required
-- ✅ **Automatic Enrollment**: Token-based setup
-- ✅ **System Service**: Background operation
-- ✅ **MDM Integration**: Standard deployment
-- ✅ **Organization Isolation**: Multi-tenant support
+### Enterprise Ready
+- **Silent Installation**: No user interaction required
+- **Automatic Enrollment**: Token-based setup
+- **System Service**: Background operation
+- **MDM Integration**: Standard deployment
+- **Organization Isolation**: Multi-tenant support
 
-### **Minimal Footprint**
-- ✅ **No UI**: Data collection only
-- ✅ **Resource Efficient**: Low CPU/memory usage
-- ✅ **Silent Operation**: No user notifications
-- ✅ **Background Service**: LaunchDaemon integration
+### Minimal Footprint
+- **No UI**: Data collection only
+- **Resource Efficient**: Low CPU/memory usage
+- **Silent Operation**: No user notifications
+- **Background Service**: LaunchDaemon integration
 
-### **Universal Agent**
-- ✅ **Single Binary**: Works for all organizations
-- ✅ **Enrollment Tokens**: Secure org identification
-- ✅ **Credential Management**: Long-lived device credentials
-- ✅ **Revocation Support**: Secure credential management
+### Universal Agent
+- **Single Binary**: Works for all organizations
+- **Enrollment Tokens**: Secure org identification
+- **Credential Management**: Long-lived device credentials
+- **Revocation Support**: Secure credential management
 
-## 📞 **Next Steps**
+## Next Steps
 
 1. **Generate Enrollment Tokens**: Create tokens for each organization
 2. **Upload to MDM**: Deploy packages to your MDM platform
@@ -169,10 +169,10 @@ sudo defaults read /Library/Preferences/com.zerotrace.agent
 4. **Deploy to Devices**: Install on target devices
 5. **Monitor Status**: Track installation and operation
 
-## 📋 **Support**
+## Support
 
 - **Documentation**: `mdm/README.md`
 - **Deployment Guide**: `mdm/dist/DEPLOYMENT_GUIDE.md`
 - **Configuration**: `mdm/dist/zerotrace-agent.mobileconfig`
 
-The agent is now **MDM-ready** with a clean workspace and simplified interface focused on data collection! 🎉
+The agent is now MDM-ready with a clean workspace and simplified interface focused on data collection.

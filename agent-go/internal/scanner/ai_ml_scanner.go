@@ -88,7 +88,7 @@ type ModelInfo struct {
 	Endpoints       []string               `json:"endpoints"`
 	InputSchema     map[string]interface{} `json:"input_schema,omitempty"`
 	OutputSchema    map[string]interface{} `json:"output_schema,omitempty"`
-	Vulnerabilities []Vulnerability        `json:"vulnerabilities"`
+	Vulnerabilities []AIMLVulnerability    `json:"vulnerabilities"`
 	BiasMetrics     map[string]float64     `json:"bias_metrics,omitempty"`
 	FairnessScore   float64                `json:"fairness_score,omitempty"`
 	PrivacyScore    float64                `json:"privacy_score,omitempty"`
@@ -96,7 +96,7 @@ type ModelInfo struct {
 }
 
 // Vulnerability represents a specific vulnerability
-type Vulnerability struct {
+type AIMLVulnerability struct {
 	ID          string    `json:"id"`
 	Severity    string    `json:"severity"`
 	Description string    `json:"description"`
@@ -125,16 +125,16 @@ type TrainingDataInfo struct {
 
 // SupplyChainInfo represents AI/ML supply chain information
 type SupplyChainInfo struct {
-	ModelName        string             `json:"model_name"`
-	Dependencies     []Dependency       `json:"dependencies"`
-	PreTrainedModels []string           `json:"pre_trained_models"`
-	DataSources      []string           `json:"data_sources"`
-	Libraries        []LibraryInfo      `json:"libraries"`
-	Vulnerabilities  []Vulnerability    `json:"vulnerabilities"`
-	Licenses         map[string]string  `json:"licenses"`
-	Compliance       []ComplianceStatus `json:"compliance"`
-	RiskScore        float64            `json:"risk_score"`
-	LastScanned      time.Time          `json:"last_scanned"`
+	ModelName        string              `json:"model_name"`
+	Dependencies     []Dependency        `json:"dependencies"`
+	PreTrainedModels []string            `json:"pre_trained_models"`
+	DataSources      []string            `json:"data_sources"`
+	Libraries        []LibraryInfo       `json:"libraries"`
+	Vulnerabilities  []AIMLVulnerability `json:"vulnerabilities"`
+	Licenses         map[string]string   `json:"licenses"`
+	Compliance       []ComplianceStatus  `json:"compliance"`
+	RiskScore        float64             `json:"risk_score"`
+	LastScanned      time.Time           `json:"last_scanned"`
 }
 
 // Dependency represents a dependency
@@ -146,10 +146,10 @@ type Dependency struct {
 
 // LibraryInfo represents library information
 type LibraryInfo struct {
-	Name            string          `json:"name"`
-	Version         string          `json:"version"`
-	Vulnerabilities []Vulnerability `json:"vulnerabilities"`
-	License         string          `json:"license"`
+	Name            string              `json:"name"`
+	Version         string              `json:"version"`
+	Vulnerabilities []AIMLVulnerability `json:"vulnerabilities"`
+	License         string              `json:"license"`
 }
 
 // ComplianceStatus represents compliance status
@@ -645,8 +645,8 @@ func (as *AIMLScanner) analyzeModelContent(model *ModelInfo) {
 }
 
 // checkKnownVulnerabilities checks for known vulnerabilities
-func (as *AIMLScanner) checkKnownVulnerabilities(framework, modelName string) []Vulnerability {
-	var vulns []Vulnerability
+func (as *AIMLScanner) checkKnownVulnerabilities(framework, modelName string) []AIMLVulnerability {
+	var vulns []AIMLVulnerability
 
 	// In production, this would query a vulnerability database
 	// For now, check for known patterns
@@ -655,7 +655,7 @@ func (as *AIMLScanner) checkKnownVulnerabilities(framework, modelName string) []
 
 	// Example: Check for pickle-based models (deserialization risk)
 	if strings.HasSuffix(name, ".pkl") || strings.HasSuffix(name, ".pickle") {
-		vulns = append(vulns, Vulnerability{
+		vulns = append(vulns, AIMLVulnerability{
 			ID:          uuid.New().String(),
 			Severity:    "high",
 			Description: "Pickle-based model files can execute arbitrary code during deserialization",
@@ -1202,7 +1202,7 @@ func (as *AIMLScanner) analyzeSupplyChain(models []ModelInfo, datasets []Trainin
 		PreTrainedModels: make([]string, 0),
 		DataSources:      make([]string, 0),
 		Libraries:        make([]LibraryInfo, 0),
-		Vulnerabilities:  make([]Vulnerability, 0),
+		Vulnerabilities:  make([]AIMLVulnerability, 0),
 		Licenses:         make(map[string]string),
 		Compliance:       make([]ComplianceStatus, 0),
 		LastScanned:      time.Now(),
@@ -1217,7 +1217,7 @@ func (as *AIMLScanner) analyzeSupplyChain(models []ModelInfo, datasets []Trainin
 			lib := LibraryInfo{
 				Name:            model.Framework,
 				Version:         "unknown",
-				Vulnerabilities: []Vulnerability{},
+				Vulnerabilities: []AIMLVulnerability{},
 				License:         "Apache-2.0", // Default for most ML frameworks
 			}
 

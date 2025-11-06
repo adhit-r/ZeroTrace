@@ -732,3 +732,4 @@ class SecurityDNAAnalyzer:
 
 # Global security DNA analyzer instance
 security_dna_analyzer = SecurityDNAAnalyzer()
+

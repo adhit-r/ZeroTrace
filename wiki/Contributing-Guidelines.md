@@ -2,9 +2,9 @@
 
 Thank you for your interest in contributing to ZeroTrace! This document provides guidelines for contributing to the project.
 
-## 🤝 **How to Contribute**
+## How to Contribute
 
-### **1. Fork and Clone**
+### 1. Fork and Clone
 ```bash
 # Fork the repository on GitHub
 # Then clone your fork
@@ -12,10 +12,10 @@ git clone https://github.com/YOUR_USERNAME/ZeroTrace.git
 cd ZeroTrace
 
 # Add upstream remote
-git remote add upstream https://github.com/radhi1991/ZeroTrace.git
+git remote add upstream https://github.com/adhit-r/ZeroTrace.git
 ```
 
-### **2. Create a Branch**
+### 2. Create a Branch
 ```bash
 # Create a feature branch
 git checkout -b feature/your-feature-name
@@ -24,13 +24,13 @@ git checkout -b feature/your-feature-name
 git checkout -b fix/your-bug-fix-name
 ```
 
-### **3. Make Changes**
+### 3. Make Changes
 - Follow the coding standards
 - Write tests for new features
 - Update documentation
 - Ensure all tests pass
 
-### **4. Commit Changes**
+### 4. Commit Changes
 ```bash
 # Add your changes
 git add .
@@ -42,45 +42,45 @@ git commit -m "feat: Add new feature description"
 git push origin feature/your-feature-name
 ```
 
-### **5. Create a Pull Request**
+### 5. Create a Pull Request
 - Use the [Pull Request Template](.github/pull_request_template.md)
 - Link to relevant issues
 - Provide clear description of changes
 - Include tests and documentation updates
 
-## 📋 **Issue Reporting**
+## Issue Reporting
 
-### **Before Creating an Issue**
+### Before Creating an Issue
 1. Check existing issues and discussions
 2. Search the documentation
 3. Try to reproduce the issue
 4. Gather relevant information
 
-### **Issue Templates**
+### Issue Templates
 - [Bug Report](.github/ISSUE_TEMPLATE/bug_report.md)
 - [Feature Request](.github/ISSUE_TEMPLATE/feature_request.md)
 - [Performance Issue](.github/ISSUE_TEMPLATE/performance_issue.md)
 
-### **Issue Guidelines**
+### Issue Guidelines
 - Use clear, descriptive titles
 - Provide detailed descriptions
 - Include steps to reproduce
 - Add relevant logs and screenshots
 - Specify environment details
 
-## 🏗️ **Development Setup**
+## Development Setup
 
-### **Prerequisites**
+### Prerequisites
 - Go 1.21+
 - Python 3.9+
 - Node.js 18+
 - Docker & Docker Compose
 - Git
 
-### **Local Development**
+### Local Development
 ```bash
 # Clone repository
-git clone https://github.com/radhi1991/ZeroTrace.git
+git clone https://github.com/adhit-r/ZeroTrace.git
 cd ZeroTrace
 
 # Set up environment
@@ -98,7 +98,7 @@ cd ../web-react && npm run dev
 cd ../agent-go && go run cmd/agent/main.go
 ```
 
-### **Testing**
+### Testing
 ```bash
 # Run all tests
 go test ./...
@@ -111,9 +111,9 @@ python -m pytest enrichment-python/tests/test_enrichment.py -v
 npm test -- --testNamePattern="API"
 ```
 
-## 📝 **Coding Standards**
+## Coding Standards
 
-### **Go (Backend & Agent)**
+### Go (Backend & Agent)
 - Use `gofmt` for formatting
 - Follow [Effective Go](https://golang.org/doc/effective_go.html)
 - Write tests for all new code
@@ -136,7 +136,7 @@ func (s *Service) ProcessData(data []byte) (*Result, error) {
 }
 ```
 
-### **Python (Enrichment Service)**
+### Python (Enrichment Service)
 - Use Black for formatting
 - Follow PEP 8 style guide
 - Write type hints
@@ -169,7 +169,7 @@ async def enrich_app_data(app_data: dict) -> Optional[EnrichmentResult]:
     )
 ```
 
-### **TypeScript/React (Frontend)**
+### TypeScript/React (Frontend)
 - Use ESLint and Prettier
 - Follow React best practices
 - Use TypeScript for type safety
@@ -205,15 +205,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ organizationId }) => {
 };
 ```
 
-## 🧪 **Testing Guidelines**
+## Testing Guidelines
 
-### **Test Coverage**
+### Test Coverage
 - Aim for 80%+ test coverage
 - Write unit tests for all functions
 - Write integration tests for APIs
 - Write end-to-end tests for critical flows
 
-### **Test Structure**
+### Test Structure
 ```bash
 # Go tests
 api-go/
@@ -240,7 +240,7 @@ web-react/
 │       └── __tests__/
 ```
 
-### **Running Tests**
+### Running Tests
 ```bash
 # Go tests
 go test ./... -v -cover
@@ -252,36 +252,36 @@ pytest enrichment-python/tests/ -v --cov=app
 npm test -- --coverage
 ```
 
-## 📚 **Documentation**
+## Documentation
 
-### **Code Documentation**
+### Code Documentation
 - Add comments for complex logic
 - Write clear function documentation
 - Update README files
 - Add inline examples
 
-### **API Documentation**
+### API Documentation
 - Document all API endpoints
 - Include request/response examples
 - Add error codes and messages
 - Keep OpenAPI specs updated
 
-### **User Documentation**
+### User Documentation
 - Update installation guides
 - Add troubleshooting sections
 - Include configuration examples
 - Maintain wiki pages
 
-## 🔄 **Pull Request Process**
+## Pull Request Process
 
-### **Before Submitting**
+### Before Submitting
 1. Ensure all tests pass
 2. Update documentation
 3. Follow coding standards
 4. Add necessary tests
 5. Self-review your changes
 
-### **Pull Request Checklist**
+### Pull Request Checklist
 - [ ] Code follows style guidelines
 - [ ] Tests are added/updated
 - [ ] Documentation is updated
@@ -289,14 +289,14 @@ npm test -- --coverage
 - [ ] Performance impact assessed
 - [ ] Security implications considered
 
-### **Review Process**
+### Review Process
 1. Automated checks must pass
 2. Code review by maintainers
 3. Address feedback and comments
 4. Maintainer approval required
 5. Merge to main branch
 
-## 🏷️ **Commit Message Format**
+## Commit Message Format
 
 Use conventional commit format:
 ```
@@ -307,7 +307,7 @@ type(scope): description
 [optional footer]
 ```
 
-### **Types**
+### Types
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -316,7 +316,7 @@ type(scope): description
 - `test`: Test changes
 - `chore`: Build/tool changes
 
-### **Examples**
+### Examples
 ```bash
 feat(api): Add user authentication endpoint
 fix(agent): Resolve memory leak in scanner
@@ -324,39 +324,39 @@ docs(readme): Update installation instructions
 test(enrichment): Add CVE enrichment tests
 ```
 
-## 🎯 **Areas for Contribution**
+## Areas for Contribution
 
-### **High Priority**
+### High Priority
 - Performance optimizations
 - Security improvements
 - Bug fixes
 - Documentation updates
 
-### **Medium Priority**
+### Medium Priority
 - New features
 - UI/UX improvements
 - Test coverage
 - Monitoring enhancements
 
-### **Low Priority**
+### Low Priority
 - Code refactoring
 - Style improvements
 - Minor optimizations
 
-## 📞 **Getting Help**
+## Getting Help
 
-### **Resources**
-- [GitHub Discussions](https://github.com/radhi1991/ZeroTrace/discussions)
-- [Issue Tracker](https://github.com/radhi1991/ZeroTrace/issues)
-- [Wiki](https://github.com/radhi1991/ZeroTrace/wiki)
+### Resources
+- [GitHub Discussions](https://github.com/adhit-r/ZeroTrace/discussions)
+- [Issue Tracker](https://github.com/adhit-r/ZeroTrace/issues)
+- [Wiki](https://github.com/adhit-r/ZeroTrace/wiki)
 - [Documentation](docs/)
 
-### **Contact**
+### Contact
 - Create a discussion for questions
 - Use issues for bugs and features
 - Join community conversations
 
-## 🙏 **Recognition**
+## Recognition
 
 Contributors will be recognized in:
 - GitHub contributors list
@@ -366,7 +366,7 @@ Contributors will be recognized in:
 
 ---
 
-**Thank you for contributing to ZeroTrace!** 🚀
+**Thank you for contributing to ZeroTrace!**
 
-**Last Updated**: January 2024  
+**Last Updated**: January 2025  
 **Version**: 1.0.0

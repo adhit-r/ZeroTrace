@@ -1279,3 +1279,4 @@ class AttackSurfaceMapper:
 
 # Global attack surface mapper instance
 attack_surface_mapper = AttackSurfaceMapper()
+

@@ -2,31 +2,31 @@
 
 This guide will walk you through installing and setting up ZeroTrace for different environments.
 
-## 📋 **Prerequisites**
+## Prerequisites
 
-### **System Requirements**
+### System Requirements
 - **OS**: Linux, macOS, or Windows
 - **CPU**: 2+ cores (4+ recommended)
 - **Memory**: 8GB+ RAM (16GB+ recommended)
 - **Storage**: 50GB+ available space
 - **Network**: Internet connection for initial setup
 
-### **Software Requirements**
+### Software Requirements
 - **Docker**: 20.10+ and Docker Compose 2.0+
 - **Git**: 2.30+
 - **Node.js**: 18+ (for development)
 - **Go**: 1.21+ (for development)
 - **Python**: 3.9+ (for development)
 
-## 🚀 **Quick Installation**
+## Quick Installation
 
-### **1. Clone the Repository**
+### 1. Clone the Repository
 ```bash
-git clone https://github.com/radhi1991/ZeroTrace.git
+git clone https://github.com/adhit-r/ZeroTrace.git
 cd ZeroTrace
 ```
 
-### **2. Environment Setup**
+### 2. Environment Setup
 ```bash
 # Copy environment files
 cp api-go/env.example api-go/.env
@@ -34,7 +34,7 @@ cp agent-go/env.example agent-go/.env
 cp enrichment-python/env.example enrichment-python/.env
 ```
 
-### **3. Start Services**
+### 3. Start Services
 ```bash
 # Start all services with Docker Compose
 docker-compose up -d
@@ -45,7 +45,7 @@ docker-compose up -d api enrichment
 docker-compose up -d frontend
 ```
 
-### **4. Verify Installation**
+### 4. Verify Installation
 ```bash
 # Check service status
 docker-compose ps
@@ -57,11 +57,11 @@ curl http://localhost:8080/api/v1/health
 open http://localhost:3000
 ```
 
-## 🔧 **Detailed Installation**
+## Detailed Installation
 
-### **Development Environment**
+### Development Environment
 
-#### **1. Backend Setup (Go API)**
+#### 1. Backend Setup (Go API)
 ```bash
 cd api-go
 
@@ -75,7 +75,7 @@ go run cmd/api/main.go migrate
 go run cmd/api/main.go
 ```
 
-#### **2. Enrichment Service (Python)**
+#### 2. Enrichment Service (Python)
 ```bash
 cd enrichment-python
 
@@ -90,7 +90,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-#### **3. Frontend Setup (React)**
+#### 3. Frontend Setup (React)
 ```bash
 cd web-react
 
@@ -101,7 +101,7 @@ npm install
 npm run dev
 ```
 
-#### **4. Agent Setup (Go)**
+#### 4. Agent Setup (Go)
 ```bash
 cd agent-go
 
@@ -115,9 +115,9 @@ go build -o zerotrace-agent cmd/agent/main.go
 ./zerotrace-agent
 ```
 
-### **Production Environment**
+### Production Environment
 
-#### **1. Docker Deployment**
+#### 1. Docker Deployment
 ```bash
 # Build production images
 docker-compose -f docker-compose.prod.yml build
@@ -126,7 +126,7 @@ docker-compose -f docker-compose.prod.yml build
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-#### **2. Kubernetes Deployment**
+#### 2. Kubernetes Deployment
 ```bash
 # Apply Kubernetes manifests
 kubectl apply -f k8s/
@@ -135,7 +135,7 @@ kubectl apply -f k8s/
 kubectl get pods -n zerotrace
 ```
 
-#### **3. Cloud Deployment**
+#### 3. Cloud Deployment
 ```bash
 # AWS ECS
 aws ecs create-cluster --cluster-name zerotrace
@@ -146,11 +146,11 @@ gcloud run deploy zerotrace-api --source api-go/
 gcloud run deploy zerotrace-enrichment --source enrichment-python/
 ```
 
-## ⚙️ **Configuration**
+## Configuration
 
-### **Environment Variables**
+### Environment Variables
 
-#### **API Configuration**
+#### API Configuration
 ```bash
 # api-go/.env
 DATABASE_URL=postgresql://user:password@localhost:5432/zerotrace
@@ -160,7 +160,7 @@ API_PORT=8080
 LOG_LEVEL=info
 ```
 
-#### **Enrichment Configuration**
+#### Enrichment Configuration
 ```bash
 # enrichment-python/.env
 DATABASE_URL=postgresql://user:password@localhost:5432/zerotrace
@@ -170,7 +170,7 @@ LOG_LEVEL=info
 NVD_API_KEY=your-nvd-api-key
 ```
 
-#### **Agent Configuration**
+#### Agent Configuration
 ```bash
 # agent-go/.env
 API_URL=http://localhost:8080
@@ -180,7 +180,7 @@ SCAN_INTERVAL=24h
 HEARTBEAT_INTERVAL=5m
 ```
 
-### **Database Setup**
+### Database Setup
 ```sql
 -- Create database
 CREATE DATABASE zerotrace;
@@ -192,9 +192,9 @@ CREATE USER zerotrace_user WITH PASSWORD 'secure_password';
 GRANT ALL PRIVILEGES ON DATABASE zerotrace TO zerotrace_user;
 ```
 
-## 🔍 **Verification**
+## Verification
 
-### **Health Checks**
+### Health Checks
 ```bash
 # API Health
 curl http://localhost:8080/api/v1/health
@@ -209,7 +209,7 @@ curl http://localhost:3000
 docker exec -it zerotrace-postgres psql -U zerotrace_user -d zerotrace -c "SELECT 1;"
 ```
 
-### **Performance Tests**
+### Performance Tests
 ```bash
 # API Performance
 ab -n 1000 -c 10 http://localhost:8080/api/v1/health
@@ -221,11 +221,11 @@ python tests/performance_test.py
 go test ./agent-go/tests/ -bench=.
 ```
 
-## 🚨 **Troubleshooting**
+## Troubleshooting
 
-### **Common Issues**
+### Common Issues
 
-#### **1. Database Connection Issues**
+#### 1. Database Connection Issues
 ```bash
 # Check database status
 docker-compose logs postgres
@@ -236,7 +236,7 @@ docker volume rm zerotrace_postgres_data
 docker-compose up -d postgres
 ```
 
-#### **2. Redis Connection Issues**
+#### 2. Redis Connection Issues
 ```bash
 # Check Redis status
 docker-compose logs redis
@@ -245,7 +245,7 @@ docker-compose logs redis
 docker exec -it zerotrace-redis redis-cli ping
 ```
 
-#### **3. Port Conflicts**
+#### 3. Port Conflicts
 ```bash
 # Check port usage
 lsof -i :8080
@@ -255,7 +255,7 @@ lsof -i :3000
 # Change ports in docker-compose.yml
 ```
 
-#### **4. Permission Issues**
+#### 4. Permission Issues
 ```bash
 # Fix file permissions
 chmod +x scripts/*.sh
@@ -265,7 +265,7 @@ chmod 600 *.env
 sudo usermod -aG docker $USER
 ```
 
-### **Logs and Debugging**
+### Logs and Debugging
 ```bash
 # View all logs
 docker-compose logs
@@ -279,7 +279,7 @@ docker-compose logs frontend
 docker-compose logs -f api
 ```
 
-## 📚 **Next Steps**
+## Next Steps
 
 After successful installation:
 
@@ -289,16 +289,16 @@ After successful installation:
 4. **Configure Organizations**: Set up company accounts
 5. **Test Workflows**: Run end-to-end tests
 
-## 📞 **Support**
+## Support
 
 If you encounter issues:
 
 1. Check the [Troubleshooting Guide](Troubleshooting)
-2. Search [GitHub Issues](https://github.com/radhi1991/ZeroTrace/issues)
-3. Ask in [GitHub Discussions](https://github.com/radhi1991/ZeroTrace/discussions)
+2. Search [GitHub Issues](https://github.com/adhit-r/ZeroTrace/issues)
+3. Ask in [GitHub Discussions](https://github.com/adhit-r/ZeroTrace/discussions)
 4. Review the [FAQ](FAQ)
 
 ---
 
-**Last Updated**: January 2024  
+**Last Updated**: January 2025  
 **Version**: 1.0.0

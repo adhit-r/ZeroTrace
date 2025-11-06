@@ -104,8 +104,19 @@ func GetAgentStats(agentService *services.AgentService) gin.HandlerFunc {
 // AgentHeartbeat handles agent heartbeat updates
 func AgentHeartbeat(agentService *services.AgentService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var heartbeat models.AgentHeartbeat
-		if err := c.ShouldBindJSON(&heartbeat); err != nil {
+		// Temporary struct to bind the request payload with string IDs
+		var req struct {
+			AgentID        string                 `json:"agent_id"`
+			OrganizationID string                 `json:"organization_id"`
+			AgentName      string                 `json:"agent_name"`
+			Status         string                 `json:"status"`
+			CPUUsage       float64                `json:"cpu_usage"`
+			MemoryUsage    float64                `json:"memory_usage"`
+			Metadata       map[string]interface{} `json:"metadata"`
+			Timestamp      time.Time              `json:"timestamp"`
+		}
+
+		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, models.APIResponse{
 				Success: false,
 				Error: &models.APIError{
@@ -118,6 +129,47 @@ func AgentHeartbeat(agentService *services.AgentService) gin.HandlerFunc {
 			return
 		}
 
+		// Parse string IDs into UUIDs
+		agentUUID, err := uuid.Parse(req.AgentID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, models.APIResponse{
+				Success: false,
+				Error: &models.APIError{
+					Code:    "INVALID_AGENT_ID",
+					Message: "Invalid agent ID format",
+					Details: err.Error(),
+				},
+				Timestamp: time.Now(),
+			})
+			return
+		}
+
+		orgUUID, err := uuid.Parse(req.OrganizationID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, models.APIResponse{
+				Success: false,
+				Error: &models.APIError{
+					Code:    "INVALID_ORGANIZATION_ID",
+					Message: "Invalid organization ID format",
+					Details: err.Error(),
+				},
+				Timestamp: time.Now(),
+			})
+			return
+		}
+
+		// Create the heartbeat model
+		heartbeat := models.AgentHeartbeat{
+			AgentID:        agentUUID,
+			OrganizationID: orgUUID,
+			AgentName:      req.AgentName,
+			Status:         req.Status,
+			CPUUsage:       req.CPUUsage,
+			MemoryUsage:    req.MemoryUsage,
+			Metadata:       req.Metadata,
+			Timestamp:      req.Timestamp,
+		}
+
 		// Set timestamp if not provided
 		if heartbeat.Timestamp.IsZero() {
 			heartbeat.Timestamp = time.Now()
@@ -126,7 +178,7 @@ func AgentHeartbeat(agentService *services.AgentService) gin.HandlerFunc {
 		// Debug: log heartbeat metadata
 		log.Printf("[Heartbeat Handler] Heartbeat metadata: %v", heartbeat.Metadata)
 
-		err := agentService.UpdateAgentHeartbeat(heartbeat)
+		err = agentService.UpdateAgentHeartbeat(heartbeat)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, models.APIResponse{
 				Success: false,

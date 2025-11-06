@@ -1,0 +1,1004 @@
+openapi: 3.0.3
+info:
+  title: ZeroTrace API
+  description: |
+    ZeroTrace API provides comprehensive security scanning and vulnerability management capabilities.
+    The API supports real-time scanning, compliance monitoring, and advanced analytics.
+  version: 2.0.0
+  contact:
+    name: ZeroTrace Support
+    email: support@zerotrace.io
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.zerotrace.io
+    description: Production server
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Agents
+    description: Agent management endpoints
+  - name: Vulnerabilities
+    description: Vulnerability management endpoints
+  - name: Dashboard
+    description: Dashboard data endpoints
+  - name: Compliance
+    description: Compliance framework endpoints
+  - name: Scans
+    description: Network scanning endpoints
+  - name: Organizations
+    description: Organization management endpoints
+  - name: AI Analysis
+    description: AI-powered analysis endpoints
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns API health status
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/agents/register:
+    post:
+      tags:
+        - Agents
+      summary: Register agent
+      description: Register a new agent with the system
+      operationId: registerAgent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentRegistration'
+      responses:
+        '200':
+          description: Agent registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/agents/heartbeat:
+    post:
+      tags:
+        - Agents
+      summary: Agent heartbeat
+      description: Update agent heartbeat status
+      operationId: agentHeartbeat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentHeartbeat'
+      responses:
+        '200':
+          description: Heartbeat updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/agents/results:
+    post:
+      tags:
+        - Agents
+      summary: Submit scan results
+      description: Submit vulnerability scan results from agent
+      operationId: agentResults
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentResults'
+      responses:
+        '200':
+          description: Results submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/agents:
+    get:
+      tags:
+        - Agents
+      summary: Get all agents
+      description: Retrieve all registered agents
+      operationId: getAgents
+      responses:
+        '200':
+          description: Agents retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+              example:
+                success: true
+                data:
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "agent-001"
+                    status: "active"
+                    hostname: "server-01"
+                    os: "Linux"
+                    last_seen: "2025-01-15T10:30:00Z"
+
+  /api/agents/stats:
+    get:
+      tags:
+        - Agents
+      summary: Get agent statistics
+      description: Retrieve agent statistics
+      operationId: getAgentStats
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentStats'
+
+  /api/dashboard/overview:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard overview
+      description: Retrieve dashboard overview data
+      operationId: getDashboardOverview
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardOverview'
+
+  /api/v2/vulnerabilities:
+    get:
+      tags:
+        - Vulnerabilities
+      summary: Get vulnerabilities
+      description: Retrieve vulnerabilities with filtering and pagination
+      operationId: getVulnerabilities
+      parameters:
+        - name: category
+          in: query
+          description: Filter by security category
+          schema:
+            type: string
+            enum: [network, compliance, system, auth, database, api, container, ai, iot, privacy, web3]
+        - name: severity
+          in: query
+          description: Filter by severity
+          schema:
+            type: string
+            enum: [critical, high, medium, low]
+        - name: status
+          in: query
+          description: Filter by status
+          schema:
+            type: string
+            enum: [open, in_progress, closed]
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          description: Number of results per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sort_by
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [severity, discovered_date, risk_score]
+            default: severity
+        - name: sort_order
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Vulnerabilities retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VulnerabilityV2Response'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v2/vulnerabilities/stats:
+    get:
+      tags:
+        - Vulnerabilities
+      summary: Get vulnerability statistics
+      description: Retrieve vulnerability statistics
+      operationId: getVulnerabilityStats
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VulnerabilityStatsResponse'
+
+  /api/v2/vulnerabilities/export:
+    get:
+      tags:
+        - Vulnerabilities
+      summary: Export vulnerabilities
+      description: Export vulnerabilities in various formats
+      operationId: exportVulnerabilities
+      parameters:
+        - name: format
+          in: query
+          description: Export format
+          schema:
+            type: string
+            enum: [json, csv, pdf, sarif]
+            default: json
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: severity
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Export file
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+            application/csv:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /api/v2/compliance/status:
+    get:
+      tags:
+        - Compliance
+      summary: Get compliance status
+      description: Retrieve compliance status across frameworks
+      operationId: getComplianceStatus
+      responses:
+        '200':
+          description: Compliance status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceStatusResponse'
+
+  /api/v2/scans/network:
+    post:
+      tags:
+        - Scans
+      summary: Initiate network scan
+      description: Start a new network vulnerability scan
+      operationId: initiateNetworkScan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NetworkScanRequest'
+      responses:
+        '200':
+          description: Scan initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkScanResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v2/scans/{scan_id}/status:
+    get:
+      tags:
+        - Scans
+      summary: Get scan status
+      description: Retrieve status of a network scan
+      operationId: getScanStatus
+      parameters:
+        - name: scan_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Scan status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v2/scans/{scan_id}/results:
+    get:
+      tags:
+        - Scans
+      summary: Get scan results
+      description: Retrieve results of a completed network scan
+      operationId: getScanResults
+      parameters:
+        - name: scan_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Scan results retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanResults'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    APIResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        error:
+          $ref: '#/components/schemas/APIError'
+
+    APIError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: string
+
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organization_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, offline]
+        version:
+          type: string
+        hostname:
+          type: string
+        os:
+          type: string
+        last_seen:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    AgentRegistration:
+      type: object
+      required:
+        - id
+        - organization_id
+        - name
+        - version
+        - hostname
+        - os
+      properties:
+        id:
+          type: string
+          format: uuid
+        organization_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        version:
+          type: string
+        hostname:
+          type: string
+        os:
+          type: string
+
+    AgentHeartbeat:
+      type: object
+      required:
+        - agent_id
+        - organization_id
+        - agent_name
+        - status
+      properties:
+        agent_id:
+          type: string
+          format: uuid
+        organization_id:
+          type: string
+          format: uuid
+        agent_name:
+          type: string
+        status:
+          type: string
+        cpu_usage:
+          type: number
+          format: float
+        memory_usage:
+          type: number
+          format: float
+        metadata:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    AgentResults:
+      type: object
+      required:
+        - agent_id
+        - results
+      properties:
+        agent_id:
+          type: string
+          format: uuid
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentScanResult'
+        metadata:
+          type: object
+
+    AgentScanResult:
+      type: object
+      properties:
+        scan_type:
+          type: string
+        dependencies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Dependency'
+        vulnerabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vulnerability'
+        timestamp:
+          type: string
+          format: date-time
+
+    Dependency:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        type:
+          type: string
+        path:
+          type: string
+
+    Vulnerability:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        category:
+          type: string
+        cve_id:
+          type: string
+        cvss_score:
+          type: number
+          format: float
+
+    AgentStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        online:
+          type: integer
+        offline:
+          type: integer
+        active:
+          type: integer
+
+    DashboardOverview:
+      type: object
+      properties:
+        assets:
+          type: object
+          properties:
+            total:
+              type: integer
+            vulnerable:
+              type: integer
+            critical:
+              type: integer
+            high:
+              type: integer
+            medium:
+              type: integer
+            low:
+              type: integer
+            last_scan:
+              type: string
+              format: date-time
+        applications:
+          type: object
+          properties:
+            total:
+              type: integer
+        vulnerabilities:
+          type: object
+          properties:
+            total:
+              type: integer
+            critical:
+              type: integer
+            high:
+              type: integer
+            medium:
+              type: integer
+            low:
+              type: integer
+        agents:
+          type: object
+          properties:
+            total:
+              type: integer
+            online:
+              type: integer
+
+    VulnerabilityV2Response:
+      type: object
+      properties:
+        vulnerabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/VulnerabilityV2Data'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_pages:
+          type: integer
+        categories:
+          type: object
+          additionalProperties:
+            type: integer
+        severities:
+          type: object
+          additionalProperties:
+            type: integer
+        compliance:
+          type: object
+          additionalProperties:
+            type: integer
+        risk_scores:
+          type: object
+          additionalProperties:
+            type: integer
+        metadata:
+          type: object
+
+    VulnerabilityV2Data:
+      type: object
+      properties:
+        id:
+          type: string
+        agent_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        category:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, closed]
+        discovered_at:
+          type: string
+          format: date-time
+        last_seen:
+          type: string
+          format: date-time
+        risk_score:
+          type: number
+          format: float
+        exploit_complexity:
+          type: string
+        attack_vector:
+          type: string
+        compliance_frameworks:
+          type: array
+          items:
+            type: string
+        remediation:
+          type: string
+        references:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+        enrichment_data:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VulnerabilityStatsResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        by_category:
+          type: object
+          additionalProperties:
+            type: integer
+        by_severity:
+          type: object
+          additionalProperties:
+            type: integer
+        by_compliance:
+          type: object
+          additionalProperties:
+            type: integer
+        by_risk_score:
+          type: object
+          additionalProperties:
+            type: integer
+        trends:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrendData'
+        top_vulnerabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopVulnerability'
+        compliance_score:
+          type: number
+          format: float
+        risk_score:
+          type: number
+          format: float
+        last_updated:
+          type: string
+          format: date-time
+
+    TrendData:
+      type: object
+      properties:
+        date:
+          type: string
+        count:
+          type: integer
+        severity:
+          type: string
+        category:
+          type: string
+
+    TopVulnerability:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        severity:
+          type: string
+        category:
+          type: string
+        count:
+          type: integer
+        risk_score:
+          type: number
+          format: float
+        description:
+          type: string
+
+    ComplianceStatusResponse:
+      type: object
+      properties:
+        overall_score:
+          type: number
+          format: float
+        frameworks:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FrameworkScore'
+        gap_analysis:
+          type: array
+          items:
+            $ref: '#/components/schemas/GapAnalysis'
+        recommendations:
+          type: array
+          items:
+            type: string
+        last_audit:
+          type: string
+          format: date-time
+        next_audit:
+          type: string
+          format: date-time
+
+    FrameworkScore:
+      type: object
+      properties:
+        score:
+          type: number
+          format: float
+        total_checks:
+          type: integer
+        passed_checks:
+          type: integer
+        failed_checks:
+          type: integer
+        status:
+          type: string
+          enum: [compliant, non_compliant, partial]
+
+    GapAnalysis:
+      type: object
+      properties:
+        framework:
+          type: string
+        requirement:
+          type: string
+        status:
+          type: string
+        gap:
+          type: string
+        remediation:
+          type: string
+        priority:
+          type: string
+
+    NetworkScanRequest:
+      type: object
+      required:
+        - targets
+        - scan_type
+      properties:
+        targets:
+          type: array
+          items:
+            type: string
+          example: ["192.168.1.0/24", "10.0.0.0/8"]
+        scan_type:
+          type: string
+          enum: [quick, standard, comprehensive]
+        options:
+          type: object
+          properties:
+            port_range:
+              type: string
+            scan_timeout:
+              type: integer
+            parallel_scans:
+              type: integer
+
+    NetworkScanResponse:
+      type: object
+      properties:
+        scan_id:
+          type: string
+        status:
+          type: string
+        estimated_duration:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ScanStatus:
+      type: object
+      properties:
+        scan_id:
+          type: string
+        status:
+          type: string
+          enum: [initiated, running, completed, failed]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        hosts_scanned:
+          type: integer
+        total_hosts:
+          type: integer
+        vulnerabilities_found:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        estimated_completion:
+          type: string
+          format: date-time
+
+    ScanResults:
+      type: object
+      properties:
+        scan_id:
+          type: string
+        status:
+          type: string
+        hosts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanHost'
+        vulnerabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/VulnerabilityV2Data'
+        summary:
+          type: object
+          properties:
+            total_hosts:
+              type: integer
+            hosts_online:
+              type: integer
+            hosts_offline:
+              type: integer
+            total_vulnerabilities:
+              type: integer
+            critical_vulnerabilities:
+              type: integer
+            high_vulnerabilities:
+              type: integer
+
+    ScanHost:
+      type: object
+      properties:
+        id:
+          type: string
+        ip:
+          type: string
+        hostname:
+          type: string
+        os:
+          type: string
+        status:
+          type: string
+        open_ports:
+          type: array
+          items:
+            type: integer
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanService'
+        vulnerabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/VulnerabilityV2Data'
+
+    ScanService:
+      type: object
+      properties:
+        port:
+          type: integer
+        protocol:
+          type: string
+        service:
+          type: string
+        version:
+          type: string
+        ssl_enabled:
+          type: boolean
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/APIError'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/APIError'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/APIError'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token authentication
+
+security:
+  - BearerAuth: []
+

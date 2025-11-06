@@ -715,3 +715,4 @@ class PredictiveAnalysisService:
 
 # Global predictive analysis service instance
 predictive_analysis_service = PredictiveAnalysisService()
+

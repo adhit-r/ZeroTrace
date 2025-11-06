@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # Go API Service
+  api-go:
+    name: Go API Service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: api-go/go.sum
+      
+      - name: Install dependencies
+        working-directory: api-go
+        run: go mod download
+      
+      - name: Run tests
+        working-directory: api-go
+        run: go test ./... -v -race -coverprofile=coverage.out
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./api-go/coverage.out
+          flags: api-go
+        continue-on-error: true
+      
+      - name: Build
+        working-directory: api-go
+        run: go build -o zerotrace-api cmd/api/main.go
+      
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          working-directory: api-go
+          args: --timeout=5m
+
+  # Agent Service
+  agent-go:
+    name: Go Agent Service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: agent-go/go.sum
+      
+      - name: Install dependencies
+        working-directory: agent-go
+        run: go mod download
+      
+      - name: Run tests
+        working-directory: agent-go
+        run: go test ./... -v -race -coverprofile=coverage.out
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./agent-go/coverage.out
+          flags: agent-go
+        continue-on-error: true
+      
+      - name: Build
+        working-directory: agent-go
+        run: go build -o zerotrace-agent cmd/agent-simple/main.go
+      
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          working-directory: agent-go
+          args: --timeout=5m
+
+  # Python Enrichment Service
+  enrichment-python:
+    name: Python Enrichment Service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      
+      - name: Install dependencies
+        working-directory: enrichment-python
+        run: uv pip install -r requirements.txt
+      
+      - name: Run tests
+        working-directory: enrichment-python
+        run: uv run pytest tests/ -v --cov=app --cov-report=xml
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./enrichment-python/coverage.xml
+          flags: enrichment-python
+        continue-on-error: true
+      
+      - name: Lint
+        working-directory: enrichment-python
+        run: |
+          uv run ruff check app/
+          uv run ruff format --check app/
+
+  # Frontend
+  web-react:
+    name: React Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        working-directory: web-react
+        run: bun install
+      
+      - name: Build
+        working-directory: web-react
+        run: bun run build
+        env:
+          VITE_API_URL: http://localhost:8080
+      
+      - name: Lint
+        working-directory: web-react
+        run: bun run lint
+        continue-on-error: true
+      
+      - name: Type check
+        working-directory: web-react
+        run: bun run typecheck
+        continue-on-error: true
+
+  # Docker Compose Integration Test
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [api-go, enrichment-python]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Start services
+        run: |
+          docker-compose up -d postgres redis
+          sleep 10
+      
+      - name: Run integration tests
+        run: |
+          docker-compose up -d
+          sleep 15
+          curl -f http://localhost:8080/health || exit 1
+          curl -f http://localhost:8000/health || exit 1
+

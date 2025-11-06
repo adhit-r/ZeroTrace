@@ -2,7 +2,9 @@
 
 Welcome to the ZeroTrace documentation. This comprehensive guide covers all aspects of the ZeroTrace security platform, from API usage to compliance frameworks.
 
-## 📚 Documentation Index
+For the latest development status and roadmap, see [ROADMAP.md](../ROADMAP.md).
+
+## Documentation Index
 
 ### Core Documentation
 - [API v2 Documentation](./api-v2-documentation.md) - Complete API reference
@@ -29,7 +31,7 @@ Welcome to the ZeroTrace documentation. This comprehensive guide covers all aspe
 - [Monitoring Strategy](./monitoring-strategy.md) - Security monitoring approach
 - [Organization Prioritization Design](./org-prioritization-design.md) - Risk prioritization
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Go 1.21+
@@ -61,7 +63,7 @@ Welcome to the ZeroTrace documentation. This comprehensive guide covers all aspe
    cd api-go && go run cmd/api/main.go
    
    # Enrichment Service
-   cd enrichment-python && python -m uvicorn app.main:app --port 5001
+   cd enrichment-python && uv run python app/main.py
    
    # Frontend
    cd web-react && bun dev
@@ -81,7 +83,7 @@ Welcome to the ZeroTrace documentation. This comprehensive guide covers all aspe
 3. **Check agent status**: http://localhost:8080/api/agents
 4. **Monitor vulnerabilities**: http://localhost:8080/api/vulnerabilities
 
-## 🔧 API Reference
+## API Reference
 
 ### Base URL
 ```
@@ -114,7 +116,7 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
 #### Agents
 - `GET /api/v2/agents/processing-status` - Agent processing status
 
-## 🛡️ Security Categories
+## Security Categories
 
 ZeroTrace supports comprehensive security scanning across 11 categories:
 
@@ -186,7 +188,7 @@ ZeroTrace supports comprehensive security scanning across 11 categories:
 - DApp security assessment
 - DeFi protocol analysis
 
-## 📊 Compliance Frameworks
+## Compliance Frameworks
 
 ### Supported Frameworks
 - **CIS Benchmarks**: Security configuration guidelines
@@ -203,7 +205,7 @@ ZeroTrace supports comprehensive security scanning across 11 categories:
 - Compliance reporting and dashboards
 - Automated remediation workflows
 
-## 🔍 Scanner Modules
+## Scanner Modules
 
 ### Core Scanners
 - **System Scanner**: OS and hardware information
@@ -231,7 +233,7 @@ config := ScannerConfig{
 }
 ```
 
-## 🎨 Frontend Dashboards
+## Frontend Dashboards
 
 ### Comprehensive Security Dashboard
 - Multi-category security overview
@@ -261,7 +263,7 @@ config := ScannerConfig{
 - Automated compliance workflows
 - Compliance reporting
 
-## 🧪 Testing
+## Testing
 
 ### Test Suite
 ```bash
@@ -283,7 +285,7 @@ config := ScannerConfig{
 - **Security Tests**: Security vulnerability testing
 - **E2E Tests**: End-to-end workflow testing
 
-## 📈 Performance Monitoring
+## Performance Monitoring
 
 ### Metrics Collection
 - **Prometheus**: Metrics collection and storage
@@ -296,7 +298,7 @@ config := ScannerConfig{
 - **Enrichment Performance**: Processing latency, accuracy
 - **Database Performance**: Query performance, connections
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 ```bash
@@ -318,7 +320,8 @@ REDIS_PORT=6379
 REDIS_PASSWORD=your-password
 
 # Enrichment Service
-ENRICHMENT_SERVICE_URL=http://localhost:5001
+ENRICHMENT_SERVICE_URL=http://localhost:8000
+ENRICHMENT_PORT=8000
 CVE_DATA_PATH=/data/cve_data.json
 ```
 
@@ -328,7 +331,7 @@ CVE_DATA_PATH=/data/cve_data.json
 - `web-react/.env` - Frontend configuration
 - `docker-compose.yml` - Docker services configuration
 
-## 🚀 Deployment
+## Deployment
 
 ### Docker Deployment
 ```bash
@@ -360,7 +363,7 @@ kubectl get pods
 kubectl get services
 ```
 
-## 🔒 Security
+## Security
 
 ### Security Features
 - **Authentication**: JWT-based authentication
@@ -378,11 +381,11 @@ kubectl get services
 
 
 
-## 📄 License
+## License
 
 ZeroTrace is licensed under the MIT License. See [LICENSE](../LICENSE) for details.
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
 

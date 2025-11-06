@@ -427,3 +427,4 @@ class IntegratedAIService:
 
 # Global integrated AI service instance
 integrated_ai_service = IntegratedAIService()
+

@@ -237,3 +237,4 @@ func (h *MaturityHandler) filterPriorityItems(roadmap []services.ImprovementItem
 
 	return priorityItems
 }
+

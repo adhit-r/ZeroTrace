@@ -786,3 +786,4 @@ class ChatOpsIntegrationHub:
 
 # Global ChatOps integration hub
 chatops_hub = ChatOpsIntegrationHub()
+

@@ -792,3 +792,4 @@ class SIEMSOARIntegrationHub:
 
 # Global SIEM/SOAR integration hub instance
 siem_soar_hub = SIEMSOARIntegrationHub()
+
