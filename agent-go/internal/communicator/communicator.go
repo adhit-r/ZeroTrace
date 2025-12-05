@@ -373,7 +373,7 @@ func (c *Communicator) SendHeartbeatWithCredential(cpuUsage, memoryUsage float64
 	}
 
 	// Create request
-	url := fmt.Sprintf("%s/api/agents/heartbeat", c.config.APIURL)
+	url := fmt.Sprintf("%s/api/agents/heartbeat", c.config.APIEndpoint)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create heartbeat request: %w", err)
@@ -454,6 +454,51 @@ func (c *Communicator) SendSystemInfo(systemInfo *scanner.SystemInfo) error {
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("API returned status %d for system info: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// SendNetworkScanResults sends network scan results to the API
+func (c *Communicator) SendNetworkScanResults(scanResult *scanner.NetworkScanResult) error {
+	url := c.config.APIEndpoint + "/api/agents/network-scan-results"
+
+	// Prepare payload
+	payload := map[string]interface{}{
+		"agent_id": c.config.AgentID,
+		"scan_result": map[string]interface{}{
+			"id":               scanResult.ID,
+			"agent_id":         scanResult.AgentID,
+			"company_id":       scanResult.CompanyID,
+			"start_time":       scanResult.StartTime,
+			"end_time":         scanResult.EndTime,
+			"status":           scanResult.Status,
+			"network_findings": scanResult.NetworkFindings,
+			"metadata":         scanResult.Metadata,
+		},
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal network scan results: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create network scan results request: %w", err)
+	}
+	c.setAuthHeaders(req)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send network scan results: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("API returned status %d for network scan results: %s", resp.StatusCode, string(body))
 	}
 
 	return nil

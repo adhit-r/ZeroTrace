@@ -20,12 +20,7 @@ func GetAgents(agentService *services.AgentService) gin.HandlerFunc {
 		// For public endpoint, get all agents without company filter
 		agents := agentService.GetAllAgents()
 
-		c.JSON(http.StatusOK, models.APIResponse{
-			Success:   true,
-			Data:      agents,
-			Message:   "Agents retrieved successfully",
-			Timestamp: time.Now(),
-		})
+		SuccessResponse(c, http.StatusOK, agents, "Agents retrieved successfully")
 	}
 }
 
@@ -37,12 +32,7 @@ func GetOnlineAgents(agentService *services.AgentService) gin.HandlerFunc {
 
 		agents := agentService.GetOnlineAgents(companyUUID)
 
-		c.JSON(http.StatusOK, models.APIResponse{
-			Success:   true,
-			Data:      agents,
-			Message:   "Online agents retrieved successfully",
-			Timestamp: time.Now(),
-		})
+		SuccessResponse(c, http.StatusOK, agents, "Online agents retrieved successfully")
 	}
 }
 
@@ -51,36 +41,17 @@ func GetAgent(agentService *services.AgentService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		agentID, err := uuid.Parse(c.Param("id"))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "INVALID_AGENT_ID",
-					Message: "Invalid agent ID",
-				},
-				Timestamp: time.Now(),
-			})
+			BadRequest(c, "INVALID_AGENT_ID", "Invalid agent ID", err.Error())
 			return
 		}
 
 		agent, exists := agentService.GetAgent(agentID)
 		if !exists {
-			c.JSON(http.StatusNotFound, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "AGENT_NOT_FOUND",
-					Message: "Agent not found",
-				},
-				Timestamp: time.Now(),
-			})
+			NotFound(c, "AGENT_NOT_FOUND", "Agent not found")
 			return
 		}
 
-		c.JSON(http.StatusOK, models.APIResponse{
-			Success:   true,
-			Data:      agent,
-			Message:   "Agent retrieved successfully",
-			Timestamp: time.Now(),
-		})
+		SuccessResponse(c, http.StatusOK, agent, "Agent retrieved successfully")
 	}
 }
 
@@ -92,12 +63,7 @@ func GetAgentStats(agentService *services.AgentService) gin.HandlerFunc {
 
 		stats := agentService.GetAgentStats(companyUUID)
 
-		c.JSON(http.StatusOK, models.APIResponse{
-			Success:   true,
-			Data:      stats,
-			Message:   "Agent statistics retrieved successfully",
-			Timestamp: time.Now(),
-		})
+		SuccessResponse(c, http.StatusOK, stats, "Agent statistics retrieved successfully")
 	}
 }
 
@@ -117,45 +83,28 @@ func AgentHeartbeat(agentService *services.AgentService) gin.HandlerFunc {
 		}
 
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "INVALID_HEARTBEAT",
-					Message: "Invalid heartbeat data",
-					Details: err.Error(),
-				},
-				Timestamp: time.Now(),
-			})
+			BadRequest(c, "INVALID_HEARTBEAT", "Invalid heartbeat data", err.Error())
 			return
 		}
 
 		// Parse string IDs into UUIDs
 		agentUUID, err := uuid.Parse(req.AgentID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "INVALID_AGENT_ID",
-					Message: "Invalid agent ID format",
-					Details: err.Error(),
-				},
-				Timestamp: time.Now(),
-			})
+			BadRequest(c, "INVALID_AGENT_ID", "Invalid agent ID format", err.Error())
 			return
 		}
 
-		orgUUID, err := uuid.Parse(req.OrganizationID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "INVALID_ORGANIZATION_ID",
-					Message: "Invalid organization ID format",
-					Details: err.Error(),
-				},
-				Timestamp: time.Now(),
-			})
-			return
+		// Handle missing or invalid organization ID
+		var orgUUID uuid.UUID
+		if req.OrganizationID == "" {
+			// Use default organization ID if not provided
+			orgUUID, _ = uuid.Parse("00000000-0000-0000-0000-000000000001")
+		} else {
+			orgUUID, err = uuid.Parse(req.OrganizationID)
+			if err != nil {
+				BadRequest(c, "INVALID_ORGANIZATION_ID", "Invalid organization ID format", err.Error())
+				return
+			}
 		}
 
 		// Create the heartbeat model
@@ -180,15 +129,7 @@ func AgentHeartbeat(agentService *services.AgentService) gin.HandlerFunc {
 
 		err = agentService.UpdateAgentHeartbeat(heartbeat)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "HEARTBEAT_UPDATE_FAILED",
-					Message: "Failed to update agent heartbeat",
-					Details: err.Error(),
-				},
-				Timestamp: time.Now(),
-			})
+			InternalServerError(c, "HEARTBEAT_UPDATE_FAILED", "Failed to update agent heartbeat", err)
 			return
 		}
 
@@ -227,12 +168,17 @@ func RegisterAgent(agentService *services.AgentService) gin.HandlerFunc {
 			return
 		}
 
-		orgUUID, err := uuid.Parse(req.OrganizationID)
-		if err != nil {
-			// If OrganizationID is missing or invalid, we can decide how to handle it.
-			// For now, let's return an error.
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid organization ID format"})
-			return
+		// Handle missing or invalid organization ID
+		var orgUUID uuid.UUID
+		if req.OrganizationID == "" {
+			// Use default organization ID if not provided
+			orgUUID, _ = uuid.Parse("00000000-0000-0000-0000-000000000001")
+		} else {
+			orgUUID, err = uuid.Parse(req.OrganizationID)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid organization ID format"})
+				return
+			}
 		}
 
 		// Create the agent model
@@ -537,6 +483,52 @@ func UpdateSystemInfo(agentService *services.AgentService) gin.HandlerFunc {
 		c.JSON(http.StatusOK, models.APIResponse{
 			Success:   true,
 			Message:   "System information updated successfully",
+			Timestamp: time.Now(),
+		})
+	}
+}
+
+// NetworkScanResults handles network scan results from agents
+func NetworkScanResults(agentService *services.AgentService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		log.Printf("[NetworkScanResults] Request received from %s", c.ClientIP())
+
+		var req struct {
+			AgentID    string                 `json:"agent_id" binding:"required"`
+			ScanResult map[string]interface{} `json:"scan_result" binding:"required"`
+		}
+
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Printf("[NetworkScanResults] JSON binding error: %v", err)
+			c.JSON(http.StatusBadRequest, models.APIResponse{
+				Success:   false,
+				Message:   "Invalid request body: " + err.Error(),
+				Timestamp: time.Now(),
+			})
+			return
+		}
+
+		log.Printf("[NetworkScanResults] Successfully parsed network scan results for agent %s", req.AgentID)
+
+		// Store network scan results in agent metadata
+		// In a full implementation, this would be stored in a separate table
+		err := agentService.UpdateAgentMetadata(req.AgentID, map[string]interface{}{
+			"last_network_scan": time.Now(),
+			"network_scan_result": req.ScanResult,
+		})
+		if err != nil {
+			log.Printf("[NetworkScanResults] Failed to update agent metadata: %v", err)
+			c.JSON(http.StatusInternalServerError, models.APIResponse{
+				Success:   false,
+				Message:   "Failed to store network scan results: " + err.Error(),
+				Timestamp: time.Now(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success:   true,
+			Message:   "Network scan results received successfully",
 			Timestamp: time.Now(),
 		})
 	}

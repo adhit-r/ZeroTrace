@@ -3,128 +3,150 @@ package handlers
 import (
 	"net/http"
 
-	"zerotrace/api/internal/models"
+	"zerotrace/api/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
 
 // AIAnalysisHandler handles AI-powered vulnerability analysis endpoints
 type AIAnalysisHandler struct {
-	// TODO: Connect to Python AI services when available
-	// For now, return service not implemented responses
+	aiService *services.AIService
 }
 
 // NewAIAnalysisHandler creates a new AI analysis handler
-func NewAIAnalysisHandler() *AIAnalysisHandler {
-	return &AIAnalysisHandler{}
+func NewAIAnalysisHandler(aiService *services.AIService) *AIAnalysisHandler {
+	return &AIAnalysisHandler{
+		aiService: aiService,
+	}
 }
 
 // AnalyzeVulnerabilityComprehensive performs comprehensive AI analysis
 func (h *AIAnalysisHandler) AnalyzeVulnerabilityComprehensive(c *gin.Context) {
 	vulnerabilityID := c.Param("id")
 	if vulnerabilityID == "" {
-		c.JSON(http.StatusBadRequest, models.APIResponse{
-			Success: false,
-			Error: &models.APIError{
-				Code:    "MISSING_VULNERABILITY_ID",
-				Message: "Vulnerability ID is required",
-			},
-		})
+		BadRequest(c, "MISSING_VULNERABILITY_ID", "Vulnerability ID is required", nil)
 		return
 	}
 
-	// TODO: Implement real AI analysis by calling Python AI services
-	c.JSON(http.StatusNotImplemented, models.APIResponse{
-		Success: false,
-		Error: &models.APIError{
-			Code:    "SERVICE_NOT_IMPLEMENTED",
-			Message: "AI analysis service not yet implemented",
-		},
-	})
+	// Create vulnerability data structure from provided ID
+	// Note: Full implementation would fetch complete vulnerability details from database
+	vulnData := services.VulnerabilityData{
+		ID:          vulnerabilityID,
+		Title:       "Vulnerability Analysis",
+		Description: "Comprehensive AI analysis requested",
+	}
+
+	// Get organization context if available
+	var orgContext *services.OrganizationContext
+	if orgID, exists := c.Get("company_id"); exists {
+		orgContext = &services.OrganizationContext{
+			OrganizationID: orgID.(string),
+		}
+	}
+
+	// Call AI service
+	analysis, err := h.aiService.AnalyzeVulnerabilityComprehensive(vulnData, orgContext)
+	if err != nil {
+		InternalServerError(c, "AI_ANALYSIS_FAILED", "Failed to perform AI analysis", err)
+		return
+	}
+
+	SuccessResponse(c, http.StatusOK, analysis, "Comprehensive analysis completed")
 }
 
 // AnalyzeVulnerabilityTrends analyzes vulnerability trends using AI
 func (h *AIAnalysisHandler) AnalyzeVulnerabilityTrends(c *gin.Context) {
-	// TODO: Implement real trend analysis
-	c.JSON(http.StatusNotImplemented, models.APIResponse{
-		Success: false,
-		Error: &models.APIError{
-			Code:    "SERVICE_NOT_IMPLEMENTED",
-			Message: "AI trend analysis service not yet implemented",
-		},
-	})
+	// This endpoint requires vulnerability data from database
+	// Return error indicating database integration is required
+	ErrorResponse(c, http.StatusNotImplemented, "DATABASE_INTEGRATION_REQUIRED",
+		"Trend analysis requires vulnerability data from database. This endpoint needs to be connected to vulnerability repository.",
+		nil)
 }
 
 // GetExploitIntelligence retrieves exploit intelligence for a CVE
 func (h *AIAnalysisHandler) GetExploitIntelligence(c *gin.Context) {
 	cveID := c.Param("cve_id")
 	if cveID == "" {
-		c.JSON(http.StatusBadRequest, models.APIResponse{
-			Success: false,
-			Error: &models.APIError{
-				Code:    "MISSING_CVE_ID",
-				Message: "CVE ID is required",
-			},
-		})
+		BadRequest(c, "MISSING_CVE_ID", "CVE ID is required", nil)
 		return
 	}
 
-	// TODO: Implement real exploit intelligence gathering
-	c.JSON(http.StatusNotImplemented, models.APIResponse{
-		Success: false,
-		Error: &models.APIError{
-			Code:    "SERVICE_NOT_IMPLEMENTED",
-			Message: "Exploit intelligence service not yet implemented",
-		},
-	})
+	packageName := c.Query("package_name")
+
+	// Call AI service
+	intelligence, err := h.aiService.GetExploitIntelligence(cveID, packageName)
+	if err != nil {
+		InternalServerError(c, "EXPLOIT_INTELLIGENCE_FAILED", "Failed to retrieve exploit intelligence", err)
+		return
+	}
+
+	SuccessResponse(c, http.StatusOK, intelligence, "Exploit intelligence retrieved")
 }
 
 // GetPredictiveAnalysis performs predictive analysis on vulnerabilities
 func (h *AIAnalysisHandler) GetPredictiveAnalysis(c *gin.Context) {
 	vulnerabilityID := c.Param("id")
 	if vulnerabilityID == "" {
-		c.JSON(http.StatusBadRequest, models.APIResponse{
-			Success: false,
-			Error: &models.APIError{
-				Code:    "MISSING_VULNERABILITY_ID",
-				Message: "Vulnerability ID is required",
-			},
-		})
+		BadRequest(c, "MISSING_VULNERABILITY_ID", "Vulnerability ID is required", nil)
 		return
 	}
 
-	// TODO: Implement real predictive analysis
-	c.JSON(http.StatusNotImplemented, models.APIResponse{
-		Success: false,
-		Error: &models.APIError{
-			Code:    "SERVICE_NOT_IMPLEMENTED",
-			Message: "Predictive analysis service not yet implemented",
-		},
-	})
+	// Create vulnerability data
+	vulnData := services.VulnerabilityData{
+		ID:          vulnerabilityID,
+		Title:       "Predictive Analysis Request",
+		Description: "AI-powered predictive analysis requested",
+	}
+
+	// Get organization context if available
+	var orgContext *services.OrganizationContext
+	if orgID, exists := c.Get("company_id"); exists {
+		orgContext = &services.OrganizationContext{
+			OrganizationID: orgID.(string),
+		}
+	}
+
+	// Call AI service
+	predictions, err := h.aiService.GetPredictiveAnalysis(vulnData, orgContext)
+	if err != nil {
+		InternalServerError(c, "PREDICTIVE_ANALYSIS_FAILED", "Failed to perform predictive analysis", err)
+		return
+	}
+
+	SuccessResponse(c, http.StatusOK, predictions, "Predictive analysis completed")
 }
 
 // GetRemediationPlan generates AI-powered remediation plans
 func (h *AIAnalysisHandler) GetRemediationPlan(c *gin.Context) {
 	vulnerabilityID := c.Param("id")
 	if vulnerabilityID == "" {
-		c.JSON(http.StatusBadRequest, models.APIResponse{
-			Success: false,
-			Error: &models.APIError{
-				Code:    "MISSING_VULNERABILITY_ID",
-				Message: "Vulnerability ID is required",
-			},
-		})
+		BadRequest(c, "MISSING_VULNERABILITY_ID", "Vulnerability ID is required", nil)
 		return
 	}
 
-	// TODO: Implement real remediation plan generation
-	c.JSON(http.StatusNotImplemented, models.APIResponse{
-		Success: false,
-		Error: &models.APIError{
-			Code:    "SERVICE_NOT_IMPLEMENTED",
-			Message: "Remediation plan service not yet implemented",
-		},
-	})
+	// Create vulnerability data
+	vulnData := services.VulnerabilityData{
+		ID:          vulnerabilityID,
+		Title:       "Remediation Plan Request",
+		Description: "AI-powered remediation plan requested",
+	}
+
+	// Get organization context if available
+	var orgContext *services.OrganizationContext
+	if orgID, exists := c.Get("company_id"); exists {
+		orgContext = &services.OrganizationContext{
+			OrganizationID: orgID.(string),
+		}
+	}
+
+	// Call AI service
+	plan, err := h.aiService.GetRemediationPlan(vulnData, orgContext)
+	if err != nil {
+		InternalServerError(c, "REMEDIATION_PLAN_FAILED", "Failed to generate remediation plan", err)
+		return
+	}
+
+	SuccessResponse(c, http.StatusOK, plan, "Remediation plan generated")
 }
 
 // GetBulkAnalysis performs bulk analysis on multiple vulnerabilities
@@ -135,22 +157,16 @@ func (h *AIAnalysisHandler) GetBulkAnalysis(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.APIResponse{
-			Success: false,
-			Error: &models.APIError{
-				Code:    "INVALID_REQUEST",
-				Message: "Invalid request body: " + err.Error(),
-			},
-		})
+		BadRequest(c, "INVALID_REQUEST", "Invalid request body", err.Error())
 		return
 	}
 
-	// TODO: Implement real bulk analysis
-	c.JSON(http.StatusNotImplemented, models.APIResponse{
-		Success: false,
-		Error: &models.APIError{
-			Code:    "SERVICE_NOT_IMPLEMENTED",
-			Message: "Bulk analysis service not yet implemented",
-		},
-	})
+	// Bulk analysis requires fetching vulnerabilities from database
+	// Return error indicating database integration is required
+	ErrorResponse(c, http.StatusNotImplemented, "DATABASE_INTEGRATION_REQUIRED",
+		"Bulk analysis requires vulnerability data from database. This endpoint needs to be connected to vulnerability repository.",
+		map[string]interface{}{
+			"requested_count": len(req.VulnerabilityIDs),
+			"analysis_type":   req.AnalysisType,
+		})
 }

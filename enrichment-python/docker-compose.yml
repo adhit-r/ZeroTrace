@@ -1,0 +1,73 @@
+services:
+  enrichment:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/cve_db
+      - REDIS_URL=redis://redis:6379/0
+      - UVLOOP_ENABLED=true
+      - ORJSON_ENABLED=true
+      - LOG_LEVEL=INFO
+      - PGVECTOR_ENABLED=true
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - zerotrace-net
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=cve_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zerotrace-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - zerotrace-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  cpe-guesser:
+    build: ./cpe-guesser
+    ports:
+      - "8001:8000"
+    environment:
+      - VALKEY_HOST=redis
+      - VALKEY_PORT=6379
+      - VALKEY_DB=8
+    depends_on:
+      - redis
+    networks:
+      - zerotrace-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  zerotrace-net:
+    driver: bridge
+

@@ -1,0 +1,101 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+.ENV
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# CVE data (large file, should be downloaded separately)
+cve_data.json
+cve_data.json.backup
+cve_metadata.json
+
+# CPE Guesser data
+# Note: The CPE dictionary (nvdcpe-2.0.tar, ~682MB) is needed locally for seeding
+# It will be auto-downloaded by import.py if missing, but keeping it locally avoids re-download
+# These files should NOT be committed to git due to size
+cpe-guesser/data/*.tar
+cpe-guesser/data/*.tar.gz
+cpe-guesser/data/*.json
+cpe-guesser/data/*.xml
+data/*.tar
+data/*.tar.gz
+data/*.json
+data/*.xml
+
+# Cache
+.cache/
+*.cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+tmp/
+temp/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Jupyter
+.ipynb_checkpoints
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
+
+# UV
+uv.lock
+

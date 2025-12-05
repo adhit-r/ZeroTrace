@@ -69,9 +69,8 @@ func (s *EnrollmentService) GenerateEnrollmentToken(req *models.GenerateEnrollme
 
 // ValidateEnrollmentToken validates an enrollment token
 func (s *EnrollmentService) ValidateEnrollmentToken(token string) (*models.EnrollmentToken, error) {
-	// Hash the provided token
-	tokenHash := sha256.Sum256([]byte(token))
-	tokenHashStr := hex.EncodeToString(tokenHash[:])
+	// Hash the provided token (for future database lookup)
+	_ = sha256.Sum256([]byte(token))
 
 	// TODO: Look up token in database
 	// enrollmentToken, err := s.repo.GetEnrollmentTokenByHash(tokenHashStr)
@@ -79,31 +78,9 @@ func (s *EnrollmentService) ValidateEnrollmentToken(token string) (*models.Enrol
 	//     return nil, fmt.Errorf("failed to find enrollment token: %w", err)
 	// }
 
-	// For now, return a mock token for testing
-	enrollmentToken := &models.EnrollmentToken{
-		ID:             uuid.New(),
-		OrganizationID: uuid.New(), // This would come from the database
-		TokenHash:      tokenHashStr,
-		Status:         "active",
-		ExpiresAt:      time.Now().Add(time.Hour),
-	}
-
-	// Check if token is expired
-	if time.Now().After(enrollmentToken.ExpiresAt) {
-		return nil, fmt.Errorf("enrollment token has expired")
-	}
-
-	// Check if token is already used
-	if enrollmentToken.Status == "used" {
-		return nil, fmt.Errorf("enrollment token has already been used")
-	}
-
-	// Check if token is revoked
-	if enrollmentToken.Status == "revoked" {
-		return nil, fmt.Errorf("enrollment token has been revoked")
-	}
-
-	return enrollmentToken, nil
+	// Database integration required - enrollment token lookup needs to be implemented
+	// Returning error until database integration is complete
+	return nil, fmt.Errorf("enrollment token lookup requires database integration")
 }
 
 // EnrollAgent enrolls an agent using an enrollment token
@@ -201,9 +178,8 @@ func (s *EnrollmentService) generateAgentCredential(agentID, organizationID uuid
 
 // ValidateAgentCredential validates an agent's credential
 func (s *EnrollmentService) ValidateAgentCredential(credential string, agentID uuid.UUID) (*models.AgentCredential, error) {
-	// Hash the provided credential
-	credentialHash := sha256.Sum256([]byte(credential))
-	credentialHashStr := hex.EncodeToString(credentialHash[:])
+	// Hash the credential (for future database lookup)
+	_ = sha256.Sum256([]byte(credential))
 
 	// TODO: Look up credential in database
 	// agentCredential, err := s.repo.GetAgentCredentialByHash(credentialHashStr)
@@ -211,37 +187,9 @@ func (s *EnrollmentService) ValidateAgentCredential(credential string, agentID u
 	//     return nil, fmt.Errorf("failed to find agent credential: %w", err)
 	// }
 
-	// For now, return a mock credential for testing
-	expiresAt := time.Now().AddDate(1, 0, 0)
-	agentCredential := &models.AgentCredential{
-		ID:             uuid.New(),
-		AgentID:        agentID,
-		OrganizationID: uuid.New(), // This would come from the database
-		CredentialHash: credentialHashStr,
-		Status:         "active",
-		ExpiresAt:      &expiresAt,
-	}
-
-	// Check if credential is expired
-	if agentCredential.ExpiresAt != nil && time.Now().After(*agentCredential.ExpiresAt) {
-		return nil, fmt.Errorf("agent credential has expired")
-	}
-
-	// Check if credential is revoked
-	if agentCredential.Status == "revoked" {
-		return nil, fmt.Errorf("agent credential has been revoked")
-	}
-
-	// Update last used time
-	agentCredential.LastUsedAt = time.Now()
-	agentCredential.UpdatedAt = time.Now()
-
-	// TODO: Update credential in database
-	// if err := s.repo.UpdateAgentCredential(agentCredential); err != nil {
-	//     return nil, fmt.Errorf("failed to update agent credential: %w", err)
-	// }
-
-	return agentCredential, nil
+	// Database integration required - agent credential lookup needs to be implemented
+	// Returning error until database integration is complete
+	return nil, fmt.Errorf("agent credential lookup requires database integration")
 }
 
 // RevokeEnrollmentToken revokes an enrollment token

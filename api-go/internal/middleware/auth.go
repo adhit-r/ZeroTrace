@@ -14,9 +14,16 @@ import (
 func ClerkAuth() gin.HandlerFunc {
 	// Get Clerk JWT verification key from environment
 	clerkSecret := os.Getenv("CLERK_JWT_VERIFICATION_KEY")
+	isDebug := os.Getenv("API_MODE") == "debug" || os.Getenv("DEBUG") == "true"
+	
 	if clerkSecret == "" {
-		// Fallback for development
-		clerkSecret = "development-key"
+		if isDebug {
+			// Only allow development key in debug mode
+			clerkSecret = "development-key"
+		} else {
+			// In production, fail if no key is provided
+			panic("CLERK_JWT_VERIFICATION_KEY environment variable is required in production")
+		}
 	}
 
 	return func(c *gin.Context) {
@@ -38,8 +45,8 @@ func ClerkAuth() gin.HandlerFunc {
 			token = token[7:]
 		}
 
-		// Demo mode for development
-		if token == "demo-valid-token" {
+		// Demo mode only in debug/development mode
+		if isDebug && token == "demo-valid-token" {
 			c.Set("user_id", "demo-user-1")
 			c.Set("company_id", "demo-company-1")
 			c.Set("role", "admin")

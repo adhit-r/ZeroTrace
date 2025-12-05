@@ -15,6 +15,7 @@ import (
 	"zerotrace/api/internal/middleware"
 	"zerotrace/api/internal/repository"
 	"zerotrace/api/internal/services"
+	analytics "zerotrace/api/internal/services/analytics"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -28,6 +29,16 @@ func main() {
 
 	// Load configuration
 	cfg := config.Load()
+
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("Configuration validation failed: %v", err)
+	}
+
+	// Validate environment variables
+	if err := config.ValidateEnvironment(); err != nil {
+		log.Fatalf("Environment validation failed: %v", err)
+	}
 
 	// Set Gin mode
 	if cfg.Debug {
@@ -57,22 +68,25 @@ func main() {
 	enrollmentService := services.NewEnrollmentService(cfg)
 	vulnerabilityV2Service := services.NewVulnerabilityV2Service()
 	organizationProfileService := services.NewOrganizationProfileService(db.DB)
-	techStackService := services.NewTechStackService(db.DB)
-	heatmapService := services.NewHeatmapService(db.DB)
-	maturityService := services.NewMaturityService(db.DB)
-	complianceService := services.NewComplianceService(db.DB)
-	enrichmentService := services.NewEnrichmentService("http://localhost:5001")
+	analyticsService := analytics.NewAnalyticsService(db.DB)
+	enrichmentService := services.NewEnrichmentService(cfg.EnrichmentServiceURL)
+	aiService := services.NewAIService(cfg.AIServiceURL)
 
 	// Setup router
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 
-	// Setup middleware
+	// Setup middleware (order matters - correlation ID should be first)
+	router.Use(middleware.CorrelationID())
 	router.Use(middleware.CORS())
+	router.Use(middleware.CompressionMiddleware()) // Add compression
+	router.Use(middleware.ETagMiddleware())        // Add ETag support
+	router.Use(middleware.InputValidationMiddleware())
+	router.Use(middleware.RateLimitMiddleware(cfg))
 	router.Use(middleware.RequestLogger())
 
 	// Setup routes
-	setupRoutes(router, scanService, agentService, enrollmentService, vulnerabilityV2Service, organizationProfileService, techStackService, heatmapService, maturityService, complianceService, enrichmentService)
+	setupRoutes(router, scanService, agentService, enrollmentService, vulnerabilityV2Service, organizationProfileService, analyticsService, enrichmentService, aiService)
 
 	// Create server
 	server := &http.Server{
@@ -105,7 +119,10 @@ func main() {
 	log.Println("Server exited")
 }
 
-func setupRoutes(router *gin.Engine, scanService *services.ScanService, agentService *services.AgentService, enrollmentService *services.EnrollmentService, vulnerabilityV2Service *services.VulnerabilityV2Service, organizationProfileService *services.OrganizationProfileService, techStackService *services.TechStackService, heatmapService *services.HeatmapService, maturityService *services.MaturityService, complianceService *services.ComplianceService, enrichmentService *services.EnrichmentService) {
+func setupRoutes(router *gin.Engine, scanService *services.ScanService, agentService *services.AgentService, enrollmentService *services.EnrollmentService, vulnerabilityV2Service *services.VulnerabilityV2Service, organizationProfileService *services.OrganizationProfileService, analyticsService *analytics.AnalyticsService, enrichmentService *services.EnrichmentService, aiService *services.AIService) {
+	// Root route
+	router.GET("/", handlers.Root)
+
 	// Health check
 	router.GET("/health", handlers.HealthCheck)
 
@@ -117,7 +134,9 @@ func setupRoutes(router *gin.Engine, scanService *services.ScanService, agentSer
 		agents.POST("/results", handlers.AgentResults(agentService, enrichmentService))
 		agents.POST("/status", handlers.AgentStatus(agentService))
 		agents.POST("/system-info", handlers.UpdateSystemInfo(agentService))
+		agents.POST("/network-scan-results", handlers.NetworkScanResults(agentService))
 		agents.GET("/", handlers.GetAgents(agentService))
+		agents.GET("/:id", handlers.GetAgent(agentService))
 		agents.GET("/online", handlers.GetOnlineAgents(agentService))
 		agents.GET("/stats", handlers.GetAgentStats(agentService))
 		agents.GET("/stats/public", handlers.GetPublicAgentStats(agentService))
@@ -148,16 +167,15 @@ func setupRoutes(router *gin.Engine, scanService *services.ScanService, agentSer
 		organizations.GET("/:id/risk-weights", organizationProfileHandler.GetIndustryRiskWeights)
 	}
 
-	// Technology stack analysis routes (public for now)
-	techStackHandler := handlers.NewTechStackHandler(techStackService)
+	// Technology stack analysis routes (merged into organization profile)
 	techStack := router.Group("/api/tech-stack")
 	{
-		techStack.GET("/organizations/:id/analyze", techStackHandler.AnalyzeTechStack)
-		techStack.GET("/organizations/:id/recommendations", techStackHandler.GetTechStackRecommendations)
+		techStack.GET("/organizations/:id/analyze", organizationProfileHandler.AnalyzeTechStack)
+		techStack.GET("/organizations/:id/recommendations", organizationProfileHandler.GetTechStackRecommendations)
 	}
 
 	// AI-powered analysis routes (public for now)
-	aiAnalysisHandler := handlers.NewAIAnalysisHandler()
+	aiAnalysisHandler := handlers.NewAIAnalysisHandler(aiService)
 	aiAnalysis := router.Group("/api/ai-analysis")
 	{
 		aiAnalysis.GET("/vulnerabilities/:id/comprehensive", aiAnalysisHandler.AnalyzeVulnerabilityComprehensive)
@@ -168,38 +186,38 @@ func setupRoutes(router *gin.Engine, scanService *services.ScanService, agentSer
 		aiAnalysis.POST("/bulk-analysis", aiAnalysisHandler.GetBulkAnalysis)
 	}
 
+	// Analytics routes (unified service for heatmap, maturity, compliance)
+	analyticsHandler := handlers.NewAnalyticsHandler(analyticsService)
+
 	// Risk heatmap routes (public for now)
-	heatmapHandler := handlers.NewHeatmapHandler(heatmapService)
 	heatmaps := router.Group("/api/heatmaps")
 	{
-		heatmaps.GET("/organizations/:id", heatmapHandler.GenerateRiskHeatmap)
-		heatmaps.GET("/organizations/:id/hotspots", heatmapHandler.GetHeatmapHotspots)
-		heatmaps.GET("/organizations/:id/risk-distribution", heatmapHandler.GetRiskDistribution)
-		heatmaps.GET("/organizations/:id/trends", heatmapHandler.GetHeatmapTrends)
-		heatmaps.GET("/organizations/:id/recommendations", heatmapHandler.GetHeatmapRecommendations)
+		heatmaps.GET("/organizations/:id", analyticsHandler.GenerateRiskHeatmap)
+		heatmaps.GET("/organizations/:id/hotspots", analyticsHandler.GetHeatmapHotspots)
+		heatmaps.GET("/organizations/:id/risk-distribution", analyticsHandler.GetRiskDistribution)
+		heatmaps.GET("/organizations/:id/trends", analyticsHandler.GetHeatmapTrends)
+		heatmaps.GET("/organizations/:id/recommendations", analyticsHandler.GetHeatmapRecommendations)
 	}
 
 	// Security maturity score routes (public for now)
-	maturityHandler := handlers.NewMaturityHandler(maturityService)
 	maturity := router.Group("/api/maturity")
 	{
-		maturity.GET("/organizations/:id/score", maturityHandler.CalculateMaturityScore)
-		maturity.GET("/organizations/:id/benchmark", maturityHandler.GetMaturityBenchmark)
-		maturity.GET("/organizations/:id/roadmap", maturityHandler.GetImprovementRoadmap)
-		maturity.GET("/organizations/:id/trends", maturityHandler.GetMaturityTrends)
-		maturity.GET("/organizations/:id/dimensions", maturityHandler.GetDimensionScores)
+		maturity.GET("/organizations/:id/score", analyticsHandler.CalculateMaturityScore)
+		maturity.GET("/organizations/:id/benchmark", analyticsHandler.GetMaturityBenchmark)
+		maturity.GET("/organizations/:id/roadmap", analyticsHandler.GetImprovementRoadmap)
+		maturity.GET("/organizations/:id/trends", analyticsHandler.GetMaturityTrends)
+		maturity.GET("/organizations/:id/dimensions", analyticsHandler.GetDimensionScores)
 	}
 
 	// Compliance reporting routes (public for now)
-	complianceHandler := handlers.NewComplianceHandler(complianceService)
 	compliance := router.Group("/api/compliance")
 	{
-		compliance.GET("/organizations/:id/report", complianceHandler.GenerateComplianceReport)
-		compliance.GET("/organizations/:id/score", complianceHandler.GetComplianceScore)
-		compliance.GET("/organizations/:id/findings", complianceHandler.GetComplianceFindings)
-		compliance.GET("/organizations/:id/recommendations", complianceHandler.GetComplianceRecommendations)
-		compliance.GET("/organizations/:id/evidence", complianceHandler.GetComplianceEvidence)
-		compliance.GET("/organizations/:id/executive-summary", complianceHandler.GetExecutiveSummary)
+		compliance.GET("/organizations/:id/report", analyticsHandler.GenerateComplianceReport)
+		compliance.GET("/organizations/:id/score", analyticsHandler.GetComplianceScore)
+		compliance.GET("/organizations/:id/findings", analyticsHandler.GetComplianceFindings)
+		compliance.GET("/organizations/:id/recommendations", analyticsHandler.GetComplianceRecommendations)
+		compliance.GET("/organizations/:id/evidence", analyticsHandler.GetComplianceEvidence)
+		compliance.GET("/organizations/:id/executive-summary", analyticsHandler.GetExecutiveSummary)
 	}
 
 	// API v2 routes (public - no auth required for now)

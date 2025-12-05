@@ -220,8 +220,8 @@ func (h *OrganizationProfileHandler) GetTechStackRelevance(c *gin.Context) {
 		return
 	}
 
-	// For now, we'll create a mock vulnerability - in real implementation,
-	// this would fetch from the database
+	// Create vulnerability structure from provided parameters
+	// Note: Full implementation would fetch complete vulnerability details from database
 	vulnerability := &models.Vulnerability{
 		ID:          vulnerabilityID,
 		PackageName: c.Query("package_name"),
@@ -294,4 +294,43 @@ func (h *OrganizationProfileHandler) GetIndustryRiskWeights(c *gin.Context) {
 			"risk_weights":    weights,
 		},
 	})
+}
+
+// AnalyzeTechStack analyzes technology stack for an organization
+func (h *OrganizationProfileHandler) AnalyzeTechStack(c *gin.Context) {
+	organizationIDStr := c.Param("id")
+	organizationID, err := uuid.Parse(organizationIDStr)
+	if err != nil {
+		BadRequest(c, "INVALID_UUID", "Invalid organization ID format", err.Error())
+		return
+	}
+
+	analysis, err := h.profileService.AnalyzeTechStackFromAssets(organizationID)
+	if err != nil {
+		InternalServerError(c, "ANALYSIS_FAILED", "Failed to analyze technology stack", err)
+		return
+	}
+
+	SuccessResponse(c, http.StatusOK, analysis, "Technology stack analyzed successfully")
+}
+
+// GetTechStackRecommendations gets security recommendations based on tech stack
+func (h *OrganizationProfileHandler) GetTechStackRecommendations(c *gin.Context) {
+	organizationIDStr := c.Param("id")
+	organizationID, err := uuid.Parse(organizationIDStr)
+	if err != nil {
+		BadRequest(c, "INVALID_UUID", "Invalid organization ID format", err.Error())
+		return
+	}
+
+	recommendations, err := h.profileService.GetTechStackRecommendations(organizationID)
+	if err != nil {
+		InternalServerError(c, "ANALYSIS_FAILED", "Failed to get tech stack recommendations", err)
+		return
+	}
+
+	SuccessResponse(c, http.StatusOK, gin.H{
+		"organization_id": organizationID,
+		"recommendations": recommendations,
+	}, "Recommendations retrieved successfully")
 }

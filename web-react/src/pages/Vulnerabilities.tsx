@@ -66,7 +66,7 @@ const Vulnerabilities: React.FC = () => {
       setError(null);
 
       // Fetch vulnerabilities from API
-      const response = await fetch('http://localhost:8080/api/vulnerabilities/');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/vulnerabilities/`);
       const data = await response.json();
 
       if (data.success && data.data) {

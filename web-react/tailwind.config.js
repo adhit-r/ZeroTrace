@@ -21,38 +21,48 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "#000000", // Black for neobrutal
+          foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: "#FF6B00", // ZeroTrace orange
+          foreground: "#FFFFFF",
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: "#EF4444", // Red
+          foreground: "#FFFFFF",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "#FF6B00", // ZeroTrace orange
+          foreground: "#FFFFFF",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "#FFFFFF",
+          foreground: "#000000",
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "0", // Neobrutal: no border radius
+        md: "0",
+        sm: "0",
+        none: "0",
+      },
+      borderWidth: {
+        '3': '3px',
+        '4': '4px',
+      },
+      boxShadow: {
+        'neobrutal-sm': '2px 2px 0px #000',
+        'neobrutal-md': '4px 4px 0px #000',
+        'neobrutal-lg': '8px 8px 0px #000',
       },
       keyframes: {
         "accordion-down": {
@@ -70,6 +80,13 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      textTransform: {
+        'uppercase': 'uppercase',
+      },
+      letterSpacing: {
+        'neobrutal': '0.5px',
+        'neobrutal-wide': '1px',
       },
     },
   },

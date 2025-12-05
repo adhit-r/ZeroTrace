@@ -83,8 +83,10 @@ class AmassDiscovery:
             # Clean up output file
             try:
                 os.remove(output_file)
-            except:
-                pass
+            except (FileNotFoundError, PermissionError, OSError) as e:
+                logger.debug(f"Could not remove output file {output_file}: {e}")
+            except Exception as e:
+                logger.warning(f"Unexpected error removing output file {output_file}: {e}")
             
             return results
             

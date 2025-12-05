@@ -28,18 +28,18 @@ services:
       - label=disable
     read_only: false
 
-  # Redis Cache & Message Queue
-  redis:
-    image: redis:7-alpine
-    container_name: zerotrace-redis
+  # Valkey Cache & Message Queue (Redis-compatible)
+  valkey:
+    image: valkey/valkey:latest
+    container_name: zerotrace-valkey
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - valkey_data:/data
     networks:
       - zerotrace-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "valkey-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,6 +47,10 @@ services:
     security_opt:
       - label=disable
     read_only: false
+
+  # Note: CPE Guesser is now integrated as a Python library in the enrichment service
+  # Uses direct Valkey access (DB 8) - no separate HTTP service needed
+  # To seed CPE database: docker exec -it zerotrace-enrichment python3 -m cpe_guesser.bin.import --download
 
   # Go API Backend
   api:
@@ -64,10 +68,11 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=password
       - DB_SSL_MODE=disable
-      - REDIS_HOST=redis
+      - REDIS_HOST=valkey
       - REDIS_PORT=6379
       - REDIS_PASSWORD=
       - REDIS_DB=0
+      # Note: Using REDIS_* env vars for backward compatibility with Redis clients
       - JWT_SECRET=dev-secret-key-change-in-production
       - JWT_EXPIRY=24h
       - RATE_LIMIT_REQUESTS=100
@@ -79,7 +84,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      valkey:
         condition: service_healthy
     networks:
       - zerotrace-network
@@ -101,14 +106,19 @@ services:
     environment:
       - ENRICHMENT_PORT=8000
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/zerotrace
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://valkey:6379/0
+      # Note: Using redis:// protocol (Valkey is Redis-compatible)
       - LOG_LEVEL=info
+      - CPE_GUESSER_ENABLED=true
+      - CPE_GUESSER_VALKEY_DB=8
+      - CPE_GUESSER_FALLBACK_TO_ML=true
+      # CPE Guesser uses library mode (direct Valkey access) - no HTTP service needed
     ports:
       - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      valkey:
         condition: service_healthy
     networks:
       - zerotrace-network
@@ -148,7 +158,7 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
+  valkey_data:
 
 networks:
   zerotrace-network:

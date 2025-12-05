@@ -282,7 +282,11 @@ class PredictiveAnalysisService:
                 cve_year = int(cve_id.split('-')[1])
                 current_year = datetime.now().year
                 features.append(current_year - cve_year)  # Age of CVE
-            except:
+            except (ValueError, IndexError) as e:
+                logger.debug(f"Could not parse CVE year from {cve_id}: {e}")
+                features.append(0.0)
+            except Exception as e:
+                logger.warning(f"Unexpected error parsing CVE year from {cve_id}: {e}")
                 features.append(0.0)
         else:
             features.append(0.0)

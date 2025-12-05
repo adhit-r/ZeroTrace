@@ -42,7 +42,7 @@ class CVEDatabaseUpdater:
         
         logger.info(f"Fetching CVEs published since {since_date_str}")
         
-            async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as session:
             while True:
                 params = {
                     'pubStartDate': since_date_str,
@@ -85,7 +85,7 @@ class CVEDatabaseUpdater:
                             
                         elif response.status == 403:
                             logger.error("NVD API rate limit exceeded. Consider using API key for higher limits.")
-                                break
+                            break
                         else:
                             logger.error(f"NVD API returned status {response.status}")
                             break
@@ -95,7 +95,7 @@ class CVEDatabaseUpdater:
                     break
         
         logger.info(f"Total CVEs fetched: {len(cves)}")
-                return cves
+        return cves
                 
     def load_existing_cves(self) -> List[Dict]:
         """Load existing CVE data from file"""

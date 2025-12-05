@@ -89,7 +89,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, onClose, className =
       
       try {
         // Fetch real agent data from API
-        const response = await fetch(`http://localhost:8080/api/agents/`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/agents/`);
         if (!response.ok) {
           throw new Error('Failed to fetch agent data');
         }

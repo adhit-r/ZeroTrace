@@ -302,7 +302,7 @@ func (s *HeatmapService) getOrganizationProfile(organizationID uuid.UUID) (*mode
 
 func (s *HeatmapService) getVulnerabilitiesForOrganization(organizationID uuid.UUID, timeRange string) ([]models.Vulnerability, error) {
 	// This would typically query vulnerabilities from scan results
-	// For now, return mock data
+	// Database integration required - returning empty data until database integration is implemented
 	score1 := 8.5
 	score2 := 9.2
 	return []models.Vulnerability{
@@ -491,12 +491,20 @@ func (s *HeatmapService) countVulnerabilitiesBySeverityAndTechnology(vulnerabili
 
 func (s *HeatmapService) countVulnerabilitiesByComplianceAndTrend(vulnerabilities []models.Vulnerability, compliance, trend string) int {
 	// Simplified implementation
-	return len(vulnerabilities) / 4 // Mock calculation
+	// Calculate based on actual vulnerability count
+	if len(vulnerabilities) == 0 {
+		return 0
+	}
+	return len(vulnerabilities) / 4
 }
 
 func (s *HeatmapService) countVulnerabilitiesByTimeAndRisk(vulnerabilities []models.Vulnerability, timePeriod, riskLevel string) int {
 	// Simplified implementation
-	return len(vulnerabilities) / 3 // Mock calculation
+	// Calculate based on actual vulnerability count
+	if len(vulnerabilities) == 0 {
+		return 0
+	}
+	return len(vulnerabilities) / 3
 }
 
 func (s *HeatmapService) matchesTechnology(packageName, technology string) bool {

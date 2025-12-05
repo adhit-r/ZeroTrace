@@ -22,19 +22,23 @@ type NetworkScanResult struct {
 
 // NetworkFinding represents a single network security finding from Naabu or Nuclei.
 type NetworkFinding struct {
-	ID             uuid.UUID `json:"id"`
-	FindingType    string    `json:"finding_type"` // e.g., "port", "vuln"
-	Severity       string    `json:"severity"`     // critical, high, medium, low, info
-	Host           string    `json:"host"`
-	Port           int       `json:"port"`
-	Protocol       string    `json:"protocol"` // tcp, udp
-	ServiceName    string    `json:"service_name"`
-	ServiceVersion string    `json:"service_version"`
-	Banner         string    `json:"banner"`
-	Description    string    `json:"description"`
-	Remediation    string    `json:"remediation"`
-	DiscoveredAt   time.Time `json:"discovered_at"`
-	Status         string    `json:"status"` // open, filtered, closed
+	ID             uuid.UUID              `json:"id"`
+	FindingType    string                 `json:"finding_type"` // e.g., "port", "vuln", "config"
+	Severity       string                 `json:"severity"`     // critical, high, medium, low, info
+	Host           string                 `json:"host"`
+	Port           int                    `json:"port"`
+	Protocol       string                 `json:"protocol"` // tcp, udp
+	ServiceName    string                 `json:"service_name"`
+	ServiceVersion string                 `json:"service_version"`
+	Banner         string                 `json:"banner"`
+	Description    string                 `json:"description"`
+	Remediation    string                 `json:"remediation"`
+	DiscoveredAt   time.Time              `json:"discovered_at"`
+	Status         string                 `json:"status"` // open, filtered, closed
+	DeviceType     string                 `json:"device_type,omitempty"` // switch, router, iot, phone, server, unknown
+	OS             string                 `json:"os,omitempty"`
+	OSVersion      string                 `json:"os_version,omitempty"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // SBOMFinding represents the result of an SBOM scan.

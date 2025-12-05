@@ -53,6 +53,10 @@ type Config struct {
 	ExcludePatterns []string      `json:"exclude_patterns"`
 	IncludePatterns []string      `json:"include_patterns"`
 
+	// Network Scan Configuration
+	NetworkScanInterval time.Duration `json:"network_scan_interval"`
+	NetworkScanEnabled  bool         `json:"network_scan_enabled"`
+
 	// AI/ML Configuration
 	FairnessThreshold    float64 `json:"fairness_threshold"`
 	DataQualityThreshold float64 `json:"data_quality_threshold"`
@@ -116,6 +120,10 @@ func Load() *Config {
 		ScanTimeout:     30 * time.Minute, // Default 30 minutes
 		ExcludePatterns: []string{".git", "node_modules", ".DS_Store", "*.log"},
 		IncludePatterns: []string{".go", ".py", ".js", ".ts", ".java", ".php", ".rb", ".rs", ".cpp", ".c", ".cs"},
+
+		// Network Scan Configuration
+		NetworkScanInterval: 6 * time.Hour, // Default 6 hours
+		NetworkScanEnabled:  getEnv("NETWORK_SCAN_ENABLED", "true") == "true",
 
 		// AI/ML Configuration
 		FairnessThreshold:    0.8, // Default 80% fairness threshold

@@ -4,6 +4,24 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Resource Hints for Performance -->
+    <!-- DNS Prefetch for external domains -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    
+    <!-- Preconnect to API endpoint -->
+    <link rel="preconnect" href="http://localhost:8080" crossorigin />
+    
+    <!-- Preload critical fonts (if self-hosted) -->
+    <!-- <link rel="preload" href="/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin /> -->
+    <!-- <link rel="preload" href="/fonts/inter-600.woff2" as="font" type="font/woff2" crossorigin /> -->
+    
+    <!-- Prefetch likely next routes -->
+    <link rel="prefetch" href="/agents" />
+    <link rel="prefetch" href="/vulnerabilities" />
+    <link rel="prefetch" href="/security" />
+    
     <title>ZeroTrace</title>
   </head>
   <body>

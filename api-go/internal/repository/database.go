@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"zerotrace/api/internal/config"
 	"zerotrace/api/internal/models"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -15,7 +17,12 @@ import (
 
 // Database represents the database connection and repositories
 type Database struct {
-	DB *gorm.DB
+	DB            *gorm.DB
+	PgxPool       *pgxpool.Pool // Direct pgx pool for hot paths
+	QueryCache    *QueryCache
+	StmtMgr       *PreparedStatementManager
+	PoolMonitor   *PoolMonitor
+	TxManager     *TransactionManager
 }
 
 // NewDatabase creates a new database connection
@@ -53,9 +60,57 @@ func NewDatabase(cfg *config.Config) (*Database, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Println("Database connected successfully")
+	// Create pgx pool for direct PostgreSQL access (bypass GORM for hot paths)
+	pgxConfig, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse pgx config: %w", err)
+	}
+	
+	// Configure pool settings
+	pgxConfig.MaxConns = 100
+	pgxConfig.MinConns = 10
+	pgxConfig.MaxConnLifetime = time.Hour
+	pgxConfig.MaxConnIdleTime = 30 * time.Minute
+	
+	pgxPool, err := pgxpool.NewWithConfig(context.Background(), pgxConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
+	}
 
-	return &Database{DB: db}, nil
+	// Test pgx pool connection
+	if err := pgxPool.Ping(context.Background()); err != nil {
+		pgxPool.Close()
+		return nil, fmt.Errorf("failed to ping pgx pool: %w", err)
+	}
+
+	log.Println("Database connected successfully (GORM + pgx pool)")
+
+	// Initialize query cache (Valkey will be passed later)
+	queryCache := NewQueryCache(pgxPool, nil, 5*time.Minute)
+	
+	// Initialize prepared statement manager
+	stmtMgr := NewPreparedStatementManager(pgxPool)
+	
+	// Initialize prepared statements
+	ctx := context.Background()
+	if err := stmtMgr.InitializePreparedStatements(ctx); err != nil {
+		log.Printf("Warning: Failed to initialize prepared statements: %v", err)
+	}
+	
+	// Initialize pool monitor
+	poolMonitor := NewPoolMonitor(pgxPool)
+	
+	// Initialize transaction manager
+	txManager := NewTransactionManager(pgxPool)
+
+	return &Database{
+		DB:          db,
+		PgxPool:     pgxPool,
+		QueryCache:  queryCache,
+		StmtMgr:     stmtMgr,
+		PoolMonitor: poolMonitor,
+		TxManager:   txManager,
+	}, nil
 }
 
 // AutoMigrate runs database migrations
@@ -80,9 +135,25 @@ func (d *Database) AutoMigrate() error {
 
 // Close closes the database connection
 func (d *Database) Close() error {
-	sqlDB, err := d.DB.DB()
-	if err != nil {
-		return err
+	var errs []error
+	
+	// Close GORM connection
+	if sqlDB, err := d.DB.DB(); err == nil {
+		if err := sqlDB.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close GORM connection: %w", err))
+		}
+	} else {
+		errs = append(errs, fmt.Errorf("failed to get GORM sql.DB: %w", err))
 	}
-	return sqlDB.Close()
+	
+	// Close pgx pool
+	if d.PgxPool != nil {
+		d.PgxPool.Close()
+	}
+	
+	if len(errs) > 0 {
+		return fmt.Errorf("errors closing database: %v", errs)
+	}
+	
+	return nil
 }

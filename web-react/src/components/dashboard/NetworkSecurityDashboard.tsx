@@ -49,7 +49,7 @@ const NetworkSecurityDashboard: React.FC = () => {
     {
       time: '2 min ago',
       type: 'blocked',
-      source: '192.168.1.100',
+      source: import.meta.env.VITE_EXAMPLE_IP_1 || '192.168.1.100',
       description: 'Suspicious port scan detected',
       severity: 'high',
       color: 'red'
@@ -73,7 +73,7 @@ const NetworkSecurityDashboard: React.FC = () => {
     {
       time: '18 min ago',
       type: 'monitored',
-      source: '192.168.1.200',
+      source: import.meta.env.VITE_EXAMPLE_IP_2 || '192.168.1.200',
       description: 'High bandwidth usage',
       severity: 'medium',
       color: 'orange'

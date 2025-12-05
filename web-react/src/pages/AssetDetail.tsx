@@ -101,12 +101,23 @@ const AssetDetail: React.FC = () => {
   const fetchAssetDetail = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/agents/');
-      const agentsData = response.data;
-      if (!agentsData.success || !agentsData.data) {
-        throw new Error('Failed to fetch agents data');
+      // Try to get agent by ID first, fallback to listing all agents
+      let agent;
+      try {
+        const response = await api.get(`/api/agents/${id}`);
+        if (response.data.success && response.data.data) {
+          agent = response.data.data;
+        }
+      } catch (err) {
+        // Fallback: get all agents and find by ID
+        const response = await api.get('/api/agents/');
+        const agentsData = response.data;
+        if (!agentsData.success || !agentsData.data) {
+          throw new Error('Failed to fetch agents data');
+        }
+        agent = agentsData.data.find((a: any) => a.id === id);
       }
-      const agent = agentsData.data.find((a: any) => a.id === id);
+      
       if (!agent) {
         throw new Error('Agent not found');
       }

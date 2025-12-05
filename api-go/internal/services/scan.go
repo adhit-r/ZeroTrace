@@ -28,7 +28,7 @@ func NewScanService(cfg *config.Config, scanRepo *repository.ScanRepository) *Sc
 	}
 }
 
-// CreateScan creates a new scan
+// CreateScan creates a new scan with transaction management
 func (s *ScanService) CreateScan(req models.CreateScanRequest, companyID uuid.UUID) (*models.Scan, error) {
 	scan := &models.Scan{
 		ID:         uuid.New(),
@@ -45,7 +45,12 @@ func (s *ScanService) CreateScan(req models.CreateScanRequest, companyID uuid.UU
 		UpdatedAt:  time.Now(),
 	}
 
-	// TODO: Save to database
+	// Save to database using repository (repository handles transactions internally)
+	err := s.scanRepo.Create(scan)
+	if err != nil {
+		return nil, err
+	}
+
 	// TODO: Queue scan for processing
 
 	return scan, nil
@@ -53,28 +58,19 @@ func (s *ScanService) CreateScan(req models.CreateScanRequest, companyID uuid.UU
 
 // GetScan retrieves a scan by ID
 func (s *ScanService) GetScan(scanID, companyID uuid.UUID) (*models.Scan, error) {
-	// TODO: Implement actual database lookup
-	// For now, return a mock scan for testing
-
 	if scanID == uuid.Nil {
 		return nil, errors.New("invalid scan ID")
 	}
 
-	scan := &models.Scan{
-		ID:         scanID,
-		CompanyID:  companyID,
-		Repository: "https://github.com/example/repo",
-		Branch:     "main",
-		ScanType:   "full",
-		Status:     models.ScanStatusCompleted,
-		Progress:   100,
-		StartTime:  &time.Time{},
-		EndTime:    &time.Time{},
-		Options:    make(map[string]any),
-		Results:    make(map[string]any),
-		Metadata:   make(map[string]any),
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+	// Query from database using repository
+	scan, err := s.scanRepo.GetByID(scanID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify company ID matches
+	if scan.CompanyID != companyID {
+		return nil, errors.New("scan not found for this company")
 	}
 
 	return scan, nil
@@ -82,50 +78,34 @@ func (s *ScanService) GetScan(scanID, companyID uuid.UUID) (*models.Scan, error)
 
 // GetScans retrieves scans for a company with pagination
 func (s *ScanService) GetScans(companyID uuid.UUID, page, limit int) (*models.PaginationResponse, error) {
-	// TODO: Implement actual database query with pagination
-	// For now, return mock data for testing
-
-	scans := []*models.Scan{
-		{
-			ID:         uuid.New(),
-			CompanyID:  companyID,
-			Repository: "https://github.com/example/repo1",
-			Branch:     "main",
-			ScanType:   "full",
-			Status:     models.ScanStatusCompleted,
-			Progress:   100,
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
-		},
-		{
-			ID:         uuid.New(),
-			CompanyID:  companyID,
-			Repository: "https://github.com/example/repo2",
-			Branch:     "develop",
-			ScanType:   "incremental",
-			Status:     models.ScanStatusScanning,
-			Progress:   45,
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
-		},
+	// Query from database using repository
+	scans, total, err := s.scanRepo.GetByCompanyID(companyID, page, limit)
+	if err != nil {
+		return nil, err
 	}
 
+	// Convert to pointer slice
+	scanPointers := make([]*models.Scan, len(scans))
+	for i := range scans {
+		scanPointers[i] = &scans[i]
+	}
+
+	totalPages := (int(total) + limit - 1) / limit
 	response := &models.PaginationResponse{
-		Data:       scans,
-		Total:      2,
+		Data:       scanPointers,
+		Total:      total,
 		Page:       page,
 		Limit:      limit,
-		TotalPages: 1,
-		HasNext:    false,
-		HasPrev:    false,
+		TotalPages: totalPages,
+		HasNext:    page < totalPages,
+		HasPrev:    page > 1,
 	}
 
 	return response, nil
 }
 
-// UpdateScan updates a scan
+// UpdateScan updates a scan with transaction management
 func (s *ScanService) UpdateScan(scanID, companyID uuid.UUID, updates map[string]any) (*models.Scan, error) {
-	// TODO: Implement actual database update
 	scan, err := s.GetScan(scanID, companyID)
 	if err != nil {
 		return nil, err
@@ -150,6 +130,13 @@ func (s *ScanService) UpdateScan(scanID, companyID uuid.UUID, updates map[string
 	}
 
 	scan.UpdatedAt = time.Now()
+	
+	// Update in database using repository (handles transactions)
+	err = s.scanRepo.Update(scan)
+	if err != nil {
+		return nil, err
+	}
+
 	return scan, nil
 }
 

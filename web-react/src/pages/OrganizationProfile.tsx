@@ -170,14 +170,13 @@ export default function OrganizationProfile() {
           <Button 
             onClick={handleSave} 
             disabled={saving}
-            className="neobrutal-button"
           >
             {saving ? 'Saving...' : 'Save Profile'}
           </Button>
         </div>
 
         {/* Basic Information */}
-        <Card className="neobrutal-card">
+        <Card>
           <CardHeader>
             <CardTitle className="text-xl font-bold">Basic Information</CardTitle>
           </CardHeader>
@@ -189,7 +188,6 @@ export default function OrganizationProfile() {
                   id="name"
                   value={profile.name}
                   onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
-                  className="neobrutal-input"
                 />
               </div>
               <div>
@@ -198,7 +196,7 @@ export default function OrganizationProfile() {
                   value={profile.industry} 
                   onValueChange={(value) => setProfile(prev => ({ ...prev, industry: value }))}
                 >
-                  <SelectTrigger className="neobrutal-input">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select industry" />
                   </SelectTrigger>
                   <SelectContent>
@@ -214,7 +212,7 @@ export default function OrganizationProfile() {
                   value={profile.size} 
                   onValueChange={(value) => setProfile(prev => ({ ...prev, size: value }))}
                 >
-                  <SelectTrigger className="neobrutal-input">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select company size" />
                   </SelectTrigger>
                   <SelectContent>
@@ -230,7 +228,7 @@ export default function OrganizationProfile() {
                   value={profile.riskTolerance} 
                   onValueChange={(value) => setProfile(prev => ({ ...prev, riskTolerance: value }))}
                 >
-                  <SelectTrigger className="neobrutal-input">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select risk tolerance" />
                   </SelectTrigger>
                   <SelectContent>
@@ -245,7 +243,7 @@ export default function OrganizationProfile() {
         </Card>
 
         {/* Tech Stack */}
-        <Card className="neobrutal-card">
+        <Card>
           <CardHeader>
             <CardTitle className="text-xl font-bold">Technology Stack</CardTitle>
           </CardHeader>
@@ -257,7 +255,6 @@ export default function OrganizationProfile() {
                     type="checkbox"
                     checked={profile.techStack.includes(tech)}
                     onChange={(e) => handleTechStackChange(tech, e.target.checked)}
-                    className="neobrutal-checkbox"
                   />
                   <span className="text-sm font-medium">{tech}</span>
                 </label>
@@ -268,7 +265,7 @@ export default function OrganizationProfile() {
                 <Label>Selected Technologies:</Label>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {profile.techStack.map(tech => (
-                    <Badge key={tech} variant="secondary" className="neobrutal-badge">
+                    <Badge key={tech} variant="secondary">
                       {tech}
                     </Badge>
                   ))}
@@ -279,7 +276,7 @@ export default function OrganizationProfile() {
         </Card>
 
         {/* Compliance Frameworks */}
-        <Card className="neobrutal-card">
+        <Card>
           <CardHeader>
             <CardTitle className="text-xl font-bold">Compliance Frameworks</CardTitle>
           </CardHeader>
@@ -291,7 +288,6 @@ export default function OrganizationProfile() {
                     type="checkbox"
                     checked={profile.complianceFrameworks.includes(framework)}
                     onChange={(e) => handleComplianceChange(framework, e.target.checked)}
-                    className="neobrutal-checkbox"
                   />
                   <span className="text-sm font-medium">{framework}</span>
                 </label>
@@ -302,7 +298,7 @@ export default function OrganizationProfile() {
                 <Label>Selected Frameworks:</Label>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {profile.complianceFrameworks.map(framework => (
-                    <Badge key={framework} variant="outline" className="neobrutal-badge">
+                    <Badge key={framework} variant="outline">
                       {framework}
                     </Badge>
                   ))}
@@ -313,7 +309,7 @@ export default function OrganizationProfile() {
         </Card>
 
         {/* Security Policies */}
-        <Card className="neobrutal-card">
+        <Card>
           <CardHeader>
             <CardTitle className="text-xl font-bold">Security Policies</CardTitle>
           </CardHeader>
@@ -325,7 +321,6 @@ export default function OrganizationProfile() {
                     type="checkbox"
                     checked={profile.securityPolicies.includes(policy)}
                     onChange={(e) => handlePolicyChange(policy, e.target.checked)}
-                    className="neobrutal-checkbox"
                   />
                   <span className="text-sm font-medium">{policy}</span>
                 </label>
@@ -336,7 +331,7 @@ export default function OrganizationProfile() {
                 <Label>Selected Policies:</Label>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {profile.securityPolicies.map(policy => (
-                    <Badge key={policy} variant="secondary" className="neobrutal-badge">
+                    <Badge key={policy} variant="secondary">
                       {policy}
                     </Badge>
                   ))}
@@ -347,7 +342,7 @@ export default function OrganizationProfile() {
         </Card>
 
         {/* Risk Weights */}
-        <Card className="neobrutal-card">
+        <Card>
           <CardHeader>
             <CardTitle className="text-xl font-bold">Risk Weight Configuration</CardTitle>
           </CardHeader>
@@ -366,7 +361,6 @@ export default function OrganizationProfile() {
                     ...prev,
                     riskWeights: { ...prev.riskWeights, confidentiality: parseFloat(e.target.value) }
                   }))}
-                  className="neobrutal-input"
                 />
               </div>
               <div>
@@ -382,7 +376,6 @@ export default function OrganizationProfile() {
                     ...prev,
                     riskWeights: { ...prev.riskWeights, integrity: parseFloat(e.target.value) }
                   }))}
-                  className="neobrutal-input"
                 />
               </div>
               <div>
@@ -398,7 +391,6 @@ export default function OrganizationProfile() {
                     ...prev,
                     riskWeights: { ...prev.riskWeights, availability: parseFloat(e.target.value) }
                   }))}
-                  className="neobrutal-input"
                 />
               </div>
               <div>
@@ -414,7 +406,6 @@ export default function OrganizationProfile() {
                     ...prev,
                     riskWeights: { ...prev.riskWeights, compliance: parseFloat(e.target.value) }
                   }))}
-                  className="neobrutal-input"
                 />
               </div>
             </div>

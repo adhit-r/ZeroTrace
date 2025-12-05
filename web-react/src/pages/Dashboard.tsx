@@ -14,37 +14,27 @@ import {
 } from 'lucide-react';
 import { agentService } from '../services/agentService';
 
-// Import charting library and new components
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-// Removed mock chart data - using real data only
+// Lazy load charting library to reduce initial bundle size
+import { loadChartJS, preloadChartJS } from '../utils/chartLazyLoader';
 import TopVulnerableAssets from '../components/dashboard/TopVulnerableAssets';
-// import InnovativeDashboard from '../components/dashboard/InnovativeDashboard';
 import RealTimeMonitoring from '../components/dashboard/RealTimeMonitoring';
 import VulnerabilityTrendAnalysis from '../components/dashboard/VulnerabilityTrendAnalysis';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-);
+// Lazy load Chart.js - will be loaded when component mounts
+let ChartComponents: { Bar: any; Doughnut: any; Line: any } | null = null;
+
+const loadCharts = async () => {
+  if (!ChartComponents) {
+    await loadChartJS();
+    const chartModule = await import('react-chartjs-2');
+    ChartComponents = {
+      Bar: chartModule.Bar,
+      Doughnut: chartModule.Doughnut,
+      Line: chartModule.Line,
+    };
+  }
+  return ChartComponents;
+};
 
 // Define types locally to avoid import issues
 interface Asset {
@@ -361,7 +351,7 @@ const Dashboard: React.FC = () => {
     setIsScanning(true);
     try {
       // Trigger a scan by calling the API
-      const response = await fetch('http://localhost:8080/api/agents/', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/agents/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { heatmapService, HeatmapData, HeatmapPoint, RiskDistributionBucket, TrendPoint } from '@/services/heatmapService';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 function HeatmapGrid({ data }: { data: HeatmapData }) {
   const max = Math.max(1, ...data.data.map(d => d.value));
@@ -32,7 +34,10 @@ function HeatmapGrid({ data }: { data: HeatmapData }) {
 }
 
 export default function RiskHeatmaps() {
-  const [organizationId] = useState<string>('123e4567-e89b-12d3-a456-426614174000'); // TODO: fetch from profile/auth
+  // Get organization ID from environment or fetch from API/auth context
+  const [organizationId] = useState<string | null>(
+    import.meta.env.VITE_ORGANIZATION_ID || null
+  );
   const [heatmap, setHeatmap] = useState<HeatmapData | null>(null);
   const [hotspots, setHotspots] = useState<HeatmapPoint[]>([]);
   const [distribution, setDistribution] = useState<RiskDistributionBucket[]>([]);
@@ -74,61 +79,77 @@ export default function RiskHeatmaps() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Risk Heatmaps</h1>
-          <span className="neobrutal-badge">Org: {organizationId.slice(0, 8)}...</span>
+          <Badge>Org: {organizationId.slice(0, 8)}...</Badge>
         </div>
 
-        <div className="neobrutal-card p-4">
-          <h2 className="neobrutal-title mb-4">Severity by Technology</h2>
-          {heatmap ? (
-            <HeatmapGrid data={heatmap} />
-          ) : (
-            <div className="text-gray-500">No data</div>
-          )}
-        </div>
+        <Card className="p-4">
+          <CardHeader>
+            <CardTitle>Severity by Technology</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {heatmap ? (
+              <HeatmapGrid data={heatmap} />
+            ) : (
+              <div className="text-gray-500">No data</div>
+            )}
+          </CardContent>
+        </Card>
 
-        <div className="neobrutal-card p-4">
-          <h2 className="neobrutal-title mb-4">Hotspots</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {hotspots.map((h, i) => (
-              <div key={i} className="neobrutal-section">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold">{h.y} / {h.x}</span>
-                  <span className="neobrutal-badge danger">{h.value}</span>
+        <Card className="p-4">
+          <CardHeader>
+            <CardTitle>Hotspots</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {hotspots.map((h, i) => (
+                <div key={i} className="border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold">{h.y} / {h.x}</span>
+                    <Badge variant="destructive">{h.value}</Badge>
+                  </div>
                 </div>
-              </div>
-            ))}
-            {hotspots.length === 0 && <div className="text-gray-500">No hotspots</div>}
-          </div>
-        </div>
+              ))}
+              {hotspots.length === 0 && <div className="text-gray-500">No hotspots</div>}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="neobrutal-card p-4">
-          <h2 className="neobrutal-title mb-4">Risk Distribution</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {distribution.map((b, i) => (
-              <div key={i} className="neobrutal-section text-center">
-                <div className="text-sm font-bold uppercase">{b.severity}</div>
-                <div className="text-2xl font-extrabold">{b.count}</div>
-              </div>
-            ))}
-            {distribution.length === 0 && <div className="text-gray-500">No distribution data</div>}
-          </div>
-        </div>
+        <Card className="p-4">
+          <CardHeader>
+            <CardTitle>Risk Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {distribution.map((b, i) => (
+                <div key={i} className="border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white p-4 text-center">
+                  <div className="text-sm font-bold uppercase">{b.severity}</div>
+                  <div className="text-2xl font-extrabold">{b.count}</div>
+                </div>
+              ))}
+              {distribution.length === 0 && <div className="text-gray-500">No distribution data</div>}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="neobrutal-card p-4">
-          <h2 className="neobrutal-title mb-4">Trends</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {trends.map((t, i) => (
-              <div key={i} className="neobrutal-section">
-                <div className="text-xs font-bold">{t.date}</div>
-                <div className="text-xs">Crit: <span className="font-bold text-red-600">{t.critical}</span></div>
-                <div className="text-xs">High: <span className="font-bold text-orange-600">{t.high}</span></div>
-                <div className="text-xs">Med: <span className="font-bold text-yellow-600">{t.medium}</span></div>
-                <div className="text-xs">Low: <span className="font-bold text-green-600">{t.low}</span></div>
-              </div>
-            ))}
-            {trends.length === 0 && <div className="text-gray-500">No trend data</div>}
-          </div>
-        </div>
+        <Card className="p-4">
+          <CardHeader>
+            <CardTitle>Trends</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {trends.map((t, i) => (
+                <div key={i} className="border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white p-4">
+                  <div className="text-xs font-bold">{t.date}</div>
+                  <div className="text-xs">Crit: <span className="font-bold text-red-600">{t.critical}</span></div>
+                  <div className="text-xs">High: <span className="font-bold text-orange-600">{t.high}</span></div>
+                  <div className="text-xs">Med: <span className="font-bold text-yellow-600">{t.medium}</span></div>
+                  <div className="text-xs">Low: <span className="font-bold text-green-600">{t.low}</span></div>
+                </div>
+              ))}
+              {trends.length === 0 && <div className="text-gray-500">No trend data</div>}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

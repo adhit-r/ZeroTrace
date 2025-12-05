@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"

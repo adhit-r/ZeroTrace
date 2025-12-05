@@ -40,6 +40,9 @@ type Config struct {
 
 	// Enrichment service
 	EnrichmentServiceURL string
+	
+	// AI service (same as enrichment service for now)
+	AIServiceURL string
 }
 
 func Load() *Config {
@@ -63,8 +66,8 @@ func Load() *Config {
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 		RedisDB:       getEnvAsInt("REDIS_DB", 0),
 
-		// JWT (for Clerk)
-		ClerkJWTVerificationKey: getEnv("CLERK_JWT_VERIFICATION_KEY", "dev-clerk-key-change-in-production"),
+		// JWT (for Clerk) - no default in production
+		ClerkJWTVerificationKey: getEnv("CLERK_JWT_VERIFICATION_KEY", ""),
 		JWTExpiry:               getEnvAsDuration("JWT_EXPIRY", "24h"),
 
 		// Rate limiting
@@ -77,6 +80,9 @@ func Load() *Config {
 
 		// Enrichment service
 		EnrichmentServiceURL: getEnv("ENRICHMENT_SERVICE_URL", "http://localhost:8000"),
+		
+		// AI service (defaults to enrichment service URL)
+		AIServiceURL: getEnv("AI_SERVICE_URL", getEnv("ENRICHMENT_SERVICE_URL", "http://localhost:8000")),
 	}
 }
 

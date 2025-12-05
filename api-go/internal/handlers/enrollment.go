@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"time"
 
 	"zerotrace/api/internal/models"
 	"zerotrace/api/internal/services"
@@ -16,72 +15,37 @@ func GenerateEnrollmentToken(enrollmentService *services.EnrollmentService) gin.
 	return func(c *gin.Context) {
 		var req models.GenerateEnrollmentTokenRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "INVALID_REQUEST",
-					Message: "Invalid request body",
-					Details: err.Error(),
-				},
-				Timestamp: time.Now(),
-			})
+			BadRequest(c, "INVALID_REQUEST", "Invalid request body", err.Error())
 			return
 		}
 
 		// Get the user ID from the context (set by auth middleware)
 		userID, exists := c.Get("user_id")
 		if !exists {
-			c.JSON(http.StatusUnauthorized, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "UNAUTHORIZED",
-					Message: "User not authenticated",
-				},
-				Timestamp: time.Now(),
-			})
+			Unauthorized(c, "UNAUTHORIZED", "User not authenticated")
 			return
 		}
 
 		userUUID, err := uuid.Parse(userID.(string))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "INVALID_USER_ID",
-					Message: "Invalid user ID",
-				},
-				Timestamp: time.Now(),
-			})
+			BadRequest(c, "INVALID_USER_ID", "Invalid user ID", err.Error())
 			return
 		}
 
 		// Generate the enrollment token
 		enrollmentToken, err := enrollmentService.GenerateEnrollmentToken(&req, userUUID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "TOKEN_GENERATION_FAILED",
-					Message: "Failed to generate enrollment token",
-					Details: err.Error(),
-				},
-				Timestamp: time.Now(),
-			})
+			InternalServerError(c, "TOKEN_GENERATION_FAILED", "Failed to generate enrollment token", err)
 			return
 		}
 
-		c.JSON(http.StatusOK, models.APIResponse{
-			Success: true,
-			Data: map[string]interface{}{
-				"token":       enrollmentToken.Token,
-				"expires_at":  enrollmentToken.ExpiresAt,
-				"issued_at":   enrollmentToken.IssuedAt,
-				"issued_by":   enrollmentToken.IssuedBy,
-				"description": req.Description,
-			},
-			Message:   "Enrollment token generated successfully",
-			Timestamp: time.Now(),
-		})
+		SuccessResponse(c, http.StatusOK, map[string]interface{}{
+			"token":       enrollmentToken.Token,
+			"expires_at":  enrollmentToken.ExpiresAt,
+			"issued_at":   enrollmentToken.IssuedAt,
+			"issued_by":   enrollmentToken.IssuedBy,
+			"description": req.Description,
+		}, "Enrollment token generated successfully")
 	}
 }
 
@@ -90,39 +54,18 @@ func EnrollAgent(enrollmentService *services.EnrollmentService) gin.HandlerFunc 
 	return func(c *gin.Context) {
 		var req models.AgentEnrollmentRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "INVALID_REQUEST",
-					Message: "Invalid request body",
-					Details: err.Error(),
-				},
-				Timestamp: time.Now(),
-			})
+			BadRequest(c, "INVALID_REQUEST", "Invalid request body", err.Error())
 			return
 		}
 
 		// Enroll the agent
 		response, err := enrollmentService.EnrollAgent(&req)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "ENROLLMENT_FAILED",
-					Message: "Failed to enroll agent",
-					Details: err.Error(),
-				},
-				Timestamp: time.Now(),
-			})
+			BadRequest(c, "ENROLLMENT_FAILED", "Failed to enroll agent", err.Error())
 			return
 		}
 
-		c.JSON(http.StatusOK, models.APIResponse{
-			Success:   true,
-			Data:      response,
-			Message:   "Agent enrolled successfully",
-			Timestamp: time.Now(),
-		})
+		SuccessResponse(c, http.StatusOK, response, "Agent enrolled successfully")
 	}
 }
 
@@ -131,37 +74,18 @@ func RevokeEnrollmentToken(enrollmentService *services.EnrollmentService) gin.Ha
 	return func(c *gin.Context) {
 		tokenID, err := uuid.Parse(c.Param("id"))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "INVALID_TOKEN_ID",
-					Message: "Invalid token ID",
-				},
-				Timestamp: time.Now(),
-			})
+			BadRequest(c, "INVALID_TOKEN_ID", "Invalid token ID", err.Error())
 			return
 		}
 
 		// Revoke the token
 		err = enrollmentService.RevokeEnrollmentToken(tokenID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "REVOKE_FAILED",
-					Message: "Failed to revoke enrollment token",
-					Details: err.Error(),
-				},
-				Timestamp: time.Now(),
-			})
+			InternalServerError(c, "REVOKE_FAILED", "Failed to revoke enrollment token", err)
 			return
 		}
 
-		c.JSON(http.StatusOK, models.APIResponse{
-			Success:   true,
-			Message:   "Enrollment token revoked successfully",
-			Timestamp: time.Now(),
-		})
+		SuccessResponse(c, http.StatusOK, nil, "Enrollment token revoked successfully")
 	}
 }
 
@@ -170,37 +94,18 @@ func RevokeAgentCredential(enrollmentService *services.EnrollmentService) gin.Ha
 	return func(c *gin.Context) {
 		credentialID, err := uuid.Parse(c.Param("id"))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "INVALID_CREDENTIAL_ID",
-					Message: "Invalid credential ID",
-				},
-				Timestamp: time.Now(),
-			})
+			BadRequest(c, "INVALID_CREDENTIAL_ID", "Invalid credential ID", err.Error())
 			return
 		}
 
 		// Revoke the credential
 		err = enrollmentService.RevokeAgentCredential(credentialID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, models.APIResponse{
-				Success: false,
-				Error: &models.APIError{
-					Code:    "REVOKE_FAILED",
-					Message: "Failed to revoke agent credential",
-					Details: err.Error(),
-				},
-				Timestamp: time.Now(),
-			})
+			InternalServerError(c, "REVOKE_FAILED", "Failed to revoke agent credential", err)
 			return
 		}
 
-		c.JSON(http.StatusOK, models.APIResponse{
-			Success:   true,
-			Message:   "Agent credential revoked successfully",
-			Timestamp: time.Now(),
-		})
+		SuccessResponse(c, http.StatusOK, nil, "Agent credential revoked successfully")
 	}
 }
 

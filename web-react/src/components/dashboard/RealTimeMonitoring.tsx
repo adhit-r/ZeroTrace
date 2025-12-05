@@ -60,8 +60,8 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
       try {
         // Fetch real-time data from API
         const [agentsResponse, vulnResponse] = await Promise.all([
-          fetch('http://localhost:8080/api/agents/'),
-          fetch('http://localhost:8080/api/vulnerabilities/')
+          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/agents/`),
+          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/vulnerabilities/`)
         ]);
         
         const agentsData = await agentsResponse.json();

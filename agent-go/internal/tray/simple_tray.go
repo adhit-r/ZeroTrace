@@ -29,33 +29,45 @@ func NewSimpleTrayManager() *SimpleTrayManager {
 }
 
 // Start initializes and runs the simple tray icon
+// NOTE: On macOS, this should NOT be called directly.
+// Instead, systray.Run() must be called from main() on the main thread.
+// This method is kept for non-macOS platforms or when called from main().
 func (stm *SimpleTrayManager) Start() {
 	log.Printf("Starting simple tray icon on %s (%s)", runtime.GOOS, stm.platform.GetPlatformName())
 
 	// Start monitoring
 	stm.monitor.Start()
 
+	// On macOS, systray.Run() must be called from main thread in main()
+	// For other platforms, we can run it in a goroutine
+	if runtime.GOOS == "darwin" {
+		log.Println("WARNING: On macOS, systray.Run() must be called from main() on main thread")
+		log.Println("This Start() method should not be used on macOS")
+		return
+	}
+
+	// Non-macOS: can run in goroutine
 	go func() {
-		// Try to run systray on all platforms, including macOS
-		// with proper error handling
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("Systray crashed on %s: %v", runtime.GOOS, r)
-				log.Println("Agent will continue running without tray icon")
+				log.Printf("Systray crashed: %v", r)
 			}
 		}()
-
-		log.Printf("Attempting to start systray on %s", runtime.GOOS)
-		systray.Run(stm.onReady, stm.onExit)
+		systray.Run(stm.OnReady, stm.OnExit)
 	}()
 }
 
-// onReady is called when the tray is ready
-func (stm *SimpleTrayManager) onReady() {
+// OnReady is called when the tray is ready - exported for use from main()
+func (stm *SimpleTrayManager) OnReady() {
+	log.Println("✅ Menu bar icon ready! Check top-right menu bar next to WiFi")
+	
+	// Start monitoring FIRST (required for CPU metrics)
+	stm.monitor.Start()
+	
 	// Set initial icon (gray - offline)
 	systray.SetIcon(GetGrayIcon())
 	systray.SetTitle("ZeroTrace Agent")
-	systray.SetTooltip("ZeroTrace Vulnerability Agent")
+	systray.SetTooltip("ZeroTrace Vulnerability Agent - Click for menu")
 
 	// Create minimal menu
 	mStatus := systray.AddMenuItem("🔄 Status: Checking...", "Agent status")
@@ -63,7 +75,7 @@ func (stm *SimpleTrayManager) onReady() {
 	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("❌ Quit", "Quit agent")
 
-	// Start status monitoring
+	// Start status monitoring (updates every 10 seconds)
 	go stm.monitorStatus(mStatus, mCPU)
 
 	// Handle menu clicks
@@ -83,15 +95,46 @@ func (stm *SimpleTrayManager) onReady() {
 	}()
 }
 
-// onExit is called when the tray is exiting
-func (stm *SimpleTrayManager) onExit() {
+// OnExit is called when the tray is exiting - exported for use from main()
+func (stm *SimpleTrayManager) OnExit() {
 	log.Println("Simple tray icon exiting")
+}
+
+// onExit is kept for backward compatibility (non-macOS)
+func (stm *SimpleTrayManager) onExit() {
+	stm.OnExit()
 }
 
 // monitorStatus continuously updates the tray with status
 func (stm *SimpleTrayManager) monitorStatus(mStatus, mCPU *systray.MenuItem) {
-	ticker := time.NewTicker(10 * time.Second) // Less frequent updates for MDM
+	// Initial update after 2 seconds
+	time.Sleep(2 * time.Second)
+	
+	ticker := time.NewTicker(10 * time.Second) // Update every 10 seconds
 	defer ticker.Stop()
+
+	// Initial update
+	func() {
+		// Check API connectivity
+		apiConnected := stm.checkAPIConnectivity()
+
+		// Update icon based on API status
+		if apiConnected {
+			systray.SetIcon(GetGreenIcon())
+			mStatus.SetTitle("🟢 Connected")
+		} else {
+			systray.SetIcon(GetGrayIcon())
+			mStatus.SetTitle("⚫ Disconnected")
+		}
+
+		// Update CPU usage
+		metrics := stm.monitor.GetMetrics()
+		if metrics.SystemCPU > 0 {
+			mCPU.SetTitle(fmt.Sprintf("📊 CPU: %.1f%%", metrics.SystemCPU))
+		} else {
+			mCPU.SetTitle("📊 CPU: Calculating...")
+		}
+	}()
 
 	for {
 		select {
@@ -110,7 +153,11 @@ func (stm *SimpleTrayManager) monitorStatus(mStatus, mCPU *systray.MenuItem) {
 
 			// Update CPU usage
 			metrics := stm.monitor.GetMetrics()
-			mCPU.SetTitle(fmt.Sprintf("📊 CPU: %.1f%%", metrics.SystemCPU))
+			if metrics.SystemCPU > 0 {
+				mCPU.SetTitle(fmt.Sprintf("📊 CPU: %.1f%%", metrics.SystemCPU))
+			} else {
+				mCPU.SetTitle("📊 CPU: Calculating...")
+			}
 
 		case <-stm.quitChan:
 			return
