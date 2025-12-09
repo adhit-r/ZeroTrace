@@ -332,16 +332,16 @@ func (s *HeatmapService) extractTechnologyCategories(vulnerabilities []models.Vu
 		packageName := vuln.PackageName
 		if packageName != "" {
 			// Extract technology category from package name
-			if contains(packageName, "web") || contains(packageName, "http") {
+			if containsHeatmap(packageName, "web") || containsHeatmap(packageName, "http") {
 				categories["Web Applications"] = true
 			}
-			if contains(packageName, "database") || contains(packageName, "db") {
+			if containsHeatmap(packageName, "database") || containsHeatmap(packageName, "db") {
 				categories["Databases"] = true
 			}
-			if contains(packageName, "auth") || contains(packageName, "login") {
+			if containsHeatmap(packageName, "auth") || containsHeatmap(packageName, "login") {
 				categories["Authentication"] = true
 			}
-			if contains(packageName, "api") || contains(packageName, "service") {
+			if containsHeatmap(packageName, "api") || containsHeatmap(packageName, "service") {
 				categories["APIs"] = true
 			}
 		}
@@ -513,13 +513,13 @@ func (s *HeatmapService) matchesTechnology(packageName, technology string) bool 
 
 	switch techLower {
 	case "web applications":
-		return contains(packageLower, "web") || contains(packageLower, "http")
+		return containsHeatmap(packageLower, "web") || containsHeatmap(packageLower, "http")
 	case "databases":
-		return contains(packageLower, "database") || contains(packageLower, "db")
+		return containsHeatmap(packageLower, "database") || containsHeatmap(packageLower, "db")
 	case "authentication":
-		return contains(packageLower, "auth") || contains(packageLower, "login")
+		return containsHeatmap(packageLower, "auth") || containsHeatmap(packageLower, "login")
 	case "apis":
-		return contains(packageLower, "api") || contains(packageLower, "service")
+		return containsHeatmap(packageLower, "api") || containsHeatmap(packageLower, "service")
 	default:
 		return true
 	}
@@ -721,7 +721,7 @@ func (s *HeatmapService) calculateConfidenceScore(heatmapData *HeatmapData) floa
 }
 
 // Utility functions
-func contains(s, substr string) bool {
+func containsHeatmap(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr ||
 		(len(s) > len(substr) && (s[:len(substr)] == substr ||
 			s[len(s)-len(substr):] == substr ||

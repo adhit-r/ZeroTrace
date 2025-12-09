@@ -323,7 +323,7 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({
               onClick={onRefresh}
               className="w-full p-2 bg-gradient-to-r from-cyan-400 to-teal-400 text-black font-semibold rounded hover:transform hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
             >
-              🔄 Refresh Data
+               Refresh Data
             </button>
             
             <button
@@ -344,7 +344,7 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({
               }}
               className="w-full p-2 bg-gradient-to-r from-blue-400 to-purple-400 text-white font-semibold rounded hover:transform hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
             >
-              📊 Export Topology
+               Export Topology
             </button>
           </div>
         </div>

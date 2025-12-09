@@ -13,6 +13,7 @@ if (import.meta.env.PROD) {
 // Initialize performance monitoring
 performanceMonitor.measureWebVitals();
 
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

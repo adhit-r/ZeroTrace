@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
 import LayoutMinimal from './components/LayoutMinimal';
 import DashboardMinimal from './pages/DashboardMinimal';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -28,14 +29,16 @@ const ScannerDetails = React.lazy(() => import('./pages/ScannerDetails'));
 
 // Applications page
 const Applications = React.lazy(() => import('./pages/Applications'));
+const ApplicationAnalysis = React.lazy(() => import('./pages/ApplicationAnalysis'));
 
 // Scan pages
-const Scans = React.lazy(() => import('./pages/Scans'));
+// const Scans = React.lazy(() => import('./pages/Scans'));
 const NetworkScanner = React.lazy(() => import('./pages/NetworkScanner'));
 const ScanProcessing = React.lazy(() => import('./pages/ScanProcessing'));
 
 // Topology pages (heavy with d3/reactflow)
 const Topology = React.lazy(() => import('./pages/Topology'));
+const AttackPaths = React.lazy(() => import('./pages/AttackPaths'));
 
 // Compliance pages
 const Compliance = React.lazy(() => import('./pages/Compliance'));
@@ -69,6 +72,32 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <Router>
           <div className="min-h-screen">
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#fff',
+                  color: '#000',
+                  border: '3px solid #000',
+                  borderRadius: '0',
+                  fontFamily: 'inherit',
+                  fontWeight: 'bold',
+                },
+                success: {
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: '#fff',
+                  },
+                },
+                error: {
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#fff',
+                  },
+                },
+              }}
+            />
             <ErrorBoundary>
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
@@ -79,12 +108,14 @@ function App() {
                   <Route path="/vulnerabilities/:id/analysis" element={<LayoutMinimal><VulnerabilityAnalysis /></LayoutMinimal>} />
                   <Route path="/apps" element={<LayoutMinimal><Applications /></LayoutMinimal>} />
                   <Route path="/applications" element={<LayoutMinimal><Applications /></LayoutMinimal>} />
+                  <Route path="/application-analysis" element={<LayoutMinimal><ApplicationAnalysis /></LayoutMinimal>} />
                   <Route path="/security" element={<LayoutMinimal><SecurityDashboard /></LayoutMinimal>} />
                   <Route path="/scans" element={<LayoutMinimal><NetworkScanner /></LayoutMinimal>} />
                   <Route path="/network-scanner" element={<LayoutMinimal><NetworkScanner /></LayoutMinimal>} />
                   <Route path="/scan-processing" element={<LayoutMinimal><ScanProcessing /></LayoutMinimal>} />
                   <Route path="/topology" element={<LayoutMinimal><Topology /></LayoutMinimal>} />
                   <Route path="/network-topology" element={<LayoutMinimal><Topology /></LayoutMinimal>} />
+                  <Route path="/attack-paths" element={<LayoutMinimal><AttackPaths /></LayoutMinimal>} />
                   <Route path="/settings" element={<LayoutMinimal><Settings /></LayoutMinimal>} />
                   <Route path="/profile" element={<LayoutMinimal><Profile /></LayoutMinimal>} />
                   <Route path="/organization-profile" element={<LayoutMinimal><OrganizationProfile /></LayoutMinimal>} />

@@ -6,7 +6,7 @@ labels: ['bug', 'needs-triage']
 assignees: ''
 ---
 
-## 🐛 **Bug Report**
+##  **Bug Report**
 
 ### **Description**
 A clear and concise description of the bug.

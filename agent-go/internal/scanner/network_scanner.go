@@ -316,7 +316,7 @@ func (ns *NetworkScanner) scanWithNaabu(target string, scanID uuid.UUID, startTi
 	return &NetworkScanResult{
 		ID:              scanID,
 		AgentID:         uuid.MustParse(ns.config.AgentID),
-		CompanyID:       uuid.MustParse(ns.config.CompanyID),
+		CompanyID:       safeParse(ns.config.CompanyID),
 		StartTime:       startTime,
 		EndTime:         time.Now(),
 		Status:          "completed",
@@ -365,4 +365,14 @@ func (ns *NetworkScanner) ScanLocalNetwork() (*NetworkScanResult, error) {
 
 	// Scan the first network (can be extended to scan all)
 	return ns.Scan(targets[0])
+}
+func safeParse(s string) uuid.UUID {
+	if s == "" {
+		return uuid.Nil
+	}
+	id, err := uuid.Parse(s)
+	if err != nil {
+		return uuid.Nil
+	}
+	return id
 }

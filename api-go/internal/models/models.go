@@ -426,3 +426,32 @@ type UpdateOrganizationProfileRequest struct {
 	SecurityPolicies     map[string]any `json:"security_policies,omitempty"`
 	RiskWeights          map[string]any `json:"risk_weights,omitempty"`
 }
+
+// Software represents installed software on an agent
+type Software struct {
+	ID        uuid.UUID `json:"id" db:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	AgentID   uuid.UUID `json:"agent_id" db:"agent_id"`
+	Name      string    `json:"name" db:"name"`
+	Version   string    `json:"version" db:"version"`
+	Type      string    `json:"type" db:"type"`
+	Vendor    string    `json:"vendor" db:"vendor"`
+	Status    string    `json:"status" db:"status"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// NetworkHost represents a host discovered during network scanning
+type NetworkHost struct {
+	ID         uuid.UUID      `json:"id" db:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	AgentID    uuid.UUID      `json:"agent_id" db:"agent_id"`
+	IPAddress  string         `json:"ip_address" db:"ip_address"`
+	Hostname   string         `json:"hostname" db:"hostname"`
+	MACAddress string         `json:"mac_address" db:"mac_address"`
+	OS         string         `json:"os" db:"os"`
+	Status     string         `json:"status" db:"status"`
+	OpenPorts  []int          `json:"open_ports" db:"open_ports" gorm:"type:jsonb"`
+	Metadata   map[string]any `json:"metadata" db:"metadata" gorm:"type:jsonb"`
+	LastSeen   time.Time      `json:"last_seen" db:"last_seen"`
+	CreatedAt  time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt  time.Time      `json:"updated_at" db:"updated_at"`
+}

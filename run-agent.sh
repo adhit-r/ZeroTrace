@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🤖 Starting ZeroTrace Agent"
+echo " Starting ZeroTrace Agent"
 echo "============================"
 
 cd agent-go
@@ -14,7 +14,7 @@ cd agent-go
 if [ ! -f .env ]; then
     echo "Creating .env from env.example..."
     cp env.example .env
-    echo "⚠️  Please edit .env with your API endpoint and credentials"
+    echo "️  Please edit .env with your API endpoint and credentials"
 fi
 
 # Check for macOS .app bundle

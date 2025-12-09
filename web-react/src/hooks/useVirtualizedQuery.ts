@@ -2,7 +2,7 @@
  * React Query hook optimized for virtualized lists
  * Fetches data in pages for efficient rendering
  */
-import { useInfiniteQuery, UseInfiniteQueryOptions } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 interface VirtualizedQueryOptions<TData, TPageParam = number> {
   queryKey: string[];
@@ -17,7 +17,7 @@ export function useVirtualizedQuery<TData, TPageParam = number>(
 ) {
   return useInfiniteQuery({
     queryKey: options.queryKey,
-    queryFn: ({ pageParam = 0 as TPageParam }) => options.queryFn(pageParam),
+    queryFn: ({ pageParam = 0 }) => options.queryFn(pageParam as any),
     getNextPageParam: options.getNextPageParam || ((lastPage) => lastPage.nextCursor),
     initialPageParam: 0 as TPageParam,
     enabled: options.enabled !== false,

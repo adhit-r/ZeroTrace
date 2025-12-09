@@ -1,21 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '@/services/api';
 import { Search, Package, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-
-interface Application {
-  name: string;
-  version: string;
-  vendor: string;
-  type: string;
-  path?: string;
-  agentId: string;
-  agentName: string;
-  vulnerabilities?: number;
-  status?: 'vulnerable' | 'safe' | 'unknown';
-}
+import { applicationService } from '@/services/applicationService';
+import type { Application } from '@/services/applicationService';
 
 const Applications: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -35,45 +24,9 @@ const Applications: React.FC = () => {
   const fetchApplications = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/api/agents/');
-      const agents = response.data?.data || [];
-
-      const allApps: Application[] = [];
-      
-      agents.forEach((agent: any) => {
-        const dependencies = agent.metadata?.dependencies || [];
-        const vulnerabilities = agent.metadata?.vulnerabilities || [];
-        
-        dependencies.forEach((dep: any) => {
-          const appVulns = vulnerabilities.filter((v: any) => 
-            v.package_name === dep.name || v.package_name === dep.package_name
-          );
-          
-          allApps.push({
-            name: dep.name || dep.package_name,
-            version: dep.version || 'unknown',
-            vendor: dep.vendor || 'Unknown',
-            type: dep.type || 'application',
-            path: dep.path,
-            agentId: agent.id,
-            agentName: agent.name || agent.hostname,
-            vulnerabilities: appVulns.length,
-            status: appVulns.length > 0 ? 'vulnerable' : 'safe'
-          });
-        });
-      });
-
-      // Deduplicate by name+version+agent
-      const uniqueApps = allApps.filter((app, index, self) =>
-        index === self.findIndex((a) => 
-          a.name === app.name && 
-          a.version === app.version && 
-          a.agentId === app.agentId
-        )
-      );
-
-      setApplications(uniqueApps);
-      setFilteredApps(uniqueApps);
+      const apps = await applicationService.getAllApplications();
+      setApplications(apps);
+      setFilteredApps(apps);
     } catch (error) {
       console.error('Failed to fetch applications:', error);
     } finally {
@@ -273,7 +226,7 @@ const Applications: React.FC = () => {
                   <span className="font-bold text-gray-700">Agent:</span>
                   <span className="text-black">{app.agentName}</span>
                 </div>
-                {app.vulnerabilities !== undefined && app.vulnerabilities > 0 && (
+                {app.vulnerabilities > 0 && (
                   <div className="flex justify-between">
                     <span className="font-bold text-red-700">Vulnerabilities:</span>
                     <span className="text-red-600 font-bold">{app.vulnerabilities}</span>

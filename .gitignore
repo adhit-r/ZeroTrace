@@ -73,7 +73,7 @@ go.work
 .cache/
 
 # Archive directory (old/unused code)
-.archive/
+archive/
 
 # Playwright
 .playwright-mcp/
@@ -82,3 +82,6 @@ playwright-report/
 
 # Docker
 docker-compose.override.yml
+# Backups
+enrichment-python/cve_data.json.backup2
+*.backup*

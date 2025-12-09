@@ -1,61 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Shield, 
-  Network, 
-  Database, 
-  Lock, 
-  Container, 
-  Brain, 
-  Wifi, 
-  Eye, 
-  Globe, 
+import {
+  Shield,
+  Network,
+  Database,
+  Lock,
+  Container,
+  Brain,
+  Wifi,
+  Eye,
+  Globe,
   Zap,
   AlertTriangle,
-  CheckCircle,
-  Activity,
   BarChart3,
-  PieChart,
-  LineChart,
   RefreshCw,
-  Filter,
-  Search,
   Download,
-  Settings,
-  Target,
-  Users,
-  Clock,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp
+  Settings
 } from 'lucide-react';
 import ComprehensiveSecurityDashboard from '../components/dashboard/ComprehensiveSecurityDashboard';
 import SecurityCategoryDashboard from '../components/dashboard/SecurityCategoryDashboard';
 import NetworkSecurityDashboard from '../components/dashboard/NetworkSecurityDashboard';
 import ComplianceDashboard from '../components/dashboard/ComplianceDashboard';
+import { api } from '../services/api';
 
-interface SecurityDashboardProps {
-  className?: string;
-}
+interface SecurityDashboardProps { }
 
-const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ className = '' }) => {
+const SecurityDashboard: React.FC<SecurityDashboardProps> = () => {
   const [selectedView, setSelectedView] = useState<string>('comprehensive');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const securityCategories = [
-    { id: 'network', name: 'Network Security', icon: <Network className="h-5 w-5" />, color: 'blue' },
-    { id: 'compliance', name: 'Compliance', icon: <Shield className="h-5 w-5" />, color: 'green' },
-    { id: 'system', name: 'System Vulnerabilities', icon: <AlertTriangle className="h-5 w-5" />, color: 'red' },
-    { id: 'auth', name: 'Authentication', icon: <Lock className="h-5 w-5" />, color: 'purple' },
-    { id: 'database', name: 'Database Security', icon: <Database className="h-5 w-5" />, color: 'orange' },
-    { id: 'api', name: 'API Security', icon: <Globe className="h-5 w-5" />, color: 'cyan' },
-    { id: 'container', name: 'Container Security', icon: <Container className="h-5 w-5" />, color: 'indigo' },
-    { id: 'ai', name: 'AI/ML Security', icon: <Brain className="h-5 w-5" />, color: 'pink' },
-    { id: 'iot', name: 'IoT/OT Security', icon: <Wifi className="h-5 w-5" />, color: 'yellow' },
-    { id: 'privacy', name: 'Privacy & Compliance', icon: <Eye className="h-5 w-5" />, color: 'emerald' },
-    { id: 'web3', name: 'Web3 Security', icon: <Zap className="h-5 w-5" />, color: 'violet' }
-  ];
 
   const dashboardViews = [
     { id: 'comprehensive', name: 'Comprehensive Overview', icon: <BarChart3 className="h-5 w-5" /> },
@@ -72,15 +45,18 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ className = '' })
     { id: 'web3', name: 'Web3 Security', icon: <Zap className="h-5 w-5" /> }
   ];
 
+  const [agents, setAgents] = useState<any[]>([]);
+
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        // Simulate loading time for dashboard data
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        // Fetch agents for dashboards
+        const agentsResponse = await api.get('/api/agents/');
+        setAgents(agentsResponse.data.data || []);
+
         setIsLoading(false);
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
@@ -99,9 +75,9 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ className = '' })
       case 'compliance':
         return <ComplianceDashboard />;
       case 'network':
-        return <NetworkSecurityDashboard />;
+        return <NetworkSecurityDashboard agents={agents} />;
       default:
-        return <SecurityCategoryDashboard category={selectedView} />;
+        return <SecurityCategoryDashboard {...({ category: selectedView } as any)} />;
     }
   };
 
@@ -133,7 +109,7 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ className = '' })
               <h2 className="text-xl font-bold text-red-800">Error Loading Dashboard</h2>
             </div>
             <p className="text-red-700 mb-4">{error}</p>
-            <button 
+            <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 bg-red-100 text-red-800 border-2 border-red-300 rounded text-sm font-bold uppercase tracking-wider hover:bg-red-200 transition-colors"
             >
@@ -185,11 +161,10 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ className = '' })
               <button
                 key={view.id}
                 onClick={() => setSelectedView(view.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wider border-b-3 transition-colors whitespace-nowrap ${
-                  selectedView === view.id
-                    ? 'text-blue-600 border-blue-600 bg-blue-50'
-                    : 'text-gray-600 border-transparent hover:text-gray-800 hover:border-gray-300'
-                }`}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wider border-b-3 transition-colors whitespace-nowrap ${selectedView === view.id
+                  ? 'text-blue-600 border-blue-600 bg-blue-50'
+                  : 'text-gray-600 border-transparent hover:text-gray-800 hover:border-gray-300'
+                  }`}
               >
                 {view.icon}
                 {view.name}
@@ -203,7 +178,7 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ className = '' })
       <div className="max-w-7xl mx-auto p-6">
         {renderDashboard()}
       </div>
-    </div>
+    </div >
   );
 };
 

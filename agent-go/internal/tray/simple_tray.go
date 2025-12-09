@@ -59,21 +59,21 @@ func (stm *SimpleTrayManager) Start() {
 
 // OnReady is called when the tray is ready - exported for use from main()
 func (stm *SimpleTrayManager) OnReady() {
-	log.Println("✅ Menu bar icon ready! Check top-right menu bar next to WiFi")
-	
+	log.Println(" Menu bar icon ready! Check top-right menu bar next to WiFi")
+
 	// Start monitoring FIRST (required for CPU metrics)
 	stm.monitor.Start()
-	
+
 	// Set initial icon (gray - offline)
 	systray.SetIcon(GetGrayIcon())
 	systray.SetTitle("ZeroTrace Agent")
 	systray.SetTooltip("ZeroTrace Vulnerability Agent - Click for menu")
 
 	// Create minimal menu
-	mStatus := systray.AddMenuItem("🔄 Status: Checking...", "Agent status")
-	mCPU := systray.AddMenuItem("📊 CPU: --", "CPU usage")
+	mStatus := systray.AddMenuItem(" Status: Checking...", "Agent status")
+	mCPU := systray.AddMenuItem(" CPU: --", "CPU usage")
 	systray.AddSeparator()
-	mQuit := systray.AddMenuItem("❌ Quit", "Quit agent")
+	mQuit := systray.AddMenuItem(" Quit", "Quit agent")
 
 	// Start status monitoring (updates every 10 seconds)
 	go stm.monitorStatus(mStatus, mCPU)
@@ -109,7 +109,7 @@ func (stm *SimpleTrayManager) onExit() {
 func (stm *SimpleTrayManager) monitorStatus(mStatus, mCPU *systray.MenuItem) {
 	// Initial update after 2 seconds
 	time.Sleep(2 * time.Second)
-	
+
 	ticker := time.NewTicker(10 * time.Second) // Update every 10 seconds
 	defer ticker.Stop()
 
@@ -121,18 +121,18 @@ func (stm *SimpleTrayManager) monitorStatus(mStatus, mCPU *systray.MenuItem) {
 		// Update icon based on API status
 		if apiConnected {
 			systray.SetIcon(GetGreenIcon())
-			mStatus.SetTitle("🟢 Connected")
+			mStatus.SetTitle(" Connected")
 		} else {
 			systray.SetIcon(GetGrayIcon())
-			mStatus.SetTitle("⚫ Disconnected")
+			mStatus.SetTitle(" Disconnected")
 		}
 
 		// Update CPU usage
 		metrics := stm.monitor.GetMetrics()
-		if metrics.SystemCPU > 0 {
-			mCPU.SetTitle(fmt.Sprintf("📊 CPU: %.1f%%", metrics.SystemCPU))
+		if metrics.SystemCPU > 0 || metrics.AgentCPU > 0 {
+			mCPU.SetTitle(fmt.Sprintf(" CPU: %.1f%% / %.1f%%", metrics.AgentCPU, metrics.SystemCPU))
 		} else {
-			mCPU.SetTitle("📊 CPU: Calculating...")
+			mCPU.SetTitle(" CPU: Calculating...")
 		}
 	}()
 
@@ -145,18 +145,18 @@ func (stm *SimpleTrayManager) monitorStatus(mStatus, mCPU *systray.MenuItem) {
 			// Update icon based on API status
 			if apiConnected {
 				systray.SetIcon(GetGreenIcon())
-				mStatus.SetTitle("🟢 Connected")
+				mStatus.SetTitle(" Connected")
 			} else {
 				systray.SetIcon(GetGrayIcon())
-				mStatus.SetTitle("⚫ Disconnected")
+				mStatus.SetTitle(" Disconnected")
 			}
 
 			// Update CPU usage
 			metrics := stm.monitor.GetMetrics()
-			if metrics.SystemCPU > 0 {
-				mCPU.SetTitle(fmt.Sprintf("📊 CPU: %.1f%%", metrics.SystemCPU))
+			if metrics.SystemCPU > 0 || metrics.AgentCPU > 0 {
+				mCPU.SetTitle(fmt.Sprintf(" CPU: %.1f%% / %.1f%%", metrics.AgentCPU, metrics.SystemCPU))
 			} else {
-				mCPU.SetTitle("📊 CPU: Calculating...")
+				mCPU.SetTitle(" CPU: Calculating...")
 			}
 
 		case <-stm.quitChan:
@@ -185,7 +185,7 @@ func (stm *SimpleTrayManager) showStatus() {
 // showCPUInfo displays CPU information
 func (stm *SimpleTrayManager) showCPUInfo() {
 	metrics := stm.monitor.GetMetrics()
-	info := fmt.Sprintf("System CPU: %.1f%%", metrics.SystemCPU)
+	info := fmt.Sprintf("Agent CPU: %.1f%%\nSystem CPU: %.1f%%", metrics.AgentCPU, metrics.SystemCPU)
 	stm.showNotification("ZeroTrace Agent", "CPU Usage", info)
 }
 

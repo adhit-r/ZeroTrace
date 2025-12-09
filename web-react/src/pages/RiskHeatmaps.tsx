@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { heatmapService, HeatmapData, HeatmapPoint, RiskDistributionBucket, TrendPoint } from '@/services/heatmapService';
+import { heatmapService } from '@/services/heatmapService';
+import type { HeatmapData, HeatmapPoint, RiskDistributionBucket, TrendPoint } from '@/services/heatmapService';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -48,16 +49,16 @@ export default function RiskHeatmaps() {
     const load = async () => {
       setLoading(true);
       try {
-        const [hm, hs, rd, tr] = await Promise.all([
-          heatmapService.getHeatmap(organizationId),
-          heatmapService.getHotspots(organizationId),
-          heatmapService.getRiskDistribution(organizationId),
-          heatmapService.getTrends(organizationId)
+        const [heatmap, hotspots, dist, trends] = await Promise.all([
+          heatmapService.getHeatmap(organizationId || ''),
+          heatmapService.getHotspots(organizationId || ''),
+          heatmapService.getRiskDistribution(organizationId || ''),
+          heatmapService.getTrends(organizationId || '')
         ]);
-        setHeatmap(hm);
-        setHotspots(hs);
-        setDistribution(rd);
-        setTrends(tr);
+        setHeatmap(heatmap);
+        setHotspots(hotspots);
+        setDistribution(dist);
+        setTrends(trends);
       } finally {
         setLoading(false);
       }
@@ -79,7 +80,7 @@ export default function RiskHeatmaps() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Risk Heatmaps</h1>
-          <Badge>Org: {organizationId.slice(0, 8)}...</Badge>
+          <Badge>Org: {(organizationId || '').slice(0, 8)}...</Badge>
         </div>
 
         <Card className="p-4">

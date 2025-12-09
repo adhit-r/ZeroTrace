@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { maturityService, MaturityScore, DimensionScore, ImprovementItem, PeerComparison } from '@/services/maturityService';
+import { useEffect, useState } from 'react';
+import { maturityService } from '@/services/maturityService';
+import type { MaturityScore, DimensionScore, ImprovementItem, PeerComparison } from '@/services/maturityService';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -19,10 +20,10 @@ export default function SecurityMaturity() {
       setLoading(true);
       try {
         const [s, b, r, t] = await Promise.all([
-          maturityService.getScore(organizationId),
-          maturityService.getBenchmark(organizationId),
-          maturityService.getRoadmap(organizationId),
-          maturityService.getTrends(organizationId)
+          maturityService.getScore(organizationId || ''),
+          maturityService.getBenchmark(organizationId || ''),
+          maturityService.getRoadmap(organizationId || ''),
+          maturityService.getTrends(organizationId || '')
         ]);
         setScore(s);
         setBenchmark(b);

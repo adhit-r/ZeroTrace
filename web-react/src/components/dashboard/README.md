@@ -2,7 +2,7 @@
 
 A comprehensive dashboard UI overhaul for ZeroTrace, a Qualys/Tenable alternative VMDR-style security product. This implementation provides enterprise-grade security management with role-based access control and hierarchical asset visibility.
 
-## 🎯 Overview
+## Overview
 
 ZeroTrace is designed for enterprise security teams to discover, prioritize, and remediate vulnerabilities across distributed branches and cloud/on-prem assets. The dashboard provides:
 
@@ -12,7 +12,7 @@ ZeroTrace is designed for enterprise security teams to discover, prioritize, and
 - **Multi-branch comparison and prioritization**
 - **Quick remediation workflows**
 
-## 👥 Target Users
+## Target Users
 
 - **Global CISO**: Enterprise-wide security oversight and risk management
 - **Branch CISO**: Branch-level security management and compliance oversight  
@@ -20,7 +20,7 @@ ZeroTrace is designed for enterprise security teams to discover, prioritize, and
 - **Security Analyst**: Threat investigation and vulnerability analysis
 - **Patch Engineer**: Patch management and deployment coordination
 
-## 🏗️ Architecture
+## Architecture
 
 ### Core Components
 
@@ -42,7 +42,7 @@ All components are built using the ZeroTrace design system (`zerotrace-design-sy
 - **Interactive elements** with hover states and animations
 - **Responsive layouts** for desktop, tablet, and mobile
 
-## 🎨 Design System Mapping
+## Design System Mapping
 
 ### Color Tokens
 ```typescript
@@ -71,7 +71,7 @@ card: 'bg-white border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rou
 input: 'w-full h-11 border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
 ```
 
-## 📊 Key Features
+## Key Features
 
 ### KPI Ribbon
 - **Configurable metrics**: Active Critical CVEs, MTTR, Compliance %, Scan Coverage %
@@ -103,7 +103,7 @@ input: 'w-full h-11 border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
 - **Bulk vulnerability actions**: Patch, ignore, export
 - **Network topology**: Interface and port information
 
-## 🔐 Role-Based Access Control
+## Role-Based Access Control
 
 ### Global CISO
 - **Enterprise-wide visibility**: All branches and assets
@@ -135,7 +135,7 @@ input: 'w-full h-11 border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
 - **Deployment tracking**: Progress monitoring and reporting
 - **Risk assessment**: Patch impact analysis
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Installation
 ```bash
@@ -186,7 +186,7 @@ const branches = [
 ];
 ```
 
-## 📱 Responsive Design
+## Responsive Design
 
 ### Breakpoints
 - **Mobile**: 640px and below
@@ -199,7 +199,7 @@ const branches = [
 - **Simplified navigation**: Collapsible menus and quick actions
 - **Offline support**: Cached data for critical metrics
 
-## 🔧 API Integration
+## API Integration
 
 ### Endpoints
 ```typescript
@@ -241,7 +241,7 @@ interface Asset {
 }
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Component Testing
 ```bash
@@ -261,7 +261,7 @@ npm run test:integration
 npm run test:e2e
 ```
 
-## 📈 Performance
+## Performance
 
 ### Optimization Strategies
 - **Virtual scrolling**: For large asset lists
@@ -276,7 +276,7 @@ npm run test:e2e
 - **Cumulative Layout Shift**: < 0.1
 - **Time to Interactive**: < 3.5s
 
-## 🔒 Security
+## Security
 
 ### Data Protection
 - **Role-based access**: Granular permissions per user type
@@ -290,7 +290,7 @@ npm run test:e2e
 - **Audit logging**: Complete user action tracking
 - **GDPR compliance**: Data subject rights support
 
-## 🚀 Deployment
+## Deployment
 
 ### Production Build
 ```bash
@@ -316,7 +316,7 @@ VITE_ENABLE_ANALYTICS=true
 VITE_ENABLE_DEBUG=false
 ```
 
-## 📚 Documentation
+## Documentation
 
 ### Component Documentation
 - **Storybook**: Interactive component documentation
@@ -328,7 +328,7 @@ VITE_ENABLE_DEBUG=false
 - **Postman Collection**: Ready-to-use API examples
 - **SDK Examples**: JavaScript/TypeScript integration
 
-## 🤝 Contributing
+## Contributing
 
 ### Development Setup
 ```bash
@@ -351,11 +351,11 @@ npm test
 - **Prettier**: Consistent code formatting
 - **Husky**: Pre-commit hooks for quality gates
 
-## 📄 License
+## License
 
 MIT License - see LICENSE file for details.
 
-## 🆘 Support
+## Support
 
 - **Documentation**: [docs.zerotrace.com](https://docs.zerotrace.com)
 - **Issues**: [GitHub Issues](https://github.com/zerotrace/dashboard/issues)
@@ -364,4 +364,4 @@ MIT License - see LICENSE file for details.
 
 ---
 
-Built with ❤️ by the ZeroTrace team
+Built by the ZeroTrace team

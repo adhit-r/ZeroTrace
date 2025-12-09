@@ -2,7 +2,7 @@
  * Virtual scrolling component for large lists
  * Optimizes rendering performance for thousands of items
  */
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 
 interface VirtualListProps<T> {
   items: T[];
@@ -29,7 +29,7 @@ export function VirtualList<T>({
   const { startIndex, endIndex, offsetY } = useMemo(() => {
     const visibleStart = Math.floor(scrollTop / itemHeight);
     const visibleEnd = Math.ceil((scrollTop + containerHeight) / itemHeight);
-    
+
     const startIndex = Math.max(0, visibleStart - overscan);
     const endIndex = Math.min(items.length - 1, visibleEnd + overscan);
     const offsetY = startIndex * itemHeight;

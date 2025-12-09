@@ -368,43 +368,64 @@ class SecurityDNAAnalyzer:
     async def _calculate_remediation_velocity(self, vulnerability_data: List[Dict], scan_history: List[Dict] = None) -> Dict[str, Any]:
         """Calculate remediation velocity metrics"""
         try:
-            # Mock remediation velocity calculation
-            # In a real implementation, this would analyze actual remediation times
+            # Calculate real remediation velocity from current open vulnerabilities
+            # Since we don't have closed dates in this dataset, we use "Age of Open Vulnerabilities" 
+            # as a proxy for how fast things are NOT being fixed.
             
-            avg_critical_time = 2.5  # days
-            avg_high_time = 7.0      # days
-            avg_medium_time = 14.0    # days
-            avg_low_time = 30.0      # days
+            # Map valid severities
+            df = pd.DataFrame(vulnerability_data)
+            if df.empty or 'created_at' not in df.columns:
+                 return {
+                    'average_time_to_patch': 0.0,
+                    'patch_velocity_trend': 'unknown',
+                    'velocity_score': 1.0 
+                }
+
+            # Convert created_at to age in days
+            now = pd.Timestamp.now(tz=None) # Ensure naive/aware match
+            # Handle string dates to datetime
+            if df['created_at'].dtype == 'object':
+                 df['created_at'] = pd.to_datetime(df['created_at'])
             
-            # Calculate overall average
-            avg_time = (avg_critical_time + avg_high_time + avg_medium_time + avg_low_time) / 4
+            # Make timezone unaware for subtraction if needed, or aware. 
+            # Assuming created_at is UTC.
+            if df['created_at'].dt.tz is not None:
+                df['created_at'] = df['created_at'].dt.tz_localize(None)
+
+
+            df['age_days'] = (now - df['created_at']).dt.total_seconds() / 86400
+
+            avg_critical_time = df[df['severity'] == 'CRITICAL']['age_days'].mean()
+            avg_high_time = df[df['severity'] == 'HIGH']['age_days'].mean()
+            avg_medium_time = df[df['severity'] == 'MEDIUM']['age_days'].mean()
+            avg_low_time = df[df['severity'] == 'LOW']['age_days'].mean()
+
+            # Handle NaNs
+            avg_critical_time = 0.0 if np.isnan(avg_critical_time) else avg_critical_time
+            avg_high_time = 0.0 if np.isnan(avg_high_time) else avg_high_time
+            avg_medium_time = 0.0 if np.isnan(avg_medium_time) else avg_medium_time
+            avg_low_time = 0.0 if np.isnan(avg_low_time) else avg_low_time
+
+            
+            # Calculate overall average weighted or simple
+            avg_time = df['age_days'].mean()
+            avg_time = 0.0 if np.isnan(avg_time) else avg_time
             
             # Determine trend (would be calculated from historical data)
-            trend = "improving"  # Mock trend
+            trend = "stable"  # Default without history
             
             # Calculate velocity score (0-1, higher is better)
-            velocity_score = max(0, 1 - (avg_time / 30))  # Normalize to 30 days
+            # If avg age > 90 days, score -> 0. < 1 day -> 1.
+            velocity_score = max(0, 1 - (avg_time / 90)) 
             
             return {
-                'average_time_to_patch': avg_time,
+                'average_time_to_patch': float(avg_time),
                 'patch_velocity_trend': trend,
-                'critical_patch_time': avg_critical_time,
-                'high_patch_time': avg_high_time,
-                'medium_patch_time': avg_medium_time,
-                'low_patch_time': avg_low_time,
-                'velocity_score': velocity_score
-            }
-            
-        except Exception as e:
-            logger.error(f"Error calculating remediation velocity: {e}")
-            return {
-                'average_time_to_patch': 15.0,
-                'patch_velocity_trend': 'stable',
-                'critical_patch_time': 5.0,
-                'high_patch_time': 10.0,
-                'medium_patch_time': 20.0,
-                'low_patch_time': 30.0,
-                'velocity_score': 0.5
+                'critical_patch_time': float(avg_critical_time),
+                'high_patch_time': float(avg_high_time),
+                'medium_patch_time': float(avg_medium_time),
+                'low_patch_time': float(avg_low_time),
+                'velocity_score': float(velocity_score)
             }
     
     async def _analyze_risk_acceptance_patterns(self, vulnerability_data: List[Dict], organization_context: Dict = None) -> Dict[str, Any]:

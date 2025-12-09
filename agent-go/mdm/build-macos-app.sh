@@ -22,23 +22,23 @@ CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
 RESOURCES_DIR="${CONTENTS_DIR}/Resources"
 
-echo -e "${BLUE}🏗️  Building ZeroTrace Agent macOS App Bundle${NC}"
+echo -e "${BLUE}️  Building ZeroTrace Agent macOS App Bundle${NC}"
 echo "=================================================="
 echo ""
 
 # Clean
-echo -e "${YELLOW}🧹 Cleaning...${NC}"
+echo -e "${YELLOW} Cleaning...${NC}"
 rm -rf "$BUILD_DIR" "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 # Build agent
-echo -e "${YELLOW}🔨 Building agent binary...${NC}"
+echo -e "${YELLOW} Building agent binary...${NC}"
 cd ..
 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o "mdm/$MACOS_DIR/zerotrace-agent" cmd/agent/main.go
 cd mdm
 
 # Copy Info.plist
-echo -e "${YELLOW}📝 Creating app bundle structure...${NC}"
+echo -e "${YELLOW} Creating app bundle structure...${NC}"
 cp Info.plist "$CONTENTS_DIR/"
 
 # Create PkgInfo
@@ -89,7 +89,7 @@ cat > "$CONTENTS_DIR/Info.plist" << EOF
 </plist>
 EOF
 
-echo -e "${GREEN}✅ App bundle created: ${APP_DIR}${NC}"
+echo -e "${GREEN} App bundle created: ${APP_DIR}${NC}"
 echo ""
 echo "To use:"
 echo "1. Double-click the .app to launch"

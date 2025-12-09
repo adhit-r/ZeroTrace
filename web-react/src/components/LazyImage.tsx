@@ -2,7 +2,8 @@
  * Optimized LazyImage component with Intersection Observer
  * Supports WebP/AVIF with fallbacks, responsive images, and blur placeholders
  */
-import React, { useState, useRef, useEffect, ImgHTMLAttributes } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import type { ImgHTMLAttributes } from 'react';
 
 interface LazyImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'srcSet'> {
   src: string;
@@ -112,9 +113,8 @@ export const LazyImage: React.FC<LazyImageProps> = ({
             srcSet={srcSet}
             sizes={sizes}
             alt={alt}
-            className={`w-full h-full object-cover transition-opacity duration-300 ${
-              isLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
             onLoad={handleLoad}
             onError={handleError}
             loading="lazy"

@@ -16,7 +16,7 @@ import {
   Monitor,
   Wifi
 } from 'lucide-react';
-import { api } from '@/services/api';
+import { agentService } from '@/services/agentService';
 
 interface AssetDetailData {
   id: string;
@@ -85,15 +85,16 @@ const AssetDetail: React.FC = () => {
     if (!asset) return;
     const interval = setInterval(async () => {
       try {
-        const resp = await api.get('/api/agents/');
-        const agentsData = resp.data;
-        const agent = (agentsData?.data || []).find((a: any) => a.id === id);
+        if (!id) return;
+        const agent = await agentService.getAgent(id);
         if (!agent) return;
-        const cpu = agent.metadata?.cpu_usage ?? asset.cpuUsage;
-        const mem = agent.metadata?.memory_usage ?? asset.memoryUsage;
+        const cpu = agent.metadata?.cpu_usage ?? agent.cpu_usage ?? asset.cpuUsage;
+        const mem = agent.metadata?.memory_usage ?? agent.memory_usage ?? asset.memoryUsage;
         const lastScan = agent.metadata?.last_scan_time ?? asset.lastScanTime;
         setAsset(prev => prev ? ({ ...prev, cpuUsage: cpu, memoryUsage: mem, lastScanTime: lastScan }) : prev);
-      } catch {}
+      } catch (error) {
+        console.error('Failed to update asset data:', error);
+      }
     }, 5000);
     return () => clearInterval(interval);
   }, [asset, id]);
@@ -101,23 +102,20 @@ const AssetDetail: React.FC = () => {
   const fetchAssetDetail = async () => {
     try {
       setLoading(true);
+      if (!id) return;
       // Try to get agent by ID first, fallback to listing all agents
-      let agent;
-      try {
-        const response = await api.get(`/api/agents/${id}`);
-        if (response.data.success && response.data.data) {
-          agent = response.data.data;
-        }
-      } catch (err) {
+      let agent = await agentService.getAgent(id);
+
+      if (!agent) {
         // Fallback: get all agents and find by ID
-        const response = await api.get('/api/agents/');
-        const agentsData = response.data;
-        if (!agentsData.success || !agentsData.data) {
-          throw new Error('Failed to fetch agents data');
-        }
-        agent = agentsData.data.find((a: any) => a.id === id);
+        const agents = await agentService.getAgents();
+        agent = agents.find(a => a.id === id) || null;
       }
-      
+
+      if (!agent) {
+        throw new Error('Agent not found');
+      }
+
       if (!agent) {
         throw new Error('Agent not found');
       }

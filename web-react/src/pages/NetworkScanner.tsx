@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '@/services/api';
+import toast from 'react-hot-toast';
 import { Network, Play, RefreshCw, AlertTriangle, CheckCircle, Search } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { networkScanService } from '@/services/networkScanService';
+import { agentService } from '@/services/agentService';
 
 interface NetworkScan {
   id: string;
@@ -46,11 +47,10 @@ const NetworkScanner: React.FC = () => {
     try {
       setIsScanning(true);
       // Get first available agent
-      const agentsResponse = await api.get('/api/agents/');
-      const agents = agentsResponse.data?.data || [];
+      const agents = await agentService.getAgents();
       
       if (agents.length === 0) {
-        alert('No agents available. Please register an agent first.');
+        toast.error('No agents available. Please register an agent first.');
         return;
       }
 
@@ -63,7 +63,7 @@ const NetworkScanner: React.FC = () => {
       const concurrency = parseInt(import.meta.env.VITE_SCAN_CONCURRENCY || '10', 10);
 
       // Initiate network scan
-      const response = await api.post('/api/v2/scans/network', {
+      const scanId = await networkScanService.initiateScan({
         agent_id: agentId,
         targets: scanTargets,
         scan_type: scanType,
@@ -71,14 +71,15 @@ const NetworkScanner: React.FC = () => {
         concurrency
       });
 
-      if (response.data.scan_id) {
-        alert(`Network scan initiated! Scan ID: ${response.data.scan_id}`);
+      if (scanId) {
+        toast.success(`Network scan initiated! Scan ID: ${scanId}`);
         // Refresh scans after a delay
         setTimeout(fetchScans, 2000);
       }
     } catch (error: any) {
       console.error('Failed to initiate scan:', error);
-      alert(`Failed to initiate scan: ${error.response?.data?.error || error.message}`);
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
+      toast.error(`Failed to initiate scan: ${errorMessage}`);
     } finally {
       setIsScanning(false);
     }

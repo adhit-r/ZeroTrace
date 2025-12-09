@@ -62,15 +62,36 @@ func main() {
 	// Initialize repositories
 	scanRepo := repository.NewScanRepository(db.DB)
 
+	// Initialize config auditor repositories
+	configFileRepo := repository.NewConfigFileRepository(db.DB)
+	configFindingRepo := repository.NewConfigFindingRepository(db.DB)
+	configStandardRepo := repository.NewConfigStandardRepository(db.DB)
+	configAnalysisRepo := repository.NewConfigAnalysisRepository(db.DB)
+
 	// Initialize services
 	scanService := services.NewScanService(cfg, scanRepo)
-	agentService := services.NewAgentService()
-	enrollmentService := services.NewEnrollmentService(cfg)
+	agentService := services.NewAgentService(db.DB)
+	enrollmentService := services.NewEnrollmentService(cfg, db)
 	vulnerabilityV2Service := services.NewVulnerabilityV2Service()
 	organizationProfileService := services.NewOrganizationProfileService(db.DB)
 	analyticsService := analytics.NewAnalyticsService(db.DB)
 	enrichmentService := services.NewEnrichmentService(cfg.EnrichmentServiceURL)
 	aiService := services.NewAIService(cfg.AIServiceURL)
+
+	// Initialize config auditor services
+	configParserService := services.NewConfigParserService(configFileRepo)
+	configAnalyzerService := services.NewConfigAnalyzerService(configFileRepo, configFindingRepo, configStandardRepo, configAnalysisRepo)
+	configJobService := services.NewConfigJobService(configFileRepo, configParserService, configAnalyzerService, cfg)
+	configFileService := services.NewConfigFileService(cfg, configFileRepo, configParserService, configAnalyzerService, configJobService)
+	configFindingService := services.NewConfigFindingService(configFindingRepo)
+	configAnalysisService := services.NewConfigAnalysisService(configAnalysisRepo, configFileRepo)
+
+	// Get underlying sql.DB for AttackPathService
+	sqlDB, err := db.DB.DB()
+	if err != nil {
+		log.Fatalf("Failed to get underlying sql.DB: %v", err)
+	}
+	attackPathService := services.NewAttackPathService(sqlDB)
 
 	// Setup router
 	router := gin.New()
@@ -86,7 +107,7 @@ func main() {
 	router.Use(middleware.RequestLogger())
 
 	// Setup routes
-	setupRoutes(router, scanService, agentService, enrollmentService, vulnerabilityV2Service, organizationProfileService, analyticsService, enrichmentService, aiService)
+	setupRoutes(router, db, scanService, agentService, enrollmentService, vulnerabilityV2Service, organizationProfileService, analyticsService, enrichmentService, aiService, configFileService, configFindingService, configAnalysisService, attackPathService)
 
 	// Create server
 	server := &http.Server{
@@ -108,6 +129,9 @@ func main() {
 	<-quit
 	log.Println("Shutting down server...")
 
+	// Graceful shutdown - stop background workers first
+	configJobService.Stop()
+
 	// Graceful shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -119,12 +143,12 @@ func main() {
 	log.Println("Server exited")
 }
 
-func setupRoutes(router *gin.Engine, scanService *services.ScanService, agentService *services.AgentService, enrollmentService *services.EnrollmentService, vulnerabilityV2Service *services.VulnerabilityV2Service, organizationProfileService *services.OrganizationProfileService, analyticsService *analytics.AnalyticsService, enrichmentService *services.EnrichmentService, aiService *services.AIService) {
+func setupRoutes(router *gin.Engine, db *repository.Database, scanService *services.ScanService, agentService *services.AgentService, enrollmentService *services.EnrollmentService, vulnerabilityV2Service *services.VulnerabilityV2Service, organizationProfileService *services.OrganizationProfileService, analyticsService *analytics.AnalyticsService, enrichmentService *services.EnrichmentService, aiService *services.AIService, configFileService *services.ConfigFileService, configFindingService *services.ConfigFindingService, configAnalysisService *services.ConfigAnalysisService, attackPathService *services.AttackPathService) {
 	// Root route
-	router.GET("/", handlers.Root)
+	// router.GET("/", handlers.Root)
 
 	// Health check
-	router.GET("/health", handlers.HealthCheck)
+	router.GET("/health", handlers.HealthCheck(db))
 
 	// Agent routes (public - no auth required)
 	agents := router.Group("/api/agents")
@@ -244,6 +268,45 @@ func setupRoutes(router *gin.Engine, scanService *services.ScanService, agentSer
 			v2Scans.POST("/network", vulnerabilityV2Handler.InitiateNetworkScan)
 			v2Scans.GET("/:scan_id/status", vulnerabilityV2Handler.GetScanStatus)
 			v2Scans.GET("/:scan_id/results", vulnerabilityV2Handler.GetScanResults)
+		}
+
+		// Attack Path routes
+		attackPathHandler := handlers.NewAttackPathHandler(attackPathService)
+		v2AttackPaths := v2.Group("/attack-paths")
+		{
+			v2AttackPaths.GET("/", attackPathHandler.GetAttackPaths)
+			v2AttackPaths.GET("/:path_id", attackPathHandler.GetAttackPath)
+			v2AttackPaths.POST("/generate", attackPathHandler.GenerateAttackPaths)
+		}
+
+		// Config Auditor routes (public for now)
+		configFileHandler := handlers.NewConfigFileHandler(configFileService)
+		configFindingHandler := handlers.NewConfigFindingHandler(configFindingService)
+		configAnalysisHandler := handlers.NewConfigAnalysisHandler(configAnalysisService)
+
+		v2ConfigFiles := v2.Group("/config-files")
+		{
+			v2ConfigFiles.POST("/upload", configFileHandler.UploadConfigFile)
+			v2ConfigFiles.GET("/", configFileHandler.ListConfigFiles)
+			v2ConfigFiles.GET("/:id", configFileHandler.GetConfigFile)
+			v2ConfigFiles.GET("/:id/content", configFileHandler.GetConfigFileContent)
+			v2ConfigFiles.DELETE("/:id", configFileHandler.DeleteConfigFile)
+			v2ConfigFiles.POST("/:id/analyze", configFileHandler.TriggerAnalysis)
+		}
+
+		v2ConfigFindings := v2.Group("/config-findings")
+		{
+			v2ConfigFindings.GET("/", configFindingHandler.ListConfigFindings)
+			v2ConfigFindings.GET("/:id", configFindingHandler.GetConfigFinding)
+			v2ConfigFindings.PATCH("/:id/status", configFindingHandler.UpdateFindingStatus)
+			v2ConfigFindings.GET("/stats", configFindingHandler.GetFindingStats)
+		}
+
+		v2ConfigAnalysis := v2.Group("/config-files/:id")
+		{
+			v2ConfigAnalysis.GET("/analysis", configAnalysisHandler.GetAnalysisResults)
+			v2ConfigAnalysis.GET("/compliance", configAnalysisHandler.GetComplianceScores)
+			v2ConfigAnalysis.GET("/analysis/status", configAnalysisHandler.GetAnalysisStatus)
 		}
 	}
 

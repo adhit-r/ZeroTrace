@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import NetworkFlowVisualizer from '../components/network/NetworkFlowVisualizer';
-import { Node, Edge } from 'reactflow';
-import { Network, Info, Activity, AlertTriangle, Shield } from 'lucide-react';
+import type { Node, Edge } from 'reactflow';
+import { Network, Info } from 'lucide-react';
 
 const Topology: React.FC = () => {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
@@ -33,7 +33,7 @@ const Topology: React.FC = () => {
           </div>
         )}
       </div>
-      
+
       {/* Main Visualizer */}
       <div className="flex-1 relative">
         <NetworkFlowVisualizer

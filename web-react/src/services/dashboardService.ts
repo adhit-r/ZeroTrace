@@ -82,7 +82,7 @@ export interface RiskScore {
   hostname: string;
   score: number;
   factors: Array<{
-  name: string;
+    name: string;
     weight: number;
     score: number;
     impact: 'high' | 'medium' | 'low';
@@ -148,9 +148,14 @@ class DashboardService {
       });
       const avgRiskScore = totalAssets > 0 ? totalRiskScore / totalAssets : 0;
 
-      const threatLevel = avgRiskScore >= 8 ? 'critical' : 
-                         avgRiskScore >= 6 ? 'high' : 
-                         avgRiskScore >= 4 ? 'medium' : 'low';
+      const threatLevel = avgRiskScore >= 8 ? 'critical' :
+        avgRiskScore >= 6 ? 'high' :
+          avgRiskScore >= 4 ? 'medium' : 'low';
+
+      // Calculate compliance metrics (approximate from risk)
+      const compliantAssets = agents.filter((a: any) => (a.risk_score || 0) < 4).length; // Low risk = compliant
+      const nonCompliantAssets = totalAssets - compliantAssets;
+      const complianceScore = totalAssets > 0 ? Math.round((compliantAssets / totalAssets) * 100) : 100;
 
       return {
         assets: {
@@ -168,13 +173,13 @@ class DashboardService {
           high: highVulns,
           medium: mediumVulns,
           low: lowVulns,
-          trend: 'stable' // TODO: Calculate actual trend
+          trend: 'stable' // Trends require historical data snapshoting
         },
         compliance: {
-          score: 85, // TODO: Calculate from compliance data
-          frameworks: 3, // TODO: Get from compliance service
-          compliant: Math.floor(totalAssets * 0.8), // TODO: Calculate actual compliance
-          nonCompliant: Math.ceil(totalAssets * 0.2)
+          score: complianceScore,
+          frameworks: 3, // Placeholder until compliance frameworks are fully implemented
+          compliant: compliantAssets,
+          nonCompliant: nonCompliantAssets
         },
         performance: {
           avgCpu,
@@ -346,16 +351,25 @@ class DashboardService {
       // Group vulnerabilities by date (last 7 days)
       const trends: VulnerabilityTrend[] = [];
       const today = new Date();
-      
+
       for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
+
         const dayVulns = vulnerabilities.filter((v: any) => {
           const vulnDate = new Date(v.created_at || v.updated_at);
           return vulnDate.toISOString().split('T')[0] === dateStr;
         });
+
+        // Filter for this day's activity
+        const resolvedCount = vulnerabilities.filter((v: any) => {
+          const upDate = new Date(v.updated_at);
+          return (v.status === 'resolved' || v.status === 'fixed') &&
+            upDate.toISOString().split('T')[0] === dateStr;
+        }).length;
+
+        const exploitedCount = dayVulns.filter((v: any) => v.exploit_available).length;
 
         trends.push({
           date: dateStr,
@@ -364,9 +378,9 @@ class DashboardService {
           high: dayVulns.filter((v: any) => v.severity === 'high').length,
           medium: dayVulns.filter((v: any) => v.severity === 'medium').length,
           low: dayVulns.filter((v: any) => v.severity === 'low').length,
-          resolved: 0, // TODO: Track resolved vulnerabilities
+          resolved: resolvedCount,
           new: dayVulns.length,
-          exploited: 0 // TODO: Track exploited vulnerabilities
+          exploited: exploitedCount
         });
       }
 

@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Server, 
-  Cpu, 
-  HardDrive, 
-  MemoryStick, 
-  Shield, 
-  AlertTriangle, 
-  CheckCircle, 
-  Activity, 
-  Wifi, 
-  Globe, 
-  RefreshCw, 
-  Download, 
-  Eye, 
-  Settings, 
-  BarChart3, 
+import {
+  Server,
+  Cpu,
+  HardDrive,
+  MemoryStick,
+  Shield,
+  AlertTriangle,
+  CheckCircle,
+  Activity,
+  Wifi,
+  Globe,
+  RefreshCw,
+  Download,
+  Eye,
+  Settings,
+  BarChart3,
   Network,
   Layers,
   X
 } from 'lucide-react';
+import { agentService } from '../../services/agentService';
 
 interface SystemMetrics {
   cpu: {
@@ -165,10 +166,10 @@ interface EnhancedAssetDetailsProps {
   className?: string;
 }
 
-const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({ 
-  assetId, 
-  onClose, 
-  className = '' 
+const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
+  assetId,
+  onClose,
+  className = ''
 }) => {
   const [assetData, setAssetData] = useState<AssetData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,21 +180,15 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
       setLoading(true);
       try {
         // Fetch real agent data from API
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/agents/`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch agent data');
-        }
-        
-        const result = await response.json();
-        const agents = result.data || [];
-        
+        const agents = await agentService.getAgents();
+
         // Find the specific agent by ID
         const agent = agents.find((a: any) => a.id === assetId);
-        
+
         if (!agent) {
           throw new Error('Agent not found');
         }
-        
+
         // Transform API data to enhanced AssetData format
         const assetData: AssetData = {
           id: agent.id,
@@ -295,7 +290,7 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
             }
           }
         };
-        
+
         setAssetData(assetData);
       } catch (error) {
         console.error('Failed to fetch asset data:', error);
@@ -395,11 +390,10 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-              activeTab === tab.id
+            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${activeTab === tab.id
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
-            }`}
+              }`}
           >
             <tab.icon className="h-4 w-4" />
             {tab.label}
@@ -466,7 +460,7 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
                     <span className="font-bold">{assetData.systemMetrics.cpu.usage}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-blue-600 h-2 rounded-full"
                       style={{ width: `${assetData.systemMetrics.cpu.usage}%` }}
                     ></div>
@@ -478,7 +472,7 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
                     <span className="font-bold">{assetData.systemMetrics.memory.usage}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-green-600 h-2 rounded-full"
                       style={{ width: `${assetData.systemMetrics.memory.usage}%` }}
                     ></div>
@@ -490,7 +484,7 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
                     <span className="font-bold">{assetData.systemMetrics.storage.usage}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-purple-600 h-2 rounded-full"
                       style={{ width: `${assetData.systemMetrics.storage.usage}%` }}
                     ></div>
@@ -657,7 +651,7 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
                   <span className="font-bold">{assetData.systemMetrics.cpu.usage}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-blue-600 h-2 rounded-full"
                     style={{ width: `${assetData.systemMetrics.cpu.usage}%` }}
                   ></div>
@@ -682,7 +676,7 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
                   <span className="font-bold">{assetData.systemMetrics.memory.usage}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-green-600 h-2 rounded-full"
                     style={{ width: `${assetData.systemMetrics.memory.usage}%` }}
                   ></div>
@@ -707,7 +701,7 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
                   <span className="font-bold">{assetData.systemMetrics.storage.usage}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-purple-600 h-2 rounded-full"
                     style={{ width: `${assetData.systemMetrics.storage.usage}%` }}
                   ></div>
@@ -819,9 +813,8 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
                       <p className="text-sm text-gray-600">IP: {iface.ip} • MAC: {iface.mac}</p>
                     </div>
                     <div className="text-right">
-                      <span className={`px-2 py-1 rounded text-xs font-bold ${
-                        iface.status === 'up' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span className={`px-2 py-1 rounded text-xs font-bold ${iface.status === 'up' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
                         {iface.status.toUpperCase()}
                       </span>
                       <p className="text-sm text-gray-600 mt-1">{iface.speed} Mbps</p>
@@ -880,7 +873,7 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
                   <span className="text-2xl font-bold text-green-600">{assetData.securityMetrics.compliance.score}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
+                  <div
                     className="bg-green-600 h-3 rounded-full"
                     style={{ width: `${assetData.securityMetrics.compliance.score}%` }}
                   ></div>
@@ -908,11 +901,10 @@ const EnhancedAssetDetails: React.FC<EnhancedAssetDetailsProps> = ({
                     <p className="font-medium">{framework.name}</p>
                     <p className="text-sm text-gray-600">Score: {framework.score}%</p>
                   </div>
-                  <span className={`px-3 py-1 rounded text-sm font-bold ${
-                    framework.status === 'compliant' ? 'bg-green-100 text-green-800' :
-                    framework.status === 'non_compliant' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
+                  <span className={`px-3 py-1 rounded text-sm font-bold ${framework.status === 'compliant' ? 'bg-green-100 text-green-800' :
+                      framework.status === 'non_compliant' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                    }`}>
                     {framework.status.replace('_', ' ').toUpperCase()}
                   </span>
                 </div>

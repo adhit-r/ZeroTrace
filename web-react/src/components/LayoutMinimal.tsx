@@ -1,10 +1,28 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export default function LayoutMinimal({ children }: LayoutProps) {
+  const location = useLocation();
+
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const getLinkClassName = (path: string) => {
+    const baseClasses = "block py-2 px-3 rounded font-bold mb-2 transition-all border-3 border-black shadow-neubrutalist-sm";
+    if (isActive(path)) {
+      return `${baseClasses} bg-orange-500 text-white shadow-neubrutalist-md`;
+    }
+    return `${baseClasses} bg-white text-black hover:bg-gray-100 hover:shadow-neubrutalist-md hover:translate-x-0.5 hover:translate-y-0.5`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
@@ -16,44 +34,44 @@ export default function LayoutMinimal({ children }: LayoutProps) {
           {/* Main */}
           <div className="mb-4">
             <p className="text-xs font-bold text-gray-500 uppercase mb-2 px-2">Main</p>
-            <a href="/" className="block py-2 px-3 rounded bg-orange-500 text-white font-bold mb-2">Dashboard</a>
-            <a href="/agents" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Agents</a>
-            <a href="/vulnerabilities" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Vulnerabilities</a>
-            <a href="/apps" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Applications</a>
+            <Link to="/" className={getLinkClassName('/')}>Dashboard</Link>
+            <Link to="/agents" className={getLinkClassName('/agents')}>Agents</Link>
+            <Link to="/vulnerabilities" className={getLinkClassName('/vulnerabilities')}>Vulnerabilities</Link>
+            <Link to="/apps" className={getLinkClassName('/apps')}>Applications</Link>
           </div>
 
           {/* Scanning */}
           <div className="mb-4">
             <p className="text-xs font-bold text-gray-500 uppercase mb-2 px-2">Scanning</p>
-            <a href="/scans" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Network Scanner</a>
-            <a href="/topology" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Network Topology</a>
-            <a href="/scanner-details" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Scanner Details</a>
-            <a href="/scan-processing" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Scan Processing</a>
+            <Link to="/scans" className={getLinkClassName('/scans')}>Network Scanner</Link>
+            <Link to="/topology" className={getLinkClassName('/topology')}>Network Topology</Link>
+            <Link to="/scanner-details" className={getLinkClassName('/scanner-details')}>Scanner Details</Link>
+            <Link to="/scan-processing" className={getLinkClassName('/scan-processing')}>Scan Processing</Link>
           </div>
 
           {/* Security & Analytics */}
           <div className="mb-4">
             <p className="text-xs font-bold text-gray-500 uppercase mb-2 px-2">Security</p>
-            <a href="/security" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Security Dashboard</a>
-            <a href="/ai-analytics" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">AI Analytics</a>
-            <a href="/risk-heatmaps" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Risk Heatmaps</a>
-            <a href="/security-maturity" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Security Maturity</a>
+            <Link to="/security" className={getLinkClassName('/security')}>Security Dashboard</Link>
+            <Link to="/ai-analytics" className={getLinkClassName('/ai-analytics')}>AI Analytics</Link>
+            <Link to="/risk-heatmaps" className={getLinkClassName('/risk-heatmaps')}>Risk Heatmaps</Link>
+            <Link to="/security-maturity" className={getLinkClassName('/security-maturity')}>Security Maturity</Link>
           </div>
 
           {/* Compliance */}
           <div className="mb-4">
             <p className="text-xs font-bold text-gray-500 uppercase mb-2 px-2">Compliance</p>
-            <a href="/compliance" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Compliance</a>
-            <a href="/compliance/reports" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Compliance Reports</a>
+            <Link to="/compliance" className={getLinkClassName('/compliance')}>Compliance</Link>
+            <Link to="/compliance/reports" className={getLinkClassName('/compliance/reports')}>Compliance Reports</Link>
           </div>
 
           {/* Settings */}
           <div className="mb-4">
             <p className="text-xs font-bold text-gray-500 uppercase mb-2 px-2">Settings</p>
-            <a href="/settings" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Settings</a>
-            <a href="/profile" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Profile</a>
-            <a href="/organization-profile" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Organization</a>
-            <a href="/tech-stack" className="block py-2 px-3 rounded hover:bg-gray-100 font-bold mb-2">Tech Stack</a>
+            <Link to="/settings" className={getLinkClassName('/settings')}>Settings</Link>
+            <Link to="/profile" className={getLinkClassName('/profile')}>Profile</Link>
+            <Link to="/organization-profile" className={getLinkClassName('/organization-profile')}>Organization</Link>
+            <Link to="/tech-stack" className={getLinkClassName('/tech-stack')}>Tech Stack</Link>
           </div>
         </nav>
       </div>

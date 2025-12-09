@@ -1,32 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  Network, 
-  Server, 
-  Shield, 
-  AlertTriangle, 
-  CheckCircle,
-  XCircle,
-  Eye,
-  Lock,
-  Unlock,
-  Wifi,
-  Globe,
-  Database,
-  Activity,
+import {
+  Network,
   RefreshCw,
   Filter,
-  Search,
-  Download,
   ZoomIn,
   ZoomOut,
-  RotateCcw,
-  Maximize,
-  Minimize,
-  Settings,
-  Target,
-  Zap,
-  Clock,
-  BarChart3
+  AlertTriangle,
+  Search,
+  Download,
+  RotateCcw
 } from 'lucide-react';
 import * as d3 from 'd3';
 
@@ -67,7 +49,7 @@ interface NetworkTopologyVisualizationProps {
   onEdgeClick?: (edge: NetworkEdge) => void;
 }
 
-const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> = ({ 
+const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> = ({
   className = '',
   data,
   onNodeClick,
@@ -80,7 +62,7 @@ const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> 
   const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<NetworkEdge | null>(null);
   const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [, setPan] = useState({ x: 0, y: 0 });
   const [layout, setLayout] = useState<'force' | 'hierarchical' | 'circular'>('force');
   const [filter, setFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -194,11 +176,11 @@ const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> 
         setSelectedEdge(d);
         onEdgeClick?.(d);
       })
-      .on('mouseover', function(event, d) {
+      .on('mouseover', function (event, d) {
         d3.select(this)
           .attr('stroke-width', d.width * 2)
           .attr('stroke-opacity', 1);
-        
+
         // Show tooltip
         const tooltip = d3.select('body').append('div')
           .attr('class', 'network-tooltip')
@@ -219,13 +201,13 @@ const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> 
         `);
 
         tooltip.style('left', (event.pageX + 10) + 'px')
-               .style('top', (event.pageY - 10) + 'px');
+          .style('top', (event.pageY - 10) + 'px');
       })
-      .on('mouseout', function() {
+      .on('mouseout', function () {
         d3.select(this)
-          .attr('stroke-width', d => d.width)
+          .attr('stroke-width', (d: any) => d.width)
           .attr('stroke-opacity', 0.6);
-        
+
         d3.selectAll('.network-tooltip').remove();
       });
 
@@ -242,9 +224,9 @@ const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> 
         setSelectedNode(d);
         onNodeClick?.(d);
       })
-      .on('mouseover', function(event, d) {
+      .on('mouseover', function (event, d) {
         // Highlight connected edges
-        edges.attr('stroke-opacity', edge => 
+        edges.attr('stroke-opacity', edge =>
           edge.source === d.id || edge.target === d.id ? 1 : 0.1
         );
 
@@ -270,12 +252,12 @@ const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> 
         `);
 
         tooltip.style('left', (event.pageX + 10) + 'px')
-               .style('top', (event.pageY - 10) + 'px');
+          .style('top', (event.pageY - 10) + 'px');
       })
-      .on('mouseout', function() {
+      .on('mouseout', function () {
         // Reset edge opacity
         edges.attr('stroke-opacity', 0.6);
-        
+
         d3.selectAll('.network-tooltip').remove();
       });
 
@@ -296,12 +278,12 @@ const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> 
       .attr('fill', 'white')
       .text(d => {
         switch (d.type) {
-          case 'host': return '🖥️';
-          case 'service': return '⚙️';
-          case 'vulnerability': return '⚠️';
-          case 'network': return '🌐';
-          case 'firewall': return '🛡️';
-          case 'router': return '🔀';
+          case 'host': return 'H';
+          case 'service': return 'S';
+          case 'vulnerability': return 'V';
+          case 'network': return 'N';
+          case 'firewall': return 'F';
+          case 'router': return 'R';
           default: return '●';
         }
       });
@@ -318,10 +300,10 @@ const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> 
     // Update positions on simulation tick
     simulation.on('tick', () => {
       edges
-        .attr('x1', d => (d.source as NetworkNode).x!)
-        .attr('y1', d => (d.source as NetworkNode).y!)
-        .attr('x2', d => (d.target as NetworkNode).x!)
-        .attr('y2', d => (d.target as NetworkNode).y!);
+        .attr('x1', d => ((d.source as unknown) as NetworkNode).x!)
+        .attr('y1', d => ((d.source as unknown) as NetworkNode).y!)
+        .attr('x2', d => ((d.target as unknown) as NetworkNode).x!)
+        .attr('y2', d => ((d.target as unknown) as NetworkNode).y!);
 
       nodes
         .attr('transform', d => `translate(${d.x},${d.y})`);
@@ -412,7 +394,7 @@ const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> 
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-red-800 mb-2">Error Loading Network Topology</h3>
           <p className="text-red-600 mb-4">{error}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-red-100 text-red-800 border-2 border-red-300 rounded text-sm font-bold uppercase tracking-wider hover:bg-red-200 transition-colors"
           >
@@ -526,7 +508,7 @@ const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> 
 
       {/* Visualization */}
       <div className="p-6">
-        <div 
+        <div
           ref={containerRef}
           className="w-full h-96 bg-gray-50 border-2 border-black rounded relative"
         >
@@ -535,7 +517,7 @@ const NetworkTopologyVisualization: React.FC<NetworkTopologyVisualizationProps> 
             className="w-full h-full"
             style={{ cursor: 'grab' }}
           />
-          
+
           {/* Zoom indicator */}
           <div className="absolute top-4 right-4 bg-white border-2 border-black rounded p-2">
             <div className="text-sm font-bold text-black">

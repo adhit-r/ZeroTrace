@@ -21,7 +21,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       });
 
       // Register the service worker
-      registration = await wb.register();
+      registration = (await wb.register()) || null;
 
       console.log('Service Worker registered successfully');
 

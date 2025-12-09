@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+// import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { organizationService } from '@/services/organizationService';
 
@@ -167,8 +167,8 @@ export default function OrganizationProfile() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">Organization Profile</h1>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={saving}
           >
             {saving ? 'Saving...' : 'Save Profile'}
@@ -192,8 +192,8 @@ export default function OrganizationProfile() {
               </div>
               <div>
                 <Label htmlFor="industry">Industry</Label>
-                <Select 
-                  value={profile.industry} 
+                <Select
+                  value={profile.industry}
                   onValueChange={(value) => setProfile(prev => ({ ...prev, industry: value }))}
                 >
                   <SelectTrigger>
@@ -208,8 +208,8 @@ export default function OrganizationProfile() {
               </div>
               <div>
                 <Label htmlFor="size">Company Size</Label>
-                <Select 
-                  value={profile.size} 
+                <Select
+                  value={profile.size}
                   onValueChange={(value) => setProfile(prev => ({ ...prev, size: value }))}
                 >
                   <SelectTrigger>
@@ -224,8 +224,8 @@ export default function OrganizationProfile() {
               </div>
               <div>
                 <Label htmlFor="riskTolerance">Risk Tolerance</Label>
-                <Select 
-                  value={profile.riskTolerance} 
+                <Select
+                  value={profile.riskTolerance}
                   onValueChange={(value) => setProfile(prev => ({ ...prev, riskTolerance: value }))}
                 >
                   <SelectTrigger>
@@ -411,10 +411,10 @@ export default function OrganizationProfile() {
             </div>
             <div className="p-4 bg-gray-100 rounded-lg">
               <p className="text-sm text-gray-600">
-                <strong>Total Weight:</strong> {(profile.riskWeights.confidentiality + 
-                profile.riskWeights.integrity + 
-                profile.riskWeights.availability + 
-                profile.riskWeights.compliance).toFixed(1)}
+                <strong>Total Weight:</strong> {(profile.riskWeights.confidentiality +
+                  profile.riskWeights.integrity +
+                  profile.riskWeights.availability +
+                  profile.riskWeights.compliance).toFixed(1)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 Weights should sum to 1.0 for optimal risk calculation

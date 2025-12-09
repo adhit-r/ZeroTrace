@@ -17,12 +17,12 @@ import (
 
 // Database represents the database connection and repositories
 type Database struct {
-	DB            *gorm.DB
-	PgxPool       *pgxpool.Pool // Direct pgx pool for hot paths
-	QueryCache    *QueryCache
-	StmtMgr       *PreparedStatementManager
-	PoolMonitor   *PoolMonitor
-	TxManager     *TransactionManager
+	DB          *gorm.DB
+	PgxPool     *pgxpool.Pool // Direct pgx pool for hot paths
+	QueryCache  *QueryCache
+	StmtMgr     *PreparedStatementManager
+	PoolMonitor *PoolMonitor
+	TxManager   *TransactionManager
 }
 
 // NewDatabase creates a new database connection
@@ -65,13 +65,13 @@ func NewDatabase(cfg *config.Config) (*Database, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pgx config: %w", err)
 	}
-	
+
 	// Configure pool settings
 	pgxConfig.MaxConns = 100
 	pgxConfig.MinConns = 10
 	pgxConfig.MaxConnLifetime = time.Hour
 	pgxConfig.MaxConnIdleTime = 30 * time.Minute
-	
+
 	pgxPool, err := pgxpool.NewWithConfig(context.Background(), pgxConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
@@ -87,19 +87,19 @@ func NewDatabase(cfg *config.Config) (*Database, error) {
 
 	// Initialize query cache (Valkey will be passed later)
 	queryCache := NewQueryCache(pgxPool, nil, 5*time.Minute)
-	
+
 	// Initialize prepared statement manager
 	stmtMgr := NewPreparedStatementManager(pgxPool)
-	
+
 	// Initialize prepared statements
 	ctx := context.Background()
 	if err := stmtMgr.InitializePreparedStatements(ctx); err != nil {
 		log.Printf("Warning: Failed to initialize prepared statements: %v", err)
 	}
-	
+
 	// Initialize pool monitor
 	poolMonitor := NewPoolMonitor(pgxPool)
-	
+
 	// Initialize transaction manager
 	txManager := NewTransactionManager(pgxPool)
 
@@ -124,6 +124,10 @@ func (d *Database) AutoMigrate() error {
 		&models.Scan{},
 		&models.Vulnerability{},
 		&models.Agent{},
+		&models.Software{},
+		&models.NetworkHost{},
+		&models.EnrollmentToken{},
+		&models.AgentCredential{},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
@@ -136,7 +140,7 @@ func (d *Database) AutoMigrate() error {
 // Close closes the database connection
 func (d *Database) Close() error {
 	var errs []error
-	
+
 	// Close GORM connection
 	if sqlDB, err := d.DB.DB(); err == nil {
 		if err := sqlDB.Close(); err != nil {
@@ -145,15 +149,15 @@ func (d *Database) Close() error {
 	} else {
 		errs = append(errs, fmt.Errorf("failed to get GORM sql.DB: %w", err))
 	}
-	
+
 	// Close pgx pool
 	if d.PgxPool != nil {
 		d.PgxPool.Close()
 	}
-	
+
 	if len(errs) > 0 {
 		return fmt.Errorf("errors closing database: %v", errs)
 	}
-	
+
 	return nil
 }

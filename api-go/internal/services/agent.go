@@ -10,18 +10,35 @@ import (
 	"zerotrace/api/internal/models"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // AgentService manages agent registration and heartbeats
 type AgentService struct {
 	agents map[uuid.UUID]*models.Agent
 	mutex  sync.RWMutex
+	db     *gorm.DB
 }
 
 // NewAgentService creates a new agent service
-func NewAgentService() *AgentService {
+func NewAgentService(db *gorm.DB) *AgentService {
+	// Restore agents from DB on startup
+	agents := make(map[uuid.UUID]*models.Agent)
+	var loadedAgents []models.Agent
+	if err := db.Find(&loadedAgents).Error; err == nil {
+		for _, agent := range loadedAgents {
+			// Create a copy of the loop variable
+			a := agent
+			agents[agent.ID] = &a
+		}
+		log.Printf("[NewAgentService] Restored %d agents from database", len(agents))
+	} else {
+		log.Printf("[NewAgentService] Failed to load agents from DB: %v", err)
+	}
+
 	return &AgentService{
-		agents: make(map[uuid.UUID]*models.Agent),
+		agents: agents,
+		db:     db,
 	}
 }
 
@@ -37,6 +54,12 @@ func (as *AgentService) RegisterAgent(agent models.Agent) (*models.Agent, error)
 
 	agent.LastSeen = time.Now()
 	as.agents[agent.ID] = &agent
+
+	// Persist to DB
+	if err := as.db.Save(&agent).Error; err != nil {
+		log.Printf("Failed to persist registered agent %s: %v", agent.ID, err)
+	}
+
 	log.Printf("Agent registered or updated: %s", agent.ID)
 	return &agent, nil
 }
@@ -83,6 +106,11 @@ func (as *AgentService) UpdateAgentHeartbeat(heartbeat models.AgentHeartbeat) er
 	log.Printf("[UpdateAgentHeartbeat] Metadata AFTER merge: %v", getMetadataKeys(agent.Metadata))
 
 	agent.UpdatedAt = time.Now()
+
+	// Persist to DB
+	if err := as.db.Save(agent).Error; err != nil {
+		log.Printf("Failed to persist agent heartbeat %s: %v", agent.ID, err)
+	}
 
 	return nil
 }
@@ -343,6 +371,30 @@ func (as *AgentService) UpdateAgentResults(agentID string, results []models.Agen
 		agent.Metadata["vulnerabilities"] = allVulnerabilities
 		log.Printf("[UpdateAgentResults] Dependencies stored successfully")
 
+		// PERSISTENCE: Save Software/Dependencies to Database
+		if len(allDependencies) > 0 {
+			go func(agentID uuid.UUID, deps []models.Dependency) {
+				for _, dep := range deps {
+					software := models.Software{
+						AgentID:   agentID,
+						Name:      dep.Name,
+						Version:   dep.Version,
+						Type:      dep.Type,
+						Status:    "active",
+						Vendor:    dep.Description, // Using description as vendor for now
+						CreatedAt: time.Now(),
+						UpdatedAt: time.Now(),
+					}
+					// Upsert software based on AgentID + Name + Version
+					if err := as.db.Where("agent_id = ? AND name = ? AND version = ?", agentID, dep.Name, dep.Version).
+						FirstOrCreate(&software).Error; err != nil {
+						log.Printf("Failed to persist software %s: %v", dep.Name, err)
+					}
+				}
+				log.Printf("Persisted %d software items for agent %s", len(deps), agentID)
+			}(agentUUID, allDependencies)
+		}
+
 		// Store counts in metadata
 		agent.Metadata["total_vulnerabilities"] = totalVulns
 		agent.Metadata["critical_vulnerabilities"] = criticalVulns
@@ -371,6 +423,12 @@ func (as *AgentService) UpdateAgentResults(agentID string, results []models.Agen
 	}
 
 	log.Printf("[UpdateAgentResults] Final metadata keys: %v", getMetadataKeys(agent.Metadata))
+
+	// Persist to DB
+	if err := as.db.Save(agent).Error; err != nil {
+		log.Printf("Failed to persist agent results %s: %v", agent.ID, err)
+	}
+
 	return nil
 }
 
@@ -403,6 +461,11 @@ func (as *AgentService) UpdateAgentStatus(agentID string, status string, metadat
 	agent.LastSeen = time.Now()
 	if metadata != nil {
 		agent.Metadata = metadata
+	}
+
+	// Persist to DB
+	if err := as.db.Save(agent).Error; err != nil {
+		log.Printf("Failed to persist agent status %s: %v", agent.ID, err)
 	}
 }
 
@@ -496,6 +559,11 @@ func (as *AgentService) UpdateAgentSystemInfo(agentID string, systemInfo map[str
 
 	// Update the agent in the map to ensure changes persist
 	as.agents[agentUUID] = agent
+
+	// Persist to DB
+	if err := as.db.Save(agent).Error; err != nil {
+		log.Printf("Failed to persist agent system info %s: %v", agent.ID, err)
+	}
 
 	log.Printf("[UpdateAgentSystemInfo] Updated system info for agent %s - hostname: %s, os: %s, cpu: %s", agentID, agent.Hostname, agent.OS, agent.CPUModel)
 	return nil
@@ -596,6 +664,62 @@ func (as *AgentService) UpdateAgentMetadata(agentID string, metadata map[string]
 	agent.LastSeen = time.Now()
 	agent.UpdatedAt = time.Now()
 
+	// PERSISTENCE: Save NetworkHost to Database
+	if networkResults, ok := metadata["network_scan_result"].(map[string]interface{}); ok {
+		go func(agentID uuid.UUID, results map[string]interface{}) {
+			// Iterate over found hosts (assuming standard Nmap/Naabu structure)
+			// This depends on the exact JSON structure of scan_result
+			// For now, checks if there's a "hosts" array or similar
+
+			// Example structure handling (adjust based on actual agent output)
+			if hosts, ok := results["hosts"].([]interface{}); ok {
+				for _, h := range hosts {
+					if hostMap, ok := h.(map[string]interface{}); ok {
+						ip, _ := hostMap["ip"].(string)
+						if ip == "" {
+							continue
+						}
+
+						hostname, _ := hostMap["hostname"].(string)
+						// ... map other fields
+
+						networkHost := models.NetworkHost{
+							AgentID:   agentID,
+							IPAddress: ip,
+							Hostname:  hostname,
+							Status:    "active",
+							LastSeen:  time.Now(),
+							CreatedAt: time.Now(),
+							UpdatedAt: time.Now(),
+						}
+
+						if ports, ok := hostMap["ports"].([]interface{}); ok {
+							var openPorts []int
+							for _, p := range ports {
+								if pNum, ok := p.(float64); ok {
+									openPorts = append(openPorts, int(pNum))
+								}
+							}
+							networkHost.OpenPorts = openPorts
+						}
+
+						// Upsert
+						if err := as.db.Where("agent_id = ? AND ip_address = ?", agentID, ip).
+							FirstOrCreate(&networkHost).Error; err != nil {
+							log.Printf("Failed to persist network host %s: %v", ip, err)
+						}
+					}
+				}
+			}
+		}(agentUUID, networkResults)
+	}
+
 	log.Printf("[UpdateAgentMetadata] Updated metadata for agent %s", agentID)
+
+	// Persist to DB (Update the agent record itself with new metadata)
+	if err := as.db.Save(agent).Error; err != nil {
+		log.Printf("Failed to persist agent metadata update %s: %v", agent.ID, err)
+	}
+
 	return nil
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import NetworkFlowVisualizer from '../components/network/NetworkFlowVisualizer';
-import { Node, Edge } from 'reactflow';
+import type { Node, Edge } from 'reactflow';
 
 const NetworkTopology: React.FC = () => {
   const handleNodeClick = (node: Node) => {

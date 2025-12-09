@@ -43,6 +43,14 @@ type Config struct {
 	
 	// AI service (same as enrichment service for now)
 	AIServiceURL string
+
+	// Config Auditor configuration
+	ConfigAuditorMaxFileSize     int
+	ConfigAuditorDefaultPageSize int
+	ConfigAuditorMaxPageSize     int
+	ConfigAuditorWorkerCount     int
+	ConfigAuditorQueueBufferSize int
+	ConfigAuditorStoragePath     string
 }
 
 func Load() *Config {
@@ -83,6 +91,14 @@ func Load() *Config {
 		
 		// AI service (defaults to enrichment service URL)
 		AIServiceURL: getEnv("AI_SERVICE_URL", getEnv("ENRICHMENT_SERVICE_URL", "http://localhost:8000")),
+
+		// Config Auditor configuration
+		ConfigAuditorMaxFileSize:     getEnvAsInt("CONFIG_AUDITOR_MAX_FILE_SIZE", 10*1024*1024), // 10MB
+		ConfigAuditorDefaultPageSize:  getEnvAsInt("CONFIG_AUDITOR_DEFAULT_PAGE_SIZE", 20),
+		ConfigAuditorMaxPageSize:      getEnvAsInt("CONFIG_AUDITOR_MAX_PAGE_SIZE", 100),
+		ConfigAuditorWorkerCount:      getEnvAsInt("CONFIG_AUDITOR_WORKER_COUNT", 3),
+		ConfigAuditorQueueBufferSize:  getEnvAsInt("CONFIG_AUDITOR_QUEUE_BUFFER_SIZE", 100),
+		ConfigAuditorStoragePath:      getEnv("CONFIG_AUDITOR_STORAGE_PATH", "configs"),
 	}
 }
 

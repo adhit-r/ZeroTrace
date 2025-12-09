@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { complianceService, ComplianceScore, ComplianceFinding, EvidenceItem } from '@/services/complianceService';
+import { useEffect, useState } from 'react';
+import { complianceService } from '@/services/complianceService';
+import type { ComplianceScore, ComplianceFinding, EvidenceItem } from '@/services/complianceService';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,11 +18,10 @@ export default function Compliance() {
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [executive, setExecutive] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
+      if (!organizationId) return;
       try {
         const [sc, fi, ev, rec, ex] = await Promise.all([
           complianceService.getScore(organizationId),
@@ -36,7 +36,7 @@ export default function Compliance() {
         setRecommendations(rec);
         setExecutive(ex);
       } finally {
-        setLoading(false);
+        // loaded
       }
     };
     load();

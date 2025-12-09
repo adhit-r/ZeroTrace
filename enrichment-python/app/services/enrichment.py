@@ -11,6 +11,13 @@ from ..core.logging import get_logger
 from ..core.cache import cache_manager
 from ..core.database import db_manager
 from .cpe_matcher import semantic_matcher
+from .threat_intel import (
+    mitre_attack_service,
+    alienvault_otx_service,
+    opencve_service,
+    cisa_kev_service,
+    initialize_threat_intel_services
+)
 
 logger = get_logger(__name__)
 
@@ -27,6 +34,8 @@ class EnrichmentService:
     async def initialize(self):
         """Initialize all subsystems"""
         logger.info("Initializing Enrichment Service...")
+        # Initialize threat intel services
+        await initialize_threat_intel_services()
         
         # 1. Core Systems
         await cache_manager.initialize()
@@ -101,12 +110,28 @@ class EnrichmentService:
             # Fallback: Fuzzy search by name if no CPE found
             if not vulnerabilities:
                 vulnerabilities = await self._get_vulns_by_text(name, version)
-
-            # 4. Cache Result
-            await cache_manager.set(cache_key, vulnerabilities)
             
-            item["vulnerabilities"] = vulnerabilities
-            item["source"] = "db" if vulnerabilities else "none"
+            # Final Fallback: Use NVD API if database is empty (works without API key, but rate-limited)
+            if not vulnerabilities:
+                try:
+                    # Try to fetch from NVD API using CPE or product name
+                    nvd_vulns = await self._get_vulns_from_nvd(name, version, cpe)
+                    if nvd_vulns:
+                        vulnerabilities = nvd_vulns
+                        logger.info(f"Found {len(vulnerabilities)} CVEs from NVD API for {name} {version}")
+                except Exception as e:
+                    logger.debug(f"NVD API fallback failed: {e}")
+
+            # 4. Enrich with Threat Intel Context (if vulnerabilities found)
+            if vulnerabilities:
+                item["vulnerabilities"] = await self._enrich_with_threat_intel(vulnerabilities)
+            else:
+                item["vulnerabilities"] = []
+            
+            # 5. Cache Result
+            await cache_manager.set(cache_key, item["vulnerabilities"])
+            
+            item["source"] = "db" if item["vulnerabilities"] else ("nvd" if item["vulnerabilities"] else "none")
             return item
 
     async def _find_cpe(self, name: str, version: str, vendor: str) -> Optional[str]:
@@ -123,40 +148,150 @@ class EnrichmentService:
 
     async def _get_vulns_by_cpe(self, cpe: str) -> List[Dict]:
         """Query DB for CVEs linked to this CPE"""
-        # This requires the cpe_cve_map table or querying via JSONB
-        # Simplified: Search in JSONB configurations
-        # Note: In a real migration, we would have a standardized cpe_cve relational table
-        
-        # Using the semantic_matcher's knowledge or direct DB query
-        # For Phase 1/2, we query the 'cves' table where data->configurations... matches
-        # Ideally, we should have a `cve_cpe` join table.
-        
-        # For now, let's assume we query the raw JSONB (slower but works without join table)
-        # Or better: Use the embeddings table inverse lookup if we had it
-        
-        # Optimized: Use Full Text Search on JSONB or description
-        return []
+        try:
+            # Optimized Strategy:
+            # 1. Try 'cpe_embeddings' table first (fastest, relational match)
+            # 2. Fallback to JSONB query on 'cves' table (slower, but comprehensive)
+            
+            # 1. CPE Embeddings Lookup
+            sql = """
+                SELECT c.id, 
+                       c.description, 
+                       c.data->'cve'->'metrics' as metrics
+                FROM cves c
+                JOIN cpe_embeddings ce ON c.id = ce.cve_id
+                WHERE ce.cpe_string = $1
+                LIMIT 20
+            """
+            
+            rows = await db_manager.fetch_all(sql, cpe)
+            
+            # 2. Fallback: JSONB Search (only if no matches found via embeddings)
+            if not rows:
+                # Use JSONB existence check. 
+                # Note: This assumes standard NVD 2.0 structure in 'data' column
+                # Path: configurations -> nodes -> cpeMatch -> criteria
+                # We use @> operator which needs GIN index for performance
+                # Constructing a partial JSON to match against is complex due to array structure.
+                # Alternative: EXISTS with jsonb_array_elements (requires lateral join or subquery)
+                sql_jsonb = """
+                    SELECT id, description, data->'cve'->'metrics' as metrics
+                    FROM cves
+                    WHERE EXISTS (
+                        SELECT 1
+                        FROM jsonb_array_elements(data->'cve'->'configurations') as configs,
+                             jsonb_array_elements(configs->'nodes') as nodes,
+                             jsonb_array_elements(nodes->'cpeMatch') as match
+                        WHERE match->>'criteria' = $1
+                    )
+                    LIMIT 20
+                """
+                rows = await db_manager.fetch_all(sql_jsonb, cpe)
+
+            results = []
+            for row in rows:
+                results.append({
+                    "id": row.get("id", ""),
+                    "description": row.get("description", ""),
+                    "severity": self._extract_severity(row.get("metrics"))
+                })
+            
+            if results:
+                logger.info(f"Found {len(results)} vulnerabilities for CPE: {cpe}")
+                
+            return results
+            
+        except Exception as e:
+            logger.error(f"Database CPE search failed: {e}")
+            return []
 
     async def _get_vulns_by_text(self, name: str, version: str) -> List[Dict]:
         """Fallback: Search CVEs by text"""
-        # Use Postgres Full Text Search
-        query = f"{name} {version}"
-        sql = """
-            SELECT id, description, data->'cve'->'metrics' as metrics
-            FROM cves
-            WHERE to_tsvector('english', description) @@ plainto_tsquery('english', $1)
-            LIMIT 5
+        try:
+            # Use Postgres Full Text Search
+            # Fix: Use COALESCE to handle NULL descriptions and cast properly
+            query = f"{name} {version}"
+            sql = """
+                SELECT id, 
+                       COALESCE(description, '') as description, 
+                       data->'cve'->'metrics' as metrics
+                FROM cves
+                WHERE to_tsvector('english', COALESCE(description, '')) @@ plainto_tsquery('english', $1::text)
+                LIMIT 5
+            """
+            rows = await db_manager.fetch_all(sql, query)
+            
+            results = []
+            for row in rows:
+                results.append({
+                    "id": row.get("id", ""),
+                    "description": row.get("description", ""),
+                    "severity": self._extract_severity(row.get("metrics"))
+                })
+            return results
+        except Exception as e:
+            logger.debug(f"Database text search failed: {e}")
+            return []
+
+    async def _enrich_with_threat_intel(self, vulnerabilities: List[Dict]) -> List[Dict]:
         """
-        rows = await db_manager.fetch_all(sql, query)
+        Enrich vulnerabilities with threat intelligence context
+        Adds MITRE ATT&CK patterns, OTX IOCs, and OpenCVE data
+        """
+        enriched = []
+        for vuln in vulnerabilities:
+            cve_id = vuln.get("id")
+            if not cve_id:
+                enriched.append(vuln)
+                continue
+            
+            # Create enriched vulnerability object
+            enriched_vuln = vuln.copy()
+            enriched_vuln["threat_intel"] = {}
+            
+            # Add CISA KEV (Known Exploited Vulnerabilities) - HIGH PRIORITY
+            if cisa_kev_service.enabled:
+                try:
+                    kev_info = await cisa_kev_service.get_kev_info(cve_id)
+                    if kev_info:
+                        enriched_vuln["threat_intel"]["cisa_kev"] = kev_info
+                        enriched_vuln["known_exploited"] = True
+                        # Mark as high priority if in KEV
+                        if "severity" not in enriched_vuln or enriched_vuln.get("severity") == "medium":
+                            enriched_vuln["severity"] = "critical"  # KEV = critical priority
+                except Exception as e:
+                    logger.debug(f"Failed to fetch CISA KEV data for {cve_id}: {e}")
+            
+            # Add MITRE ATT&CK patterns
+            if mitre_attack_service.enabled:
+                try:
+                    attack_patterns = await mitre_attack_service.get_attack_patterns(cve_id)
+                    if attack_patterns:
+                        enriched_vuln["threat_intel"]["mitre_attack"] = attack_patterns
+                except Exception as e:
+                    logger.debug(f"Failed to fetch MITRE ATT&CK data for {cve_id}: {e}")
+            
+            # Add AlienVault OTX IOCs
+            if alienvault_otx_service.enabled:
+                try:
+                    iocs = await alienvault_otx_service.get_iocs(cve_id)
+                    if iocs:
+                        enriched_vuln["threat_intel"]["otx_iocs"] = iocs
+                except Exception as e:
+                    logger.debug(f"Failed to fetch OTX IOCs for {cve_id}: {e}")
+            
+            # Add OpenCVE enhanced context
+            if opencve_service.enabled:
+                try:
+                    opencve_data = await opencve_service.get_cve_details(cve_id)
+                    if opencve_data:
+                        enriched_vuln["threat_intel"]["opencve"] = opencve_data
+                except Exception as e:
+                    logger.debug(f"Failed to fetch OpenCVE data for {cve_id}: {e}")
+            
+            enriched.append(enriched_vuln)
         
-        results = []
-        for row in rows:
-            results.append({
-                "id": row["id"],
-                "description": row["description"],
-                "severity": self._extract_severity(row["metrics"])
-            })
-        return results
+        return enriched
 
     def _extract_severity(self, metrics: Any) -> str:
         """Helper to extract severity from CVSS metrics"""
@@ -167,6 +302,49 @@ class EnrichmentService:
             return metrics.get("cvssMetricV31", [{}])[0].get("cvssData", {}).get("baseSeverity", "UNKNOWN")
         except:
             return "UNKNOWN"
+
+    async def _get_vulns_from_nvd(self, name: str, version: str, cpe: Optional[str] = None) -> List[Dict]:
+        """Fetch vulnerabilities from NVD API using keyword search"""
+        try:
+            # Search by keyword (product name)
+            keyword = f"{name} {version}".strip()
+            url = f"{settings.nvd_api_base_url}?keywordSearch={keyword}"
+            headers = {"Content-Type": "application/json"}
+            if settings.nvd_api_key:
+                headers["apiKey"] = settings.nvd_api_key
+            
+            response = await self.http_client.get(url, headers=headers, timeout=10.0)
+            response.raise_for_status()
+            data = response.json()
+            
+            vulnerabilities = []
+            for vuln in data.get("vulnerabilities", []):
+                cve_data = vuln.get("cve", {})
+                cve_id = cve_data.get("id", "")
+                
+                # Extract CVSS score
+                metrics = cve_data.get("metrics", {})
+                cvss_v31 = metrics.get("cvssMetricV31", [{}])[0] if metrics.get("cvssMetricV31") else {}
+                cvss_v30 = metrics.get("cvssMetricV30", [{}])[0] if metrics.get("cvssMetricV30") else {}
+                cvss_v2 = metrics.get("cvssMetricV2", [{}])[0] if metrics.get("cvssMetricV2") else {}
+                
+                cvss_data = cvss_v31.get("cvssData", {}) or cvss_v30.get("cvssData", {}) or cvss_v2.get("cvssData", {})
+                base_score = cvss_data.get("baseScore", 0.0)
+                severity = cvss_data.get("baseSeverity", "UNKNOWN")
+                
+                vulnerabilities.append({
+                    "id": cve_id,
+                    "cve_id": cve_id,
+                    "description": cve_data.get("descriptions", [{}])[0].get("value", ""),
+                    "severity": severity.lower() if severity else "unknown",
+                    "cvss_score": float(base_score) if base_score else 0.0,
+                    "source": "nvd"
+                })
+            
+            return vulnerabilities[:10]  # Limit to top 10
+        except Exception as e:
+            logger.debug(f"NVD API search failed: {e}")
+            return []
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def fetch_nvd_data(self, cve_id: str) -> Optional[Dict]:

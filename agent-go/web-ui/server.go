@@ -23,8 +23,8 @@ func main() {
 		port = envPort
 	}
 
-	fmt.Printf("🛡️ ZeroTrace Agent UI starting on http://localhost:%s\n", port)
-	fmt.Printf("📊 Agent status and monitoring interface\n")
+	fmt.Printf("️ ZeroTrace Agent UI starting on http://localhost:%s\n", port)
+	fmt.Printf(" Agent status and monitoring interface\n")
 	fmt.Printf("⏹️  Press Ctrl+C to stop\n")
 
 	log.Fatal(http.ListenAndServe(":"+port, nil))

@@ -23,7 +23,7 @@ export const AnimatedButton: React.FC<ButtonProps> = ({
   };
 
   return (
-    <motion.button
+    <motion.button {...(props as any)}
       className={`${baseClasses} ${variantClasses[variant]} ${className}`}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}

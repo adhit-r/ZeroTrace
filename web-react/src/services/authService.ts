@@ -1,27 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    // For demo tokens, use a valid format for API
-    if (token.startsWith('demo-token-')) {
-      config.headers.Authorization = `Bearer demo-valid-token`;
-    } else {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
+import { api } from './api';
 
 export interface LoginRequest {
   email: string;

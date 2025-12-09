@@ -1,7 +1,8 @@
 # Build stage
-FROM oven-sh/bun:latest AS builder
+FROM oven/bun:latest AS builder
 
 WORKDIR /app
+
 
 # Copy package files
 COPY package.json ./

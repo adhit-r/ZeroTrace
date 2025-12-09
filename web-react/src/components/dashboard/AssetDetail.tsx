@@ -10,6 +10,7 @@ import {
   Calendar,
   Zap
 } from 'lucide-react';
+import { agentService } from '../../services/agentService';
 
 interface Vulnerability {
   id: string;
@@ -89,13 +90,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, onClose, className =
       
       try {
         // Fetch real agent data from API
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/agents/`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch agent data');
-        }
-        
-        const result = await response.json();
-        const agents = result.data || [];
+        const agents = await agentService.getAgents();
         
         // Find the specific agent by ID
         const agent = agents.find((a: any) => a.id === assetId);

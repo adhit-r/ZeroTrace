@@ -2,7 +2,8 @@
  * Form utilities with react-hook-form and zod validation
  * Provides type-safe form handling with reduced re-renders
  */
-import { useForm as useReactHookForm, UseFormProps, UseFormReturn } from 'react-hook-form';
+import { useForm as useReactHookForm } from 'react-hook-form';
+import type { UseFormProps, UseFormReturn, FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -12,12 +13,12 @@ import { z } from 'zod';
 export function useForm<T extends z.ZodType<any, any>>(
   schema: T,
   options?: Omit<UseFormProps<z.infer<T>>, 'resolver'>
-): UseFormReturn<z.infer<T>> {
-  return useReactHookForm<z.infer<T>>({
+): UseFormReturn<z.infer<T> extends FieldValues ? z.infer<T> : FieldValues> {
+  return useReactHookForm<z.infer<T> extends FieldValues ? z.infer<T> : FieldValues>({
     resolver: zodResolver(schema),
     mode: 'onChange', // Validate on change for better UX
     ...options,
-  });
+  } as any) as unknown as UseFormReturn<z.infer<T> extends FieldValues ? z.infer<T> : FieldValues>;
 }
 
 /**

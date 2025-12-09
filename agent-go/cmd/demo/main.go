@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	fmt.Println("🚀 ZeroTrace Network Analysis Demo")
+	fmt.Println(" ZeroTrace Network Analysis Demo")
 	fmt.Println("==================================")
 
 	// Create sample network assets
@@ -37,14 +37,14 @@ func main() {
 	}
 
 	// Display results
-	fmt.Printf("\n📊 Network Topology Analysis Results:\n")
+	fmt.Printf("\n Network Topology Analysis Results:\n")
 	fmt.Printf("Total Assets: %d\n", topology.TotalAssets)
 	fmt.Printf("Total Connections: %d\n", topology.TotalConnections)
 	fmt.Printf("Critical Paths Found: %d\n", len(topology.CriticalPaths))
 	fmt.Printf("Clusters Identified: %d\n", len(topology.Clusters))
 
 	// Show critical paths
-	fmt.Printf("\n🔴 Critical Paths (High Risk):\n")
+	fmt.Printf("\n Critical Paths (High Risk):\n")
 	for i, path := range topology.CriticalPaths {
 		if i >= 5 { // Show first 5 critical paths
 			break
@@ -53,13 +53,13 @@ func main() {
 	}
 
 	// Show clusters
-	fmt.Printf("\n🏢 Network Clusters:\n")
+	fmt.Printf("\n Network Clusters:\n")
 	for _, cluster := range topology.Clusters {
 		fmt.Printf("Cluster '%s': %d nodes, Risk: %.2f\n",
 			cluster.Name, len(cluster.NodeIDs), cluster.RiskScore)
 	}
 
-	fmt.Printf("\n✅ Fast SSSP Algorithm Performance:\n")
+	fmt.Printf("\n Fast SSSP Algorithm Performance:\n")
 	fmt.Printf("• Time Complexity: O(m log^(2/3) n)\n")
 	fmt.Printf("• 15x faster than Dijkstra on large networks\n")
 	fmt.Printf("• Perfect for enterprise-scale network analysis\n")

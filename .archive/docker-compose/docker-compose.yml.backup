@@ -1,0 +1,132 @@
+version: '3.8'
+
+# Use Podman instead of Docker
+# Run with: podman-compose up -d
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: zerotrace-postgres
+    environment:
+      POSTGRES_DB: zerotrace
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zerotrace-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Message Queue
+  redis:
+    image: redis:7-alpine
+    container_name: zerotrace-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - zerotrace-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Go API Backend
+  api:
+    build:
+      context: ./api-go
+      dockerfile: Dockerfile
+    container_name: zerotrace-api
+    environment:
+      - API_PORT=8080
+      - API_HOST=0.0.0.0
+      - API_MODE=debug
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=zerotrace
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_SSL_MODE=disable
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+      - JWT_SECRET=dev-secret-key-change-in-production
+      - JWT_EXPIRY=24h
+      - RATE_LIMIT_REQUESTS=100
+      - RATE_LIMIT_WINDOW=1m
+      - LOG_LEVEL=info
+      - LOG_FORMAT=json
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - zerotrace-network
+    volumes:
+      - ./api-go:/app
+      - /app/tmp
+
+  # Python Enrichment Service
+  enrichment:
+    build:
+      context: ./enrichment-python
+      dockerfile: Dockerfile
+    container_name: zerotrace-enrichment
+    environment:
+      - ENRICHMENT_PORT=8000
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/zerotrace
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=info
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - zerotrace-network
+    volumes:
+      - ./enrichment-python:/app
+      - /app/tmp
+
+  # React Frontend
+  web:
+    build:
+      context: ./web-react
+      dockerfile: Dockerfile
+    container_name: zerotrace-web
+    environment:
+      - VITE_API_URL=http://localhost:8080
+      - VITE_ENRICHMENT_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+      - enrichment
+    networks:
+      - zerotrace-network
+    volumes:
+      - ./web-react:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  zerotrace-network:
+    driver: bridge

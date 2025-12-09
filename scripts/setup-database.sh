@@ -20,20 +20,20 @@ DB_PASSWORD=${DB_PASSWORD:-password}
 DB_NAME=${DB_NAME:-zerotrace}
 DB_SSLMODE=${DB_SSLMODE:-disable}
 
-echo -e "${BLUE}🚀 ZeroTrace Database Setup${NC}"
+echo -e "${BLUE} ZeroTrace Database Setup${NC}"
 echo -e "${BLUE}===========================${NC}"
 
 # Function to print status
 print_status() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN} $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}️  $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED} $1${NC}"
 }
 
 # Check if PostgreSQL is running
@@ -110,4 +110,4 @@ echo -e "  SSL Mode: $DB_SSLMODE"
 echo -e "${BLUE}Connection String:${NC}"
 echo -e "postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME?sslmode=$DB_SSLMODE"
 
-echo -e "${GREEN}🎉 ZeroTrace database is ready!${NC}"
+echo -e "${GREEN} ZeroTrace database is ready!${NC}"

@@ -1,7 +1,7 @@
 /**
  * Utility for lazy loading components with better error handling
  */
-import { lazy, ComponentType } from 'react';
+import { lazy, type ComponentType } from 'react';
 
 /**
  * Lazy load a component with retry logic
@@ -36,7 +36,7 @@ export function lazyLoadWithPreload<T extends ComponentType<any>>(
   importFunc: () => Promise<{ default: T }>
 ): React.LazyExoticComponent<T> & { preload: () => Promise<void> } {
   const LazyComponent = lazy(importFunc) as React.LazyExoticComponent<T> & {
-    preload?: () => Promise<void>;
+    preload: () => Promise<void>;
   };
 
   LazyComponent.preload = async () => {

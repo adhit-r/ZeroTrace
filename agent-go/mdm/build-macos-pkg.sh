@@ -20,39 +20,39 @@ BUILD_DIR="build"
 PACKAGE_DIR="package"
 DIST_DIR="dist"
 
-echo -e "${BLUE}🏗️  Building ZeroTrace Agent for MDM Deployment${NC}"
+echo -e "${BLUE}️  Building ZeroTrace Agent for MDM Deployment${NC}"
 echo "=================================================="
 echo ""
 
 # Function to check dependencies
 check_dependencies() {
-    echo -e "${YELLOW}🔍 Checking dependencies...${NC}"
+    echo -e "${YELLOW} Checking dependencies...${NC}"
     
     # Check if Go is installed
     if ! command -v go &> /dev/null; then
-        echo -e "${RED}❌ Go is not installed${NC}"
+        echo -e "${RED} Go is not installed${NC}"
         exit 1
     fi
     
     # Check if pkgbuild is available
     if ! command -v pkgbuild &> /dev/null; then
-        echo -e "${RED}❌ pkgbuild is not available (requires Xcode Command Line Tools)${NC}"
+        echo -e "${RED} pkgbuild is not available (requires Xcode Command Line Tools)${NC}"
         exit 1
     fi
     
-    echo -e "${GREEN}✅ All dependencies available${NC}"
+    echo -e "${GREEN} All dependencies available${NC}"
 }
 
 # Function to clean build directories
 clean_build() {
-    echo -e "${YELLOW}🧹 Cleaning build directories...${NC}"
+    echo -e "${YELLOW} Cleaning build directories...${NC}"
     rm -rf "$BUILD_DIR" "$PACKAGE_DIR" "$DIST_DIR"
     mkdir -p "$BUILD_DIR" "$PACKAGE_DIR" "$DIST_DIR"
 }
 
 # Function to build the agent
 build_agent() {
-    echo -e "${YELLOW}🔨 Building agent binary...${NC}"
+    echo -e "${YELLOW} Building agent binary...${NC}"
     
     cd ..
     
@@ -64,12 +64,12 @@ build_agent() {
     
     cd mdm
     
-    echo -e "${GREEN}✅ Agent binaries built${NC}"
+    echo -e "${GREEN} Agent binaries built${NC}"
 }
 
 # Function to create LaunchDaemon plist
 create_launchdaemon() {
-    echo -e "${YELLOW}📝 Creating LaunchDaemon plist...${NC}"
+    echo -e "${YELLOW} Creating LaunchDaemon plist...${NC}"
     
     cat > "$BUILD_DIR/com.zerotrace.agent.plist" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -98,12 +98,12 @@ create_launchdaemon() {
 </plist>
 EOF
     
-    echo -e "${GREEN}✅ LaunchDaemon plist created${NC}"
+    echo -e "${GREEN} LaunchDaemon plist created${NC}"
 }
 
 # Function to create post-install script
 create_postinstall() {
-    echo -e "${YELLOW}📝 Creating post-install script...${NC}"
+    echo -e "${YELLOW} Creating post-install script...${NC}"
     
     cat > "$BUILD_DIR/postinstall" << 'EOF'
 #!/bin/bash
@@ -131,12 +131,12 @@ exit 0
 EOF
     
     chmod +x "$BUILD_DIR/postinstall"
-    echo -e "${GREEN}✅ Post-install script created${NC}"
+    echo -e "${GREEN} Post-install script created${NC}"
 }
 
 # Function to create post-uninstall script
 create_postuninstall() {
-    echo -e "${YELLOW}📝 Creating post-uninstall script...${NC}"
+    echo -e "${YELLOW} Creating post-uninstall script...${NC}"
     
     cat > "$BUILD_DIR/postuninstall" << 'EOF'
 #!/bin/bash
@@ -159,12 +159,12 @@ exit 0
 EOF
     
     chmod +x "$BUILD_DIR/postuninstall"
-    echo -e "${GREEN}✅ Post-uninstall script created${NC}"
+    echo -e "${GREEN} Post-uninstall script created${NC}"
 }
 
 # Function to create package structure
 create_package_structure() {
-    echo -e "${YELLOW}📁 Creating package structure...${NC}"
+    echo -e "${YELLOW} Creating package structure...${NC}"
     
     # Create directory structure
     mkdir -p "$PACKAGE_DIR/usr/local/bin"
@@ -179,12 +179,12 @@ create_package_structure() {
     touch "$PACKAGE_DIR/var/log/zerotrace-agent.log"
     touch "$PACKAGE_DIR/var/log/zerotrace-agent.error.log"
     
-    echo -e "${GREEN}✅ Package structure created${NC}"
+    echo -e "${GREEN} Package structure created${NC}"
 }
 
 # Function to build the package
 build_package() {
-    echo -e "${YELLOW}📦 Building macOS package...${NC}"
+    echo -e "${YELLOW} Building macOS package...${NC}"
     
     # Build component package
     pkgbuild \
@@ -202,12 +202,12 @@ build_package() {
         --version "$VERSION" \
         "$DIST_DIR/ZeroTrace-Agent-$VERSION.pkg"
     
-    echo -e "${GREEN}✅ Package built: $DIST_DIR/ZeroTrace-Agent-$VERSION.pkg${NC}"
+    echo -e "${GREEN} Package built: $DIST_DIR/ZeroTrace-Agent-$VERSION.pkg${NC}"
 }
 
 # Function to create distribution XML
 create_distribution_xml() {
-    echo -e "${YELLOW}📝 Creating distribution XML...${NC}"
+    echo -e "${YELLOW} Creating distribution XML...${NC}"
     
     cat > distribution.xml << EOF
 <?xml version="1.0" encoding="utf-8"?>
@@ -227,12 +227,12 @@ create_distribution_xml() {
 </installer-gui-script>
 EOF
     
-    echo -e "${GREEN}✅ Distribution XML created${NC}"
+    echo -e "${GREEN} Distribution XML created${NC}"
 }
 
 # Function to create MDM configuration
 create_mdm_config() {
-    echo -e "${YELLOW}📝 Creating MDM configuration...${NC}"
+    echo -e "${YELLOW} Creating MDM configuration...${NC}"
     
     cat > "$DIST_DIR/zerotrace-agent.mobileconfig" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -300,21 +300,21 @@ create_mdm_config() {
 </plist>
 EOF
     
-    echo -e "${GREEN}✅ MDM configuration created${NC}"
+    echo -e "${GREEN} MDM configuration created${NC}"
 }
 
 # Function to create deployment guide
 create_deployment_guide() {
-    echo -e "${YELLOW}📝 Creating deployment guide...${NC}"
+    echo -e "${YELLOW} Creating deployment guide...${NC}"
     
     cat > "$DIST_DIR/DEPLOYMENT_GUIDE.md" << 'EOF'
 # ZeroTrace Agent - MDM Deployment Guide
 
-## 📦 Package Contents
+##  Package Contents
 - `ZeroTrace-Agent-1.0.0.pkg` - Main installation package
 - `zerotrace-agent.mobileconfig` - MDM configuration profile
 
-## 🚀 Deployment Steps
+##  Deployment Steps
 
 ### Microsoft Intune
 1. Upload `ZeroTrace-Agent-1.0.0.pkg` to Intune
@@ -334,22 +334,22 @@ Replace these variables in the configuration profile:
 - `${API_URL}` - Your API endpoint
 - `${ORG_ID}` - Your organization ID
 
-## 🔍 Verification
+##  Verification
 After deployment, verify:
 1. Agent is running: `sudo launchctl list | grep zerotrace`
 2. Logs are generated: `tail -f /var/log/zerotrace-agent.log`
 3. Tray icon appears (green = connected, gray = disconnected)
 
-## 📞 Support
+##  Support
 For deployment issues, contact: support@zerotrace.com
 EOF
     
-    echo -e "${GREEN}✅ Deployment guide created${NC}"
+    echo -e "${GREEN} Deployment guide created${NC}"
 }
 
 # Main execution
 main() {
-    echo -e "${BLUE}🚀 Starting ZeroTrace Agent MDM Package Build${NC}"
+    echo -e "${BLUE} Starting ZeroTrace Agent MDM Package Build${NC}"
     echo "=================================================="
     echo ""
     
@@ -375,14 +375,14 @@ main() {
     create_deployment_guide
     
     echo ""
-    echo -e "${GREEN}✅ Build completed successfully!${NC}"
+    echo -e "${GREEN} Build completed successfully!${NC}"
     echo ""
-    echo -e "${BLUE}📦 Generated files:${NC}"
+    echo -e "${BLUE} Generated files:${NC}"
     echo "  • $DIST_DIR/ZeroTrace-Agent-$VERSION.pkg"
     echo "  • $DIST_DIR/zerotrace-agent.mobileconfig"
     echo "  • $DIST_DIR/DEPLOYMENT_GUIDE.md"
     echo ""
-    echo -e "${YELLOW}📋 Next steps:${NC}"
+    echo -e "${YELLOW} Next steps:${NC}"
     echo "  1. Upload package to your MDM platform"
     echo "  2. Configure enrollment tokens"
     echo "  3. Deploy to target devices"

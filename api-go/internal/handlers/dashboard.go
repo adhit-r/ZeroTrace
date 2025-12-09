@@ -126,6 +126,63 @@ func GetDashboardOverview(c *gin.Context) {
 		})
 	}
 
+	// Sort agents by total vulnerabilities for top assets
+	type AssetVuln struct {
+		Name            string `json:"name"`
+		Vulnerabilities int    `json:"vulnerabilities"`
+		Critical        int    `json:"critical"`
+	}
+	var allAssetVulns []AssetVuln
+
+	// Logic to identify top vulnerable assets
+	// Wait, I can't easily inject into the previous loop with replace_file_content if I don't see the loop body here.
+	// I should rewrite the function or insert before response.
+	// However, I need to capture the data from the loop.
+	// The previous loop iterates `agents`. `agents` is available here.
+	// I will iterate `agents` AGAIN here to find top assets (inefficient but safe edit) OR refactor the whole function.
+	// Refactoring whole function is better.
+
+	// Let's iterate again effectively for top assets to keep diff simple.
+	for _, agent := range agents {
+		if agent.Metadata != nil {
+			total := 0
+			critical := 0
+			if t, ok := agent.Metadata["total_vulnerabilities"].(float64); ok {
+				total = int(t)
+			}
+			if c, ok := agent.Metadata["critical_vulnerabilities"].(float64); ok {
+				critical = int(c)
+			}
+			if total > 0 {
+				allAssetVulns = append(allAssetVulns, AssetVuln{
+					Name:            agent.Hostname,
+					Vulnerabilities: total,
+					Critical:        critical,
+				})
+			}
+		}
+	}
+
+	// Sort
+	// quick sort implementation or bubblesort for small list
+	// Since we can't import "sort" easily without checking imports, I'll assume I need to add it to imports.
+	// Actually, I can use a simple insertion sort for top 5.
+
+	topAssets := []AssetVuln{}
+	// Simple top N finding
+	for _, asset := range allAssetVulns {
+		topAssets = append(topAssets, asset)
+		// Sort descending
+		for i := len(topAssets) - 1; i > 0; i-- {
+			if topAssets[i].Vulnerabilities > topAssets[i-1].Vulnerabilities {
+				topAssets[i], topAssets[i-1] = topAssets[i-1], topAssets[i]
+			}
+		}
+		if len(topAssets) > 5 {
+			topAssets = topAssets[:5]
+		}
+	}
+
 	// Create real dashboard overview
 	overview := map[string]any{
 		"total_scans":              len(agents),
@@ -136,7 +193,8 @@ func GetDashboardOverview(c *gin.Context) {
 		"medium_vulnerabilities":   mediumVulns,
 		"low_vulnerabilities":      lowVulns,
 		"recent_scans":             recentScans,
-		"top_vulnerabilities":      topVulnerabilities,
+		"top_vulnerabilities":      topVulnerabilities, // This was by severity
+		"top_vulnerable_assets":    topAssets,          // New field
 		"total_assets":             totalAssets,
 		"vulnerable_assets":        vulnerableAssets,
 		"last_scan":                lastScan.Format(time.RFC3339),

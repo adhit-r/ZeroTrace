@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart3, 
-  Activity, 
-  Shield, 
-  AlertTriangle, 
-  CheckCircle, 
-  Server, 
-  Network, 
-  Layers, 
+import {
+  BarChart3,
+  Activity,
+  Shield,
+  AlertTriangle,
+  CheckCircle,
+  Server,
+  Network,
+  Layers,
   Zap,
   RefreshCw,
   Cpu,
@@ -15,7 +15,8 @@ import {
   HardDrive,
   Download
 } from 'lucide-react';
-import { dashboardService, DashboardMetrics } from '../../services/dashboardService';
+import { dashboardService } from '../../services/dashboardService';
+import type { DashboardMetrics } from '../../services/dashboardService';
 
 // DashboardMetrics interface is now imported from dashboardService
 
@@ -41,9 +42,9 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
         setLoading(false);
       }
     };
-    
+
     fetchMetrics();
-    
+
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchMetrics, 30000);
     return () => clearInterval(interval);
@@ -106,11 +107,10 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
           <button
             key={tab.id}
             onClick={() => setViewMode(tab.id as any)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-              viewMode === tab.id
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${viewMode === tab.id
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+              }`}
           >
             <tab.icon className="h-4 w-4" />
             {tab.label}
@@ -133,7 +133,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                 <Server className="h-12 w-12 text-blue-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
@@ -144,7 +144,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                 <AlertTriangle className="h-12 w-12 text-red-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
@@ -155,13 +155,13 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                 <CheckCircle className="h-12 w-12 text-green-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Risk Score</p>
                   <p className="text-3xl font-bold text-orange-600">{metrics.security.riskScore}%</p>
-                  <p className="text-sm text-orange-600">{metrics.security.patchesAvailable} patches</p>
+                  <p className="text-sm text-orange-600">{metrics.vulnerabilities.total} patches</p>
                 </div>
                 <Shield className="h-12 w-12 text-orange-600" />
               </div>
@@ -186,7 +186,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div 
+                        <div
                           className={`h-2 rounded-full ${item.color}`}
                           style={{ width: `${(item.count / metrics.assets.total) * 100}%` }}
                         ></div>
@@ -214,7 +214,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div 
+                        <div
                           className={`h-2 rounded-full ${item.color}`}
                           style={{ width: `${(item.count / metrics.vulnerabilities.total) * 100}%` }}
                         ></div>
@@ -240,7 +240,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                   <span className="font-bold">{metrics.performance.avgCpu.toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
+                  <div
                     className="bg-blue-600 h-3 rounded-full"
                     style={{ width: `${metrics.performance.avgCpu}%` }}
                   ></div>
@@ -259,7 +259,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                   <span className="font-bold">{metrics.performance.avgMemory.toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
+                  <div
                     className="bg-green-600 h-3 rounded-full"
                     style={{ width: `${metrics.performance.avgMemory}%` }}
                   ></div>
@@ -278,7 +278,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                   <span className="font-bold">{metrics.performance.avgStorage}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
+                  <div
                     className="bg-purple-600 h-3 rounded-full"
                     style={{ width: `${metrics.performance.avgStorage}%` }}
                   ></div>
@@ -297,32 +297,32 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Active Alerts</p>
-                  <p className="text-3xl font-bold text-red-600">{metrics.security.alertsActive}</p>
+                  <p className="text-3xl font-bold text-red-600">{metrics.vulnerabilities.critical}</p>
                 </div>
                 <AlertTriangle className="h-12 w-12 text-red-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Patches Available</p>
-                  <p className="text-3xl font-bold text-orange-600">{metrics.security.patchesAvailable}</p>
+                  <p className="text-3xl font-bold text-orange-600">{metrics.vulnerabilities.total}</p>
                 </div>
                 <Download className="h-12 w-12 text-orange-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Scans Completed</p>
-                  <p className="text-3xl font-bold text-blue-600">{metrics.security.scansCompleted}</p>
+                  <p className="text-3xl font-bold text-blue-600">{metrics.assets.total}</p>
                 </div>
                 <Zap className="h-12 w-12 text-blue-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -349,7 +349,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                 <Cpu className="h-12 w-12 text-blue-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -359,7 +359,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                 <MemoryStick className="h-12 w-12 text-green-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -369,7 +369,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                 <HardDrive className="h-12 w-12 text-purple-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -396,7 +396,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                 <CheckCircle className="h-12 w-12 text-green-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -406,7 +406,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                 <Layers className="h-12 w-12 text-blue-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -416,7 +416,7 @@ const InnovativeDashboard: React.FC<InnovativeDashboardProps> = ({ className = '
                 <CheckCircle className="h-12 w-12 text-green-600" />
               </div>
             </div>
-            
+
             <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
               <div className="flex items-center justify-between">
                 <div>

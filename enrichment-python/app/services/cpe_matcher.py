@@ -126,36 +126,113 @@ class SemanticCPEMatcher:
         2. Fallback to semantic search (L2 - if pgvector enabled)
         3. Return empty if both fail
         """
-        # Try CPE Guesser first (L1 - exact match via Redis/Valkey)
-        try:
-            from ..cpe_guesser_client import get_cpe_guesser_client
-            
-            # Construct search words from vendor, product, version
-            words = []
-            if vendor:
-                words.append(vendor.lower())
-            if product:
-                words.append(product.lower())
-            if version:
-                words.append(version.lower())
-            
-            if words:
-                cpe_client = await get_cpe_guesser_client()
-                results = await cpe_client.guess_cpe(words)
-                if results:
-                    # Convert to match format
-                    matches = []
-                    for rank, cpe in results[:5]:  # Top 5 results
-                        matches.append({
-                            "cpe": cpe,
-                            "score": 1.0 - (rank / 1000.0) if rank else 0.9,  # Higher rank = higher score
-                            "method": "cpe_guesser"
-                        })
-                    if matches:
-                        logger.info("CPE Guesser found matches", count=len(matches))
-                        return matches
-        except Exception as e:
-            logger.debug("CPE Guesser not available", error=str(e))
+        # Try CPE Guesser first (L1 - exact match via direct Valkey access)
+        # Use direct Valkey access since data is already seeded in DB 8
+        if settings.cpe_guesser_enabled:
+            try:
+                # Direct Valkey access (faster than HTTP service)
+                import valkey
+                from ..core.config import settings as app_settings
+                
+                # Connect to Valkey DB 8 where CPE data is stored
+                rdb = valkey.Valkey(
+                    host=app_settings.redis_host,
+                    port=app_settings.redis_port,
+                    db=8,  # CPE Guesser uses DB 8
+                    password=app_settings.redis_password,
+                    decode_responses=True,
+                    socket_timeout=2.0
+                )
+                
+                # Construct search words from vendor and product ONLY
+                # Version is NOT used for CPE lookup - it's matched against CVE version ranges later
+                words = []
+                if vendor:
+                    # Split vendor into words (e.g., "Microsoft Corporation" -> ["microsoft", "corporation"])
+                    words.extend([w.lower() for w in vendor.split() if len(w) > 2])
+                if product:
+                    # Split product into words (e.g., "nginx server" -> ["nginx", "server"])
+                    words.extend([w.lower() for w in product.split() if len(w) > 2])
+                
+                # Remove duplicates while preserving order
+                words = list(dict.fromkeys(words))
+                
+                if words:
+                    # CPE Guesser algorithm: find intersection of word sets
+                    word_keys = [f"w:{word}" for word in words]
+                    
+                    if len(word_keys) == 1:
+                        # Single word - get sorted set directly (s: prefix)
+                        results = rdb.zrevrange(f"s:{words[0]}", 0, 9, withscores=True)
+                        if results:
+                            matches = []
+                            for cpe, score in results[:5]:
+                                matches.append({
+                                    "cpe": cpe,
+                                    "score": float(score) / 1000.0 if score else 0.9,
+                                    "method": "cpe_guesser_direct"
+                                })
+                            if matches:
+                                logger.info("CPE Guesser (direct) found matches", count=len(matches))
+                                return matches
+                    else:
+                        # Multiple words - use sinter on w: keys (regular sets)
+                        matched_cpes = rdb.sinter(*word_keys)
+                        
+                        if matched_cpes:
+                            # Get ranks from rank:cpe sorted set
+                            ranked_results = []
+                            for cpe in matched_cpes:
+                                try:
+                                    rank = rdb.zrank("rank:cpe", cpe)
+                                    if rank is not None:
+                                        ranked_results.append((rank, cpe))
+                                    else:
+                                        ranked_results.append((0, cpe))
+                                except:
+                                    ranked_results.append((0, cpe))
+                            
+                            # Sort by rank (higher is better)
+                            ranked_results.sort(key=lambda x: x[0], reverse=True)
+                            
+                            matches = []
+                            for rank, cpe in ranked_results[:5]:
+                                matches.append({
+                                    "cpe": cpe,
+                                    "score": 0.95 - (0.05 * matches.__len__()),  # High confidence for exact matches
+                                    "method": "cpe_guesser_direct"
+                                })
+                            if matches:
+                                logger.info("CPE Guesser (direct) found matches", count=len(matches))
+                                return matches
+            except Exception as e:
+                logger.debug("CPE Guesser (direct) not available, trying HTTP service", error=str(e))
+                # Fallback to HTTP service if direct access fails
+                try:
+                    from ..cpe_guesser_client import get_cpe_guesser_client
+                    words = []
+                    if vendor:
+                        words.append(vendor.lower())
+                    if product:
+                        words.append(product.lower())
+                    if version:
+                        words.append(version.lower())
+                    if words:
+                        cpe_client = await get_cpe_guesser_client()
+                        results = await cpe_client.guess_cpe(words)
+                        if results:
+                            matches = []
+                            for rank, cpe in results[:5]:
+                                matches.append({
+                                    "cpe": cpe,
+                                    "score": 1.0 - (rank / 1000.0) if rank else 0.9,
+                                    "method": "cpe_guesser_http"
+                                })
+                            if matches:
+                                logger.info("CPE Guesser (HTTP) found matches", count=len(matches))
+                                return matches
+                except Exception as e2:
+                    logger.debug("CPE Guesser HTTP also failed", error=str(e2))
         
         # Fallback to semantic search (L2) only if pgvector is enabled
         if settings.pgvector_enabled:

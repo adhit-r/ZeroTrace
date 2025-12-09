@@ -114,7 +114,7 @@ class SlackConnector:
                     "type": "header",
                     "text": {
                         "type": "plain_text",
-                        "text": f"🚨 {alert.title}"
+                        "text": f" {alert.title}"
                     }
                 },
                 {
@@ -295,7 +295,7 @@ class TeamsConnector:
                 "body": [
                     {
                         "type": "TextBlock",
-                        "text": f"🚨 {alert.title}",
+                        "text": f" {alert.title}",
                         "weight": "Bolder",
                         "size": "Large"
                     },
@@ -426,7 +426,7 @@ class SecurityChatbot:
             if command in self.commands:
                 # Check permissions
                 if not self._check_permissions(command, message.user):
-                    return "❌ You don't have permission to use this command."
+                    return " You don't have permission to use this command."
                 
                 # Execute command
                 handler = getattr(self, self.commands[command].handler)
@@ -438,7 +438,7 @@ class SecurityChatbot:
             
         except Exception as e:
             logger.error(f"Error processing message: {e}")
-            return "❌ Sorry, I encountered an error processing your message."
+            return " Sorry, I encountered an error processing your message."
     
     def _parse_command(self, text: str) -> Tuple[str, List[str]]:
         """Parse command from text"""
@@ -497,16 +497,16 @@ class SecurityChatbot:
             target = args[0] if args else 'all'
             
             # Mock scan execution
-            response = f"🔍 Starting vulnerability scan on {target}...\n"
+            response = f" Starting vulnerability scan on {target}...\n"
             response += "⏳ Scan in progress...\n"
-            response += "📊 Results will be available in 5-10 minutes.\n"
-            response += "🔔 I'll notify you when the scan is complete."
+            response += " Results will be available in 5-10 minutes.\n"
+            response += " I'll notify you when the scan is complete."
             
             return response
             
         except Exception as e:
             logger.error(f"Error handling scan command: {e}")
-            return "❌ Error executing scan command."
+            return " Error executing scan command."
     
     async def handle_status_command(self, args: List[str], message: ChatMessage) -> str:
         """Handle security status command"""
@@ -515,17 +515,17 @@ class SecurityChatbot:
             
             # Mock status response
             if component == 'overall':
-                response = "🛡️ **Security Status Overview**\n"
-                response += "• Firewall: ✅ Active\n"
-                response += "• Antivirus: ✅ Updated\n"
-                response += "• Vulnerability Scanner: ✅ Running\n"
+                response = "️ **Security Status Overview**\n"
+                response += "• Firewall:  Active\n"
+                response += "• Antivirus:  Updated\n"
+                response += "• Vulnerability Scanner:  Running\n"
                 response += "• Last Scan: 2 hours ago\n"
                 response += "• Critical Issues: 0\n"
                 response += "• High Issues: 2\n"
                 response += "• Medium Issues: 5"
             else:
-                response = f"📊 **{component.title()} Status**\n"
-                response += f"• Status: ✅ Operational\n"
+                response = f" **{component.title()} Status**\n"
+                response += f"• Status:  Operational\n"
                 response += f"• Last Check: 1 hour ago\n"
                 response += f"• Issues: 0"
             
@@ -533,7 +533,7 @@ class SecurityChatbot:
             
         except Exception as e:
             logger.error(f"Error handling status command: {e}")
-            return "❌ Error getting security status."
+            return " Error getting security status."
     
     async def handle_incident_command(self, args: List[str], message: ChatMessage) -> str:
         """Handle incident report command"""
@@ -543,7 +543,7 @@ class SecurityChatbot:
             # Mock incident creation
             incident_id = f"INC-{int(time.time())}"
             
-            response = f"🚨 **Security Incident Created**\n"
+            response = f" **Security Incident Created**\n"
             response += f"• Incident ID: {incident_id}\n"
             response += f"• Description: {description}\n"
             response += f"• Status: Open\n"
@@ -555,7 +555,7 @@ class SecurityChatbot:
             
         except Exception as e:
             logger.error(f"Error handling incident command: {e}")
-            return "❌ Error creating incident report."
+            return " Error creating incident report."
     
     async def handle_compliance_command(self, args: List[str], message: ChatMessage) -> str:
         """Handle compliance check command"""
@@ -563,9 +563,9 @@ class SecurityChatbot:
             framework = args[0] if args else 'SOC2'
             
             # Mock compliance status
-            response = f"📋 **{framework} Compliance Status**\n"
+            response = f" **{framework} Compliance Status**\n"
             response += f"• Overall Score: 85%\n"
-            response += f"• Status: ✅ Compliant\n"
+            response += f"• Status:  Compliant\n"
             response += f"• Last Assessment: 1 week ago\n"
             response += f"• Next Assessment: 3 months\n"
             response += f"• Critical Findings: 0\n"
@@ -576,7 +576,7 @@ class SecurityChatbot:
             
         except Exception as e:
             logger.error(f"Error handling compliance command: {e}")
-            return "❌ Error checking compliance status."
+            return " Error checking compliance status."
     
     async def handle_help_command(self, args: List[str], message: ChatMessage) -> str:
         """Handle help command"""
@@ -585,7 +585,7 @@ class SecurityChatbot:
                 command = args[0]
                 if command in self.commands:
                     cmd_info = self.commands[command]
-                    response = f"📖 **{command} Command Help**\n"
+                    response = f" **{command} Command Help**\n"
                     response += f"• Description: {cmd_info.description}\n"
                     response += f"• Usage: `{cmd_info.usage}`\n"
                     if cmd_info.examples:
@@ -593,9 +593,9 @@ class SecurityChatbot:
                         for example in cmd_info.examples:
                             response += f"  - `{example}`\n"
                 else:
-                    response = f"❌ Command '{command}' not found."
+                    response = f" Command '{command}' not found."
             else:
-                response = "📖 **Available Commands**\n"
+                response = " **Available Commands**\n"
                 for cmd_name, cmd_info in self.commands.items():
                     response += f"• `{cmd_name}` - {cmd_info.description}\n"
                 response += "\nUse `help [command]` for detailed information."
@@ -604,7 +604,7 @@ class SecurityChatbot:
             
         except Exception as e:
             logger.error(f"Error handling help command: {e}")
-            return "❌ Error displaying help."
+            return " Error displaying help."
     
     async def _generate_ai_response(self, message: ChatMessage) -> str:
         """Generate AI-powered response"""
@@ -639,7 +639,7 @@ class SecurityChatbot:
             
         except Exception as e:
             logger.error(f"Error generating AI response: {e}")
-            return "❌ Sorry, I'm having trouble generating a response right now."
+            return " Sorry, I'm having trouble generating a response right now."
 
 class ChatOpsIntegrationHub:
     """Main ChatOps integration hub"""
@@ -740,7 +740,7 @@ class ChatOpsIntegrationHub:
             
         except Exception as e:
             logger.error(f"Error processing chat message: {e}")
-            return "❌ Error processing your message."
+            return " Error processing your message."
     
     async def create_security_channel(self, name: str, integration_type: str) -> str:
         """Create security-focused chat channel"""

@@ -4,7 +4,7 @@ Complete checklist for deploying ZeroTrace to GitHub.
 
 ## Pre-Deployment
 
-### ✅ Files Created
+###  Files Created
 
 - [x] `.github/workflows/ci.yml` - CI workflow
 - [x] `.github/workflows/docs.yml` - Documentation deployment
@@ -17,7 +17,7 @@ Complete checklist for deploying ZeroTrace to GitHub.
 - [x] `docs/QUICK_START.md` - Quick start guide
 - [x] `docs/openapi.yaml` - OpenAPI specification
 
-### ✅ Documentation Updated
+###  Documentation Updated
 
 - [x] `README.md` - Added CI/CD badges
 - [x] `docs/INDEX.md` - Added GitHub Actions reference
@@ -67,10 +67,10 @@ git push origin main
 
 1. Go to Actions tab in repository
 2. Verify all workflows are running:
-   - ✅ CI workflow should run on push
-   - ✅ CodeQL should run on push
-   - ✅ Docker workflow should build images
-   - ✅ Documentation workflow should deploy
+   -  CI workflow should run on push
+   -  CodeQL should run on push
+   -  Docker workflow should build images
+   -  Documentation workflow should deploy
 
 ### 5. Check Status Badges
 

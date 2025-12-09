@@ -2,7 +2,8 @@
  * React Query hook for optimistic updates
  * Updates UI immediately, rolls back on error
  */
-import { useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 
 interface OptimisticMutationOptions<TData, TVariables, TContext> {
   mutationFn: (variables: TVariables) => Promise<TData>;
@@ -24,7 +25,11 @@ export function useOptimisticMutation<TData, TVariables, TContext = unknown>(
       await queryClient.cancelQueries();
 
       // Snapshot previous value
-      const previousData = queryClient.getQueryData(options.invalidateQueries?.[0] || []);
+      const queryKey = Array.isArray(options.invalidateQueries?.[0])
+        ? (options.invalidateQueries?.[0] as readonly unknown[])
+        : (options.invalidateQueries ? [options.invalidateQueries] as readonly unknown[] : []);
+
+      const previousData = queryClient.getQueryData(queryKey);
 
       // Optimistically update
       const context = options.onMutate ? await options.onMutate(variables) : ({} as TContext);
@@ -35,7 +40,9 @@ export function useOptimisticMutation<TData, TVariables, TContext = unknown>(
       // Rollback on error
       if (context?.previousData) {
         queryClient.setQueryData(
-          options.invalidateQueries?.[0] || [],
+          (options.invalidateQueries?.[0]
+            ? (Array.isArray(options.invalidateQueries[0]) ? options.invalidateQueries[0] : [options.invalidateQueries[0]])
+            : []) as readonly unknown[],
           context.previousData
         );
       }

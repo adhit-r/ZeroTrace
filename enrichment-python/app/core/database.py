@@ -54,9 +54,14 @@ class DatabaseManager:
     async def _init_schema(self):
         """Initialize database schema and extensions"""
         async with self.pool.acquire() as conn:
-            # 1. Enable pgvector extension
+            # 1. Enable pgvector extension (only if available)
             if settings.pgvector_enabled:
-                await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+                try:
+                    await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+                except Exception as e:
+                    logger.warning("pgvector extension not available, continuing without it", error=str(e))
+                    # Disable pgvector for this session
+                    settings.pgvector_enabled = False
             
             # 2. Create CVE Data table with JSONB support
             await conn.execute("""

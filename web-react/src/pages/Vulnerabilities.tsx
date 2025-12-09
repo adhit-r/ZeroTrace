@@ -10,34 +10,8 @@ import {
   Server,
   Zap
 } from 'lucide-react';
-
-interface Vulnerability {
-  id: string;
-  cve_id: string;
-  title: string;
-  description: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  cvss_score: number;
-  published_date: string;
-  last_modified: string;
-  affected_software: string[];
-  status: 'open' | 'in_progress' | 'resolved' | 'false_positive';
-  asset_id: string;
-  asset_name: string;
-  remediation: string;
-  references: string[];
-}
-
-interface VulnerabilityStats {
-  total: number;
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
-  resolved: number;
-  open: number;
-  in_progress: number;
-}
+import { vulnerabilityService } from '../services/vulnerabilityService';
+import type { Vulnerability, VulnerabilityStats } from '../services/vulnerabilityService';
 
 const Vulnerabilities: React.FC = () => {
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
@@ -65,42 +39,27 @@ const Vulnerabilities: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch vulnerabilities from API
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/vulnerabilities/`);
-      const data = await response.json();
+      const [vulns, vulnStats] = await Promise.all([
+        vulnerabilityService.getVulnerabilities(),
+        vulnerabilityService.getVulnerabilityStats()
+      ]);
 
-      if (data.success && data.data) {
-        setVulnerabilities(data.data);
-        
-        // Calculate stats
-        const newStats: VulnerabilityStats = {
-          total: data.data.length,
-          critical: data.data.filter((v: Vulnerability) => v.severity === 'critical').length,
-          high: data.data.filter((v: Vulnerability) => v.severity === 'high').length,
-          medium: data.data.filter((v: Vulnerability) => v.severity === 'medium').length,
-          low: data.data.filter((v: Vulnerability) => v.severity === 'low').length,
-          resolved: data.data.filter((v: Vulnerability) => v.status === 'resolved').length,
-          open: data.data.filter((v: Vulnerability) => v.status === 'open').length,
-          in_progress: data.data.filter((v: Vulnerability) => v.status === 'in_progress').length
-        };
-        setStats(newStats);
-      } else {
-        // No vulnerabilities found - this is normal for a clean system
-        setVulnerabilities([]);
-        setStats({
-          total: 0,
-          critical: 0,
-          high: 0,
-          medium: 0,
-          low: 0,
-          resolved: 0,
-          open: 0,
-          in_progress: 0
-        });
-      }
+      setVulnerabilities(vulns);
+      setStats(vulnStats);
     } catch (err) {
       console.error('Failed to fetch vulnerabilities:', err);
-      setError('Failed to load vulnerabilities');
+      setError('Failed to load vulnerabilities. Please check your connection and try again.');
+      setVulnerabilities([]);
+      setStats({
+        total: 0,
+        critical: 0,
+        high: 0,
+        medium: 0,
+        low: 0,
+        resolved: 0,
+        open: 0,
+        in_progress: 0
+      });
     } finally {
       setLoading(false);
     }

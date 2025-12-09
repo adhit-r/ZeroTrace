@@ -1,34 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Shield, 
+import {
+  Shield,
+  AlertTriangle,
   CheckCircle,
-  XCircle,
-  AlertCircle,
-  TrendingUp,
-  TrendingDown,
-  Activity,
-  BarChart3,
-  PieChart,
-  LineChart,
-  RefreshCw,
-  Filter,
-  Search,
-  Download,
-  ArrowRight,
   ChevronDown,
   ChevronUp,
-  Target,
-  Users,
-  Clock,
-  FileText,
-  AlertTriangle,
-  Zap,
-  Settings,
-  Eye,
   Lock,
+  Users,
   Globe,
   Database,
-  Server
+  Server,
+  AlertCircle,
+  XCircle,
+  BarChart3,
+  RefreshCw,
+  Filter,
+  Download
 } from 'lucide-react';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import {
@@ -106,8 +93,8 @@ interface ComplianceDashboardProps {
   className?: string;
 }
 
-const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({ 
-  className = '' 
+const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
+  className = ''
 }) => {
   const [frameworks, setFrameworks] = useState<ComplianceFramework[]>([]);
   const [selectedFramework, setSelectedFramework] = useState<string>('');
@@ -115,8 +102,6 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['overview', 'frameworks']));
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
 
   const complianceFrameworks = [
     { id: 'cis', name: 'CIS Benchmarks', icon: <Shield className="h-5 w-5" />, color: 'blue' },
@@ -140,7 +125,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
         }
 
         const complianceData = await response.json();
-        
+
         // Transform API data
         const transformedFrameworks: ComplianceFramework[] = Object.entries(complianceData.frameworks || {}).map(([frameworkId, data]: [string, any]) => {
           const frameworkConfig = complianceFrameworks.find(f => f.id === frameworkId);
@@ -284,7 +269,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-red-800 mb-2">Error Loading Compliance Data</h3>
           <p className="text-red-600 mb-4">{error}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-red-100 text-red-800 border-2 border-red-300 rounded text-sm font-bold uppercase tracking-wider hover:bg-red-200 transition-colors"
           >
@@ -316,7 +301,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
             default: return 'rgba(107, 114, 128, 0.8)';
           }
         }),
-        borderColor: frameworks.map(f => 'rgba(0, 0, 0, 1)'),
+        borderColor: frameworks.map(_f => 'rgba(0, 0, 0, 1)'),
         borderWidth: 3
       }
     ]
@@ -436,9 +421,8 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                 <button
                   key={framework.id}
                   onClick={() => setSelectedFramework(selectedFramework === framework.id ? '' : framework.id)}
-                  className={`p-4 border-2 border-black rounded hover:bg-gray-50 transition-colors ${
-                    selectedFramework === framework.id ? 'bg-blue-50 border-blue-300' : 'bg-white'
-                  }`}
+                  className={`p-4 border-2 border-black rounded hover:bg-gray-50 transition-colors ${selectedFramework === framework.id ? 'bg-blue-50 border-blue-300' : 'bg-white'
+                    }`}
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`p-2 bg-${framework.color}-100 rounded border border-black`}>
@@ -507,7 +491,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                 <div>
                   <h4 className="text-md font-bold uppercase tracking-wider text-black mb-4">Trends</h4>
                   <div className="h-64">
-                    <Line 
+                    <Line
                       data={{
                         labels: ['7d ago', '6d ago', '5d ago', '4d ago', '3d ago', '2d ago', '1d ago', 'Today'],
                         datasets: [
@@ -548,7 +532,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                             beginAtZero: true
                           }
                         }
-                      }} 
+                      }}
                     />
                   </div>
                 </div>
@@ -564,8 +548,8 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
             className="w-full p-4 bg-gray-50 border-b-2 border-black rounded-t flex items-center justify-between hover:bg-gray-100 transition-colors"
           >
             <h3 className="text-lg font-bold uppercase tracking-wider text-black">Gap Analysis</h3>
-            {expandedSections.has('gaps') ? 
-              <ChevronUp className="h-5 w-5 text-gray-600" /> : 
+            {expandedSections.has('gaps') ?
+              <ChevronUp className="h-5 w-5 text-gray-600" /> :
               <ChevronDown className="h-5 w-5 text-gray-600" />
             }
           </button>
@@ -611,8 +595,8 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
             </div>
             <div className="p-6">
               <div className="h-64">
-                <Bar 
-                  data={frameworkData} 
+                <Bar
+                  data={frameworkData}
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
@@ -622,7 +606,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                         max: 100
                       }
                     }
-                  }} 
+                  }}
                 />
               </div>
             </div>
@@ -635,8 +619,8 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
             </div>
             <div className="p-6">
               <div className="h-64">
-                <Doughnut 
-                  data={statusData} 
+                <Doughnut
+                  data={statusData}
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
@@ -645,7 +629,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                         position: 'bottom'
                       }
                     }
-                  }} 
+                  }}
                 />
               </div>
             </div>

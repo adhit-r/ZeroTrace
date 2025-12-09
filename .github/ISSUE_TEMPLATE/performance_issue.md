@@ -6,7 +6,7 @@ labels: ['performance', 'needs-triage']
 assignees: ''
 ---
 
-## ⚡ **Performance Issue**
+##  **Performance Issue**
 
 ### **Description**
 A clear and concise description of the performance problem.

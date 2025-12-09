@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Activity, 
-  AlertTriangle, 
-  RefreshCw, 
-  Play, 
-  Pause, 
-  Shield, 
-  Server, 
-  Target, 
-  TrendingUp, 
+import {
+  Activity,
+  AlertTriangle,
+  RefreshCw,
+  Play,
+  Pause,
+  Shield,
+  Server,
+  Target,
+  TrendingUp,
   TrendingDown
 } from 'lucide-react';
-import { dashboardService, RealTimeMetric, RealTimeAlert } from '../../services/dashboardService';
+import type { RealTimeMetric, RealTimeAlert } from '../../services/dashboardService';
 
 // RealTimeMetric and RealTimeAlert interfaces are now imported from dashboardService
 
@@ -63,13 +63,13 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
           fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/agents/`),
           fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/vulnerabilities/`)
         ]);
-        
+
         const agentsData = await agentsResponse.json();
         const vulnData = await vulnResponse.json();
-        
+
         const agents = agentsData.data || [];
         const vulnerabilities = vulnData.data || [];
-        
+
         // Generate real-time metrics
         const metrics: RealTimeMetric[] = [
           {
@@ -133,13 +133,13 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
             history: generateMetricHistory()
           }
         ];
-        
+
         // Generate real-time alerts
         const alerts: RealTimeAlert[] = generateAlerts(agents, vulnerabilities);
-        
+
         // Generate real-time events
         const events: RealTimeEvent[] = generateEvents(agents);
-        
+
         const summary = {
           totalAssets: agents.length,
           onlineAssets: agents.filter((a: any) => a.status === 'online').length,
@@ -152,7 +152,7 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
           avgRiskScore: agents.reduce((sum: number, a: any) => sum + (a.risk_score || 0), 0) / agents.length,
           complianceScore: Math.max(0, Math.min(100, 100 - (vulnerabilities.length * 2)))
         };
-        
+
         setData({
           metrics,
           alerts,
@@ -167,11 +167,11 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
     };
 
     fetchRealTimeData();
-    
+
     if (isLive) {
       intervalRef.current = setInterval(fetchRealTimeData, refreshInterval);
     }
-    
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -182,20 +182,20 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
   const generateMetricHistory = (): Array<{ timestamp: string; value: number }> => {
     const history = [];
     const now = Date.now();
-    
+
     for (let i = 23; i >= 0; i--) {
       history.push({
         timestamp: new Date(now - i * 5 * 60 * 1000).toISOString(),
         value: Math.floor(Math.random() * 100)
       });
     }
-    
+
     return history;
   };
 
   const generateAlerts = (agents: any[], vulnerabilities: any[]): RealTimeAlert[] => {
     const alerts: RealTimeAlert[] = [];
-    
+
     // Generate security alerts
     vulnerabilities.slice(0, 5).forEach((vuln: any, index: number) => {
       if (vuln.severity === 'critical' || vuln.severity === 'high') {
@@ -211,7 +211,7 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
         });
       }
     });
-    
+
     // Generate performance alerts
     agents.forEach((agent: any, index: number) => {
       if (agent.cpu_usage > 90 || agent.memory_usage > 90) {
@@ -227,13 +227,13 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
         });
       }
     });
-    
+
     return alerts;
   };
 
   const generateEvents = (agents: any[]): RealTimeEvent[] => {
     const events: RealTimeEvent[] = [];
-    
+
     agents.forEach((agent: any, index: number) => {
       events.push({
         id: `event-${index}`,
@@ -248,7 +248,7 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
         }
       });
     });
-    
+
     return events;
   };
 
@@ -319,9 +319,8 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
           </div>
           <button
             onClick={() => setIsLive(!isLive)}
-            className={`p-2 rounded border-2 border-black transition-colors ${
-              isLive ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-            }`}
+            className={`p-2 rounded border-2 border-black transition-colors ${isLive ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+              }`}
           >
             {isLive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
@@ -353,7 +352,7 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
             <Server className="h-12 w-12 text-blue-600" />
           </div>
         </div>
-        
+
         <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
           <div className="flex items-center justify-between">
             <div>
@@ -364,7 +363,7 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
             <AlertTriangle className="h-12 w-12 text-red-600" />
           </div>
         </div>
-        
+
         <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
           <div className="flex items-center justify-between">
             <div>
@@ -375,7 +374,7 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
             <Shield className="h-12 w-12 text-orange-600" />
           </div>
         </div>
-        
+
         <div className="p-6 bg-white border-3 border-black rounded shadow-lg">
           <div className="flex items-center justify-between">
             <div>
@@ -427,11 +426,10 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
                     <span className={`px-2 py-1 rounded text-xs font-bold ${getSeverityColor(alert.severity)}`}>
                       {alert.severity}
                     </span>
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                      alert.status === 'active' ? 'bg-red-100 text-red-800' :
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${alert.status === 'active' ? 'bg-red-100 text-red-800' :
                       alert.status === 'acknowledged' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
+                        'bg-green-100 text-green-800'
+                      }`}>
                       {alert.status}
                     </span>
                   </div>
@@ -465,28 +463,28 @@ const RealTimeMonitoring: React.FC<RealTimeMonitoringProps> = ({ className = '' 
             </select>
           </div>
         </div>
-        
+
         <div className="space-y-2">
           {data.events
             .filter(event => filterEvents === 'all' || event.type === filterEvents)
             .slice(0, 10)
             .map((event) => (
-            <div key={event.id} className="flex items-center justify-between p-3 bg-gray-50 rounded border-2 border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded">
-                  <Activity className="h-4 w-4 text-blue-600" />
+              <div key={event.id} className="flex items-center justify-between p-3 bg-gray-50 rounded border-2 border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded">
+                    <Activity className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{event.title}</p>
+                    <p className="text-sm text-gray-600">{event.description}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">{event.title}</p>
-                  <p className="text-sm text-gray-600">{event.description}</p>
+                <div className="text-right">
+                  <p className="text-sm font-medium">{event.asset}</p>
+                  <p className="text-xs text-gray-600">{formatTimestamp(event.timestamp)}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-medium">{event.asset}</p>
-                <p className="text-xs text-gray-600">{formatTimestamp(event.timestamp)}</p>
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
     </div>

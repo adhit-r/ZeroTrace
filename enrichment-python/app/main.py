@@ -9,6 +9,7 @@ from typing import List, Dict
 from .core.config import settings
 from .core.logging import configure_logging, get_logger
 from .services.enrichment import enrichment_service
+from .routes.admin import router as admin_router
 
 # Configure Logger (structlog)
 configure_logging()
@@ -46,6 +47,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include Admin UI Routes
+app.include_router(admin_router)
 
 # --- Routes ---
 

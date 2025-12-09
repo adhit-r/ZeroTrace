@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,11 +20,11 @@ import (
 // TestAgentEndpointsIntegration tests agent endpoints integration
 func TestAgentEndpointsIntegration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	
-	agentService := services.NewAgentService()
+
+	agentService := services.NewAgentService(nil) // Mock DB
 	router := gin.New()
 	router.Use(middleware.CorrelationID())
-	
+
 	// Setup routes
 	router.GET("/api/agents", GetAgents(agentService))
 	router.GET("/api/agents/:id", GetAgent(agentService))
@@ -36,7 +37,7 @@ func TestAgentEndpointsIntegration(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		
+
 		var response models.APIResponse
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
@@ -51,7 +52,7 @@ func TestAgentEndpointsIntegration(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		
+
 		var response models.APIResponse
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
@@ -95,7 +96,7 @@ func TestAgentEndpointsIntegration(t *testing.T) {
 // TestErrorHandlingIntegration tests error handling across endpoints
 func TestErrorHandlingIntegration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	
+
 	router := gin.New()
 	router.Use(CorrelationID())
 
@@ -132,7 +133,7 @@ func TestErrorHandlingIntegration(t *testing.T) {
 // TestStandardizedErrorResponses tests standardized error response format
 func TestStandardizedErrorResponses(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	
+
 	router := gin.New()
 	router.Use(CorrelationID())
 
@@ -146,7 +147,7 @@ func TestStandardizedErrorResponses(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		
+
 		var response models.APIResponse
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
@@ -168,11 +169,11 @@ func TestStandardizedErrorResponses(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 
-		t.Run("InternalServerError", func(t *testing.T) {
-			router.GET("/test", func(c *gin.Context) {
-				testErr := fmt.Errorf("test error")
-				InternalServerError(c, "INTERNAL_ERROR", "Internal server error", testErr)
-			})
+	t.Run("InternalServerError", func(t *testing.T) {
+		router.GET("/test", func(c *gin.Context) {
+			testErr := fmt.Errorf("test error")
+			InternalServerError(c, "INTERNAL_ERROR", "Internal server error", testErr)
+		})
 
 		req := httptest.NewRequest("GET", "/test", nil)
 		w := httptest.NewRecorder()
@@ -181,4 +182,3 @@ func TestStandardizedErrorResponses(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 }
-

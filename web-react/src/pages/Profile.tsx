@@ -107,17 +107,17 @@ const Profile: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-orange-100 border-2 border-orange-300 rounded">
-                    <div className="text-2xl mb-2">🏆</div>
+                    <div className="text-2xl mb-2"></div>
                     <div className="font-bold text-black uppercase">SCAN MASTER</div>
                     <div className="text-sm text-gray-600">100+ scans completed</div>
                   </div>
                   <div className="text-center p-4 bg-green-100 border-2 border-green-300 rounded">
-                    <div className="text-2xl mb-2">🛡️</div>
+                    <div className="text-2xl mb-2">️</div>
                     <div className="font-bold text-black uppercase">SECURITY EXPERT</div>
                     <div className="text-sm text-gray-600">500+ vulnerabilities found</div>
                   </div>
                   <div className="text-center p-4 bg-blue-100 border-2 border-blue-300 rounded">
-                    <div className="text-2xl mb-2">📊</div>
+                    <div className="text-2xl mb-2"></div>
                     <div className="font-bold text-black uppercase">REPORT GENIUS</div>
                     <div className="text-sm text-gray-600">50+ reports generated</div>
                   </div>

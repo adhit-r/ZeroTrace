@@ -41,7 +41,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
         animate="animate"
         exit="exit"
         variants={pageVariants}
-        transition={pageTransition}
+        transition={pageTransition as any}
       >
         {children}
       </motion.div>

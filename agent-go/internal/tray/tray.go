@@ -69,17 +69,17 @@ func (tm *TrayManager) onReady() {
 	systray.SetTooltip("ZeroTrace Vulnerability Agent")
 
 	// Create menu items
-	mStatus := systray.AddMenuItem("🔄 Agent Status", "Check agent status")
-	mCPU := systray.AddMenuItem("📊 CPU: --", "CPU usage")
-	mMem := systray.AddMenuItem("💾 Memory: --", "Memory usage")
+	mStatus := systray.AddMenuItem(" Agent Status", "Check agent status")
+	mCPU := systray.AddMenuItem(" CPU: --", "CPU usage")
+	mMem := systray.AddMenuItem(" Memory: --", "Memory usage")
 	systray.AddSeparator()
-	mCheck := systray.AddMenuItem("🔍 Check Now", "Manual check")
-	mUI := systray.AddMenuItem("🌐 Open Web UI", "Open dashboard")
-	mRestart := systray.AddMenuItem("🔄 Restart Agent", "Restart agent")
+	mCheck := systray.AddMenuItem(" Check Now", "Manual check")
+	mUI := systray.AddMenuItem(" Open Web UI", "Open dashboard")
+	mRestart := systray.AddMenuItem(" Restart Agent", "Restart agent")
 	systray.AddSeparator()
-	mSettings := systray.AddMenuItem("⚙️ Settings", "Open settings")
+	mSettings := systray.AddMenuItem("️ Settings", "Open settings")
 	systray.AddSeparator()
-	mQuit := systray.AddMenuItem("❌ Quit", "Quit agent")
+	mQuit := systray.AddMenuItem(" Quit", "Quit agent")
 
 	// Start monitoring goroutine
 	go tm.monitorAndUpdate(mStatus, mCPU, mMem)
@@ -181,9 +181,9 @@ func (tm *TrayManager) getAgentStatus() string {
 
 	// Check API connectivity
 	if tm.checkAPIConnectivity() {
-		return "Running ✅"
+		return "Running "
 	}
-	return "Running ⚠️"
+	return "Running ️"
 }
 
 // getCPUUsage returns current CPU usage percentage

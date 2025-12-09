@@ -1,6 +1,6 @@
 # ZeroTrace Agent - MDM Deployment Guide
 
-## 🏢 **Supported MDM Platforms**
+## **Supported MDM Platforms**
 
 ### **Microsoft Intune**
 - **Windows**: `.intunewin` package
@@ -22,7 +22,7 @@
 - **macOS**: `.pkg` deployment
 - **Windows**: `.msi` deployment
 
-## 📦 **Deployment Packages**
+## **Deployment Packages**
 
 ### **macOS Package (.pkg)**
 ```bash
@@ -48,7 +48,7 @@
 # - Configuration files
 ```
 
-## 🔧 **Configuration**
+## **Configuration**
 
 ### **Environment Variables**
 ```bash
@@ -129,7 +129,7 @@ ZEROTRACE_LOG_LEVEL=info
 </plist>
 ```
 
-## 🚀 **Deployment Steps**
+## **Deployment Steps**
 
 ### **1. Microsoft Intune**
 
@@ -168,7 +168,7 @@ ZEROTRACE_LOG_LEVEL=info
 3. **Assign Users**: Target groups
 4. **Conditional Access**: Enforce policies
 
-## 📋 **Deployment Checklist**
+## **Deployment Checklist**
 
 ### **Pre-Deployment**
 - [ ] Build agent packages
@@ -191,7 +191,7 @@ ZEROTRACE_LOG_LEVEL=info
 - [ ] Validate security policies
 - [ ] Document deployment
 
-## 🔍 **Monitoring & Troubleshooting**
+## **Monitoring & Troubleshooting**
 
 ### **Agent Status**
 ```bash
@@ -220,7 +220,7 @@ sudo log show --predicate 'process == "mdm"' --last 1h
 3. **Package Installation Failed**: Check MDM logs
 4. **Configuration Not Applied**: Verify profile scope
 
-## 📞 **Support**
+## **Support**
 
 For MDM deployment support:
 - **Documentation**: [docs.zerotrace.com/mdm](https://docs.zerotrace.com/mdm)

@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
     }),
-  ].filter(Boolean),
+  ] as any[],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -67,38 +67,8 @@ export default defineConfig(({ mode }) => ({
     // Code splitting optimization
     rollupOptions: {
       output: {
-        // Manual chunk splitting for better caching
-        manualChunks: (id) => {
-          // Vendor chunks
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'react-vendor';
-            }
-            if (id.includes('@tanstack/react-query')) {
-              return 'query-vendor';
-            }
-            if (id.includes('@radix-ui') || id.includes('@headlessui') || id.includes('@heroicons')) {
-              return 'ui-vendor';
-            }
-            if (id.includes('chart.js') || id.includes('react-chartjs') || id.includes('recharts')) {
-              return 'chart-vendor';
-            }
-            if (id.includes('d3')) {
-              return 'd3-vendor';
-            }
-            if (id.includes('reactflow')) {
-              return 'flow-vendor';
-            }
-            if (id.includes('framer-motion')) {
-              return 'animation-vendor';
-            }
-            if (id.includes('axios') || id.includes('clsx') || id.includes('tailwind-merge')) {
-              return 'utils-vendor';
-            }
-            // Other node_modules
-            return 'vendor';
-          }
-        },
+        // Manual chunk splitting removed to prevent circular dependencies
+        // manualChunks: undefined,
         // Optimize chunk size
         chunkSizeWarningLimit: 1000,
         // Better file naming for caching

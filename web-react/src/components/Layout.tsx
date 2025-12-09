@@ -43,25 +43,33 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Desktop Layout */}
       <div className="hidden lg:flex h-screen">
         {/* Desktop Sidebar */}
-        <div className="w-64 bg-white border-3 border-black shadow-neubrutalist-lg flex-shrink-0">
-          <div className="flex items-center justify-between h-16 px-4 border-b-3 border-black bg-orange-500">
-            <h1 className="text-xl font-black text-white uppercase tracking-wider">ZeroTrace</h1>
+        <div className="w-64 bg-white flex-shrink-0 flex flex-col">
+          {/* Orange Header */}
+          <div className="bg-orange-500 px-4 py-4">
+            <h1 className="text-xl font-black text-white uppercase">ZEROTRACE</h1>
           </div>
-          <nav className="mt-4 p-2">
+          
+          {/* Navigation Menu */}
+          <nav className="flex-1 p-4 space-y-3">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
               return (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`flex items-center px-4 py-3 mb-2 text-black font-bold uppercase tracking-wider border-3 border-black rounded shadow-neubrutalist hover:shadow-neubrutalist-hover hover:translate-x-0.5 hover:translate-y-0.5 transition-all duration-150 ease-in-out ${
+                  className={`flex items-center px-4 py-3 rounded border-4 border-black font-black uppercase text-sm transition-all ${
                     isActive 
-                      ? 'bg-orange-500 text-white' 
-                      : 'bg-white hover:bg-orange-100'
+                      ? 'bg-orange-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' 
+                      : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0'
                   }`}
+                  style={{
+                    boxShadow: isActive 
+                      ? '4px 4px 0px 0px rgba(0,0,0,1)' 
+                      : '4px 4px 0px 0px rgba(0,0,0,1)'
+                  }}
                 >
-                  <item.icon className="w-5 h-5 mr-3" />
-                  {item.name}
+                  <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                  <span>{item.name}</span>
                 </Link>
               );
             })}
@@ -71,10 +79,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Desktop Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Top bar */}
-          <div className="bg-white border-b-3 border-black shadow-neubrutalist">
+          <div className="bg-white border-b-4 border-black">
             <div className="flex items-center justify-between h-16 px-4">
               <div className="flex items-center space-x-4">
-                <span className="text-sm font-bold text-black uppercase tracking-wider">Enterprise Security Management Platform</span>
+                <span className="text-sm font-bold text-black uppercase">Enterprise Security Management Platform</span>
               </div>
             </div>
           </div>
@@ -89,15 +97,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Mobile Layout */}
       <div className="lg:hidden">
         {/* Mobile Top bar */}
-        <div className="bg-white border-b-3 border-black shadow-neubrutalist">
+        <div className="bg-white border-b-4 border-black">
           <div className="flex items-center justify-between h-16 px-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 bg-orange-500 text-white border-3 border-black rounded shadow-neubrutalist hover:shadow-neubrutalist-hover hover:translate-x-0.5 hover:translate-y-0.5 transition-all duration-150 ease-in-out"
+              className="p-2 bg-orange-500 text-white border-4 border-black rounded shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all"
             >
               <Menu className="w-6 h-6" />
             </button>
-            <h1 className="text-xl font-black text-black uppercase tracking-wider">ZeroTrace</h1>
+            <h1 className="text-xl font-black text-black uppercase">ZEROTRACE</h1>
             <div></div>
           </div>
         </div>
@@ -105,19 +113,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Mobile Sidebar */}
         <div className={`
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-          fixed inset-y-0 left-0 z-50 w-64 bg-white border-3 border-black shadow-neubrutalist-lg 
-          transform transition-transform duration-300 ease-in-out
+          fixed inset-y-0 left-0 z-50 w-64 bg-white
+          transform transition-transform duration-300 ease-in-out flex flex-col
         `}>
-          <div className="flex items-center justify-between h-16 px-4 border-b-3 border-black bg-orange-500">
-            <h1 className="text-xl font-black text-white uppercase tracking-wider">ZeroTrace</h1>
+          {/* Orange Header */}
+          <div className="bg-orange-500 px-4 py-4 flex items-center justify-between">
+            <h1 className="text-xl font-black text-white uppercase">ZEROTRACE</h1>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="p-2 bg-white border-2 border-black rounded hover:bg-gray-100 transition-colors"
+              className="p-2 bg-white border-4 border-black rounded shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 transition-all"
             >
               <X className="w-5 h-5 text-black" />
             </button>
           </div>
-          <nav className="mt-4 p-2">
+          
+          {/* Navigation Menu */}
+          <nav className="flex-1 p-4 space-y-3 overflow-y-auto">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -125,14 +136,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   key={item.name}
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center px-4 py-3 mb-2 text-black font-bold uppercase tracking-wider border-3 border-black rounded shadow-neubrutalist hover:shadow-neubrutalist-hover hover:translate-x-0.5 hover:translate-y-0.5 transition-all duration-150 ease-in-out ${
+                  className={`flex items-center px-4 py-3 rounded border-4 border-black font-black uppercase text-sm transition-all ${
                     isActive 
-                      ? 'bg-orange-500 text-white' 
-                      : 'bg-white hover:bg-orange-100'
+                      ? 'bg-orange-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' 
+                      : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0'
                   }`}
+                  style={{
+                    boxShadow: isActive 
+                      ? '4px 4px 0px 0px rgba(0,0,0,1)' 
+                      : '4px 4px 0px 0px rgba(0,0,0,1)'
+                  }}
                 >
-                  <item.icon className="w-5 h-5 mr-3" />
-                  {item.name}
+                  <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                  <span>{item.name}</span>
                 </Link>
               );
             })}

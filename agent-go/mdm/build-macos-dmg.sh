@@ -21,37 +21,37 @@ DIST_DIR="dist"
 DMG_NAME="ZeroTrace-Agent-${VERSION}.dmg"
 DMG_PATH="${DIST_DIR}/${DMG_NAME}"
 
-echo -e "${BLUE}🏗️  Building ZeroTrace Agent DMG for macOS${NC}"
+echo -e "${BLUE}️  Building ZeroTrace Agent DMG for macOS${NC}"
 echo "=================================================="
 echo ""
 
 # Function to check dependencies
 check_dependencies() {
-    echo -e "${YELLOW}🔍 Checking dependencies...${NC}"
+    echo -e "${YELLOW} Checking dependencies...${NC}"
     
     if ! command -v go &> /dev/null; then
-        echo -e "${RED}❌ Go is not installed${NC}"
+        echo -e "${RED} Go is not installed${NC}"
         exit 1
     fi
     
     if ! command -v hdiutil &> /dev/null; then
-        echo -e "${RED}❌ hdiutil is not available (macOS only)${NC}"
+        echo -e "${RED} hdiutil is not available (macOS only)${NC}"
         exit 1
     fi
     
-    echo -e "${GREEN}✅ All dependencies available${NC}"
+    echo -e "${GREEN} All dependencies available${NC}"
 }
 
 # Function to clean build directories
 clean_build() {
-    echo -e "${YELLOW}🧹 Cleaning build directories...${NC}"
+    echo -e "${YELLOW} Cleaning build directories...${NC}"
     rm -rf "$BUILD_DIR" "$DIST_DIR" "dmg_temp"
     mkdir -p "$BUILD_DIR" "$DIST_DIR" "dmg_temp"
 }
 
 # Function to build the agent with tray UI
 build_agent() {
-    echo -e "${YELLOW}🔨 Building agent binary with tray UI...${NC}"
+    echo -e "${YELLOW} Building agent binary with tray UI...${NC}"
     
     cd ..
     
@@ -63,12 +63,12 @@ build_agent() {
     
     # Use universal binary if on macOS
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo -e "${YELLOW}📦 Creating universal binary...${NC}"
+        echo -e "${YELLOW} Creating universal binary...${NC}"
         lipo -create \
             "mdm/$BUILD_DIR/zerotrace-agent" \
             "mdm/$BUILD_DIR/zerotrace-agent-arm64" \
             -output "mdm/$BUILD_DIR/zerotrace-agent-universal" 2>/dev/null || {
-            echo -e "${YELLOW}⚠️  Universal binary creation skipped (using arm64)${NC}"
+            echo -e "${YELLOW}️  Universal binary creation skipped (using arm64)${NC}"
             cp "mdm/$BUILD_DIR/zerotrace-agent-arm64" "mdm/$BUILD_DIR/zerotrace-agent-universal"
         }
     else
@@ -77,22 +77,22 @@ build_agent() {
     
     cd mdm
     
-    echo -e "${GREEN}✅ Agent binaries built${NC}"
+    echo -e "${GREEN} Agent binaries built${NC}"
 }
 
 # Function to create DMG structure
 create_dmg_structure() {
-    echo -e "${YELLOW}📁 Creating DMG structure...${NC}"
+    echo -e "${YELLOW} Creating DMG structure...${NC}"
     
     # Create Applications link
     ln -s /Applications "dmg_temp/Applications"
     
     # Copy .app bundle if it exists, otherwise copy binary
     if [ -d "$BUILD_DIR/ZeroTrace Agent.app" ]; then
-        echo -e "${YELLOW}📦 Using .app bundle for menu bar icon support${NC}"
+        echo -e "${YELLOW} Using .app bundle for menu bar icon support${NC}"
         cp -R "$BUILD_DIR/ZeroTrace Agent.app" "dmg_temp/"
     else
-        echo -e "${YELLOW}📦 Using binary (no menu bar icon)${NC}"
+        echo -e "${YELLOW} Using binary (no menu bar icon)${NC}"
         cp "$BUILD_DIR/zerotrace-agent-universal" "dmg_temp/zerotrace-agent"
         chmod +x "dmg_temp/zerotrace-agent"
     fi
@@ -131,12 +131,12 @@ EOF
     
     # Create .DS_Store for better appearance
     # This is optional but makes the DMG look better
-    echo -e "${YELLOW}📝 DMG structure created${NC}"
+    echo -e "${YELLOW} DMG structure created${NC}"
 }
 
 # Function to create DMG
 create_dmg() {
-    echo -e "${YELLOW}💿 Creating DMG file...${NC}"
+    echo -e "${YELLOW} Creating DMG file...${NC}"
     
     # Calculate size (add 20MB overhead)
     SIZE=$(du -sm dmg_temp | cut -f1)
@@ -150,7 +150,7 @@ create_dmg() {
         -format UDRW \
         -size ${SIZE}M \
         "${DMG_PATH}.temp" || {
-        echo -e "${RED}❌ Failed to create DMG${NC}"
+        echo -e "${RED} Failed to create DMG${NC}"
         exit 1
     }
     
@@ -196,13 +196,13 @@ create_dmg() {
     # Remove temp file
     rm -f "${DMG_PATH}.temp"
     
-    echo -e "${GREEN}✅ DMG created: ${DMG_PATH}${NC}"
+    echo -e "${GREEN} DMG created: ${DMG_PATH}${NC}"
 }
 
 # Function to show summary
 show_summary() {
     echo ""
-    echo -e "${GREEN}✅ Build Complete!${NC}"
+    echo -e "${GREEN} Build Complete!${NC}"
     echo "=================================================="
     echo -e "${BLUE}DMG Location:${NC} ${DMG_PATH}"
     echo -e "${BLUE}Size:${NC} $(du -h "$DMG_PATH" | cut -f1)"

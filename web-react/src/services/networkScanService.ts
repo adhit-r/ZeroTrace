@@ -1,5 +1,13 @@
 import { api } from './api';
 
+export interface InitiateScanRequest {
+  agent_id: string;
+  targets: string[];
+  scan_type: string;
+  timeout: number;
+  concurrency: number;
+}
+
 export interface NetworkScanResult {
   id: string;
   agent_id: string;
@@ -68,6 +76,16 @@ export interface NetworkEdge {
 }
 
 export const networkScanService = {
+  async initiateScan(request: InitiateScanRequest): Promise<string | null> {
+    try {
+      const response = await api.post<{ scan_id: string }>('/api/v2/scans/network', request);
+      return response.data.scan_id || null;
+    } catch (error) {
+      console.error('Failed to initiate network scan:', error);
+      throw error;
+    }
+  },
+
   async getNetworkScanResults(): Promise<NetworkScanResult[]> {
     try {
       // Fetch agents and extract network scan results from metadata

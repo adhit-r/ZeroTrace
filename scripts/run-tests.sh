@@ -276,25 +276,25 @@ Generated on: $(date)
 ## Test Results
 
 ### Go Tests
-- Unit Tests: ✅ Passed
-- Integration Tests: ✅ Passed  
-- Performance Tests: ✅ Passed
-- Security Tests: ✅ Passed
+- Unit Tests:  Passed
+- Integration Tests:  Passed  
+- Performance Tests:  Passed
+- Security Tests:  Passed
 
 ### Python Tests
-- Unit Tests: ✅ Passed
-- Integration Tests: ✅ Passed
-- Performance Tests: ✅ Passed
-- Security Tests: ✅ Passed
+- Unit Tests:  Passed
+- Integration Tests:  Passed
+- Performance Tests:  Passed
+- Security Tests:  Passed
 
 ### Frontend Tests
-- Unit Tests: ✅ Passed
-- Integration Tests: ✅ Passed
-- E2E Tests: ✅ Passed
+- Unit Tests:  Passed
+- Integration Tests:  Passed
+- E2E Tests:  Passed
 
 ### Load Tests
-- API Load Tests: ✅ Passed
-- Enrichment Load Tests: ✅ Passed
+- API Load Tests:  Passed
+- Enrichment Load Tests:  Passed
 
 ## Coverage Reports
 
@@ -304,10 +304,10 @@ Generated on: $(date)
 
 ## Recommendations
 
-1. All tests are passing ✅
-2. Coverage is above 80% for all modules ✅
-3. Performance tests show acceptable response times ✅
-4. Security tests show no vulnerabilities ✅
+1. All tests are passing 
+2. Coverage is above 80% for all modules 
+3. Performance tests show acceptable response times 
+4. Security tests show no vulnerabilities 
 
 EOF
 
@@ -417,10 +417,10 @@ main() {
     print_status "INFO" "Failed: $FAILED_TESTS"
     
     if [ $FAILED_TESTS -eq 0 ]; then
-        print_status "SUCCESS" "All tests passed! 🎉"
+        print_status "SUCCESS" "All tests passed! "
         exit 0
     else
-        print_status "ERROR" "Some tests failed! ❌"
+        print_status "ERROR" "Some tests failed! "
         exit 1
     fi
 }

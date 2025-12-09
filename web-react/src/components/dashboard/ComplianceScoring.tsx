@@ -12,6 +12,7 @@ import {
   FileText, 
   Server
 } from 'lucide-react';
+import { agentService } from '../../services/agentService';
 
 interface ComplianceFramework {
   id: string;
@@ -108,13 +109,7 @@ const ComplianceScoring: React.FC<ComplianceScoringProps> = ({ className = '' })
       setLoading(true);
       try {
         // Fetch agent data to build compliance information
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/agents/`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch agent data');
-        }
-        
-        const result = await response.json();
-        const agents = result.data || [];
+        const agents = await agentService.getAgents();
         
         // Generate compliance frameworks
         const frameworks: ComplianceFramework[] = [

@@ -9,20 +9,23 @@ import (
 
 	"zerotrace/api/internal/config"
 	"zerotrace/api/internal/models"
+	"zerotrace/api/internal/repository"
 
 	"github.com/google/uuid"
-
+	"gorm.io/gorm"
 )
 
 // EnrollmentService handles agent enrollment and token management
 type EnrollmentService struct {
 	cfg *config.Config
+	db  *repository.Database
 }
 
 // NewEnrollmentService creates a new enrollment service
-func NewEnrollmentService(cfg *config.Config) *EnrollmentService {
+func NewEnrollmentService(cfg *config.Config, db *repository.Database) *EnrollmentService {
 	return &EnrollmentService{
 		cfg: cfg,
+		db:  db,
 	}
 }
 
@@ -59,28 +62,40 @@ func (s *EnrollmentService) GenerateEnrollmentToken(req *models.GenerateEnrollme
 		UpdatedAt:      time.Now(),
 	}
 
-	// TODO: Save to database
-	// if err := s.repo.CreateEnrollmentToken(enrollmentToken); err != nil {
-	//     return nil, fmt.Errorf("failed to save enrollment token: %w", err)
-	// }
+	// Save to database
+	if err := s.db.DB.Create(enrollmentToken).Error; err != nil {
+		return nil, fmt.Errorf("failed to save enrollment token: %w", err)
+	}
 
 	return enrollmentToken, nil
 }
 
 // ValidateEnrollmentToken validates an enrollment token
 func (s *EnrollmentService) ValidateEnrollmentToken(token string) (*models.EnrollmentToken, error) {
-	// Hash the provided token (for future database lookup)
-	_ = sha256.Sum256([]byte(token))
+	// Hash the provided token (for database lookup)
+	tokenHash := sha256.Sum256([]byte(token))
+	tokenHashStr := hex.EncodeToString(tokenHash[:])
 
-	// TODO: Look up token in database
-	// enrollmentToken, err := s.repo.GetEnrollmentTokenByHash(tokenHashStr)
-	// if err != nil {
-	//     return nil, fmt.Errorf("failed to find enrollment token: %w", err)
-	// }
+	// Look up token in database
+	var enrollmentToken models.EnrollmentToken
+	if err := s.db.DB.Where("token_hash = ?", tokenHashStr).First(&enrollmentToken).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("invalid enrollment token")
+		}
+		return nil, fmt.Errorf("failed to find enrollment token: %w", err)
+	}
 
-	// Database integration required - enrollment token lookup needs to be implemented
-	// Returning error until database integration is complete
-	return nil, fmt.Errorf("enrollment token lookup requires database integration")
+	// Check expiration
+	if time.Now().After(enrollmentToken.ExpiresAt) {
+		return nil, fmt.Errorf("enrollment token expired")
+	}
+
+	// Check status
+	if enrollmentToken.Status != "active" {
+		return nil, fmt.Errorf("enrollment token is not active (status: %s)", enrollmentToken.Status)
+	}
+
+	return &enrollmentToken, nil
 }
 
 // EnrollAgent enrolls an agent using an enrollment token
@@ -93,7 +108,8 @@ func (s *EnrollmentService) EnrollAgent(req *models.AgentEnrollmentRequest) (*mo
 
 	// Create a new agent
 	agentID := uuid.New()
-	_ = &models.Agent{
+	// Save agent to database
+	agent := &models.Agent{
 		ID:             agentID,
 		OrganizationID: enrollmentToken.OrganizationID,
 		CompanyID:      uuid.Nil, // This would be looked up from the organization
@@ -108,10 +124,9 @@ func (s *EnrollmentService) EnrollAgent(req *models.AgentEnrollmentRequest) (*mo
 		UpdatedAt:      time.Now(),
 	}
 
-	// TODO: Save agent to database
-	// if err := s.repo.CreateAgent(agent); err != nil {
-	//     return nil, fmt.Errorf("failed to create agent: %w", err)
-	// }
+	if err := s.db.DB.Create(agent).Error; err != nil {
+		return nil, fmt.Errorf("failed to create agent: %w", err)
+	}
 
 	// Generate a long-lived credential for the agent
 	credential, err := s.generateAgentCredential(agentID, enrollmentToken.OrganizationID)
@@ -126,20 +141,20 @@ func (s *EnrollmentService) EnrollAgent(req *models.AgentEnrollmentRequest) (*mo
 	enrollmentToken.UsedBy = &agentID
 	enrollmentToken.UpdatedAt = time.Now()
 
-	// TODO: Update enrollment token in database
-	// if err := s.repo.UpdateEnrollmentToken(enrollmentToken); err != nil {
-	//     return nil, fmt.Errorf("failed to update enrollment token: %w", err)
-	// }
+	// Update enrollment token in database
+	if err := s.db.DB.Save(enrollmentToken).Error; err != nil {
+		return nil, fmt.Errorf("failed to update enrollment token: %w", err)
+	}
 
-	// TODO: Save agent credential to database
-	// if err := s.repo.CreateAgentCredential(credential); err != nil {
-	//     return nil, fmt.Errorf("failed to save agent credential: %w", err)
-	// }
+	// Save agent credential to database
+	if err := s.db.DB.Create(credential).Error; err != nil {
+		return nil, fmt.Errorf("failed to save agent credential: %w", err)
+	}
 
 	return &models.AgentEnrollmentResponse{
 		AgentID:        agentID,
 		OrganizationID: enrollmentToken.OrganizationID,
-		Credential:     credential.CredentialHash, // In real implementation, this would be the actual credential
+		Credential:     credential.CredentialHash,   // In real implementation, this would be the actual credential
 		ExpiresAt:      time.Now().AddDate(1, 0, 0), // 1 year
 	}, nil
 }
@@ -178,52 +193,71 @@ func (s *EnrollmentService) generateAgentCredential(agentID, organizationID uuid
 
 // ValidateAgentCredential validates an agent's credential
 func (s *EnrollmentService) ValidateAgentCredential(credential string, agentID uuid.UUID) (*models.AgentCredential, error) {
-	// Hash the credential (for future database lookup)
-	_ = sha256.Sum256([]byte(credential))
+	// Hash the credential
+	credentialHash := sha256.Sum256([]byte(credential))
+	credentialHashStr := hex.EncodeToString(credentialHash[:])
 
-	// TODO: Look up credential in database
-	// agentCredential, err := s.repo.GetAgentCredentialByHash(credentialHashStr)
-	// if err != nil {
-	//     return nil, fmt.Errorf("failed to find agent credential: %w", err)
-	// }
+	// Look up credential in database
+	var agentCredential models.AgentCredential
+	if err := s.db.DB.Where("credential_hash = ? AND agent_id = ?", credentialHashStr, agentID).First(&agentCredential).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("invalid agent credential")
+		}
+		return nil, fmt.Errorf("failed to find agent credential: %w", err)
+	}
 
-	// Database integration required - agent credential lookup needs to be implemented
-	// Returning error until database integration is complete
-	return nil, fmt.Errorf("agent credential lookup requires database integration")
+	// Check status
+	if agentCredential.Status != "active" {
+		return nil, fmt.Errorf("agent credential is not active")
+	}
+
+	// Check expiration
+	if agentCredential.ExpiresAt != nil && time.Now().After(*agentCredential.ExpiresAt) {
+		return nil, fmt.Errorf("agent credential expired")
+	}
+
+	// Update LastUsedAt
+	agentCredential.LastUsedAt = time.Now()
+	// Update in background or simple save
+	go func() {
+		s.db.DB.Model(&agentCredential).Update("last_used_at", time.Now())
+	}()
+
+	return &agentCredential, nil
 }
 
 // RevokeEnrollmentToken revokes an enrollment token
 func (s *EnrollmentService) RevokeEnrollmentToken(tokenID uuid.UUID) error {
-	// TODO: Look up token in database and mark as revoked
-	// enrollmentToken, err := s.repo.GetEnrollmentTokenByID(tokenID)
-	// if err != nil {
-	//     return fmt.Errorf("failed to find enrollment token: %w", err)
-	// }
+	// Look up token in database
+	var enrollmentToken models.EnrollmentToken
+	if err := s.db.DB.Where("id = ?", tokenID).First(&enrollmentToken).Error; err != nil {
+		return fmt.Errorf("failed to find enrollment token: %w", err)
+	}
 
-	// enrollmentToken.Status = "revoked"
-	// enrollmentToken.UpdatedAt = time.Now()
+	enrollmentToken.Status = "revoked"
+	enrollmentToken.UpdatedAt = time.Now()
 
-	// if err := s.repo.UpdateEnrollmentToken(enrollmentToken); err != nil {
-	//     return fmt.Errorf("failed to revoke enrollment token: %w", err)
-	// }
+	if err := s.db.DB.Save(&enrollmentToken).Error; err != nil {
+		return fmt.Errorf("failed to revoke enrollment token: %w", err)
+	}
 
 	return nil
 }
 
 // RevokeAgentCredential revokes an agent's credential
 func (s *EnrollmentService) RevokeAgentCredential(credentialID uuid.UUID) error {
-	// TODO: Look up credential in database and mark as revoked
-	// agentCredential, err := s.repo.GetAgentCredentialByID(credentialID)
-	// if err != nil {
-	//     return fmt.Errorf("failed to find agent credential: %w", err)
-	// }
+	// Look up credential in database
+	var agentCredential models.AgentCredential
+	if err := s.db.DB.Where("id = ?", credentialID).First(&agentCredential).Error; err != nil {
+		return fmt.Errorf("failed to find agent credential: %w", err)
+	}
 
-	// agentCredential.Status = "revoked"
-	// agentCredential.UpdatedAt = time.Now()
+	agentCredential.Status = "revoked"
+	agentCredential.UpdatedAt = time.Now()
 
-	// if err := s.repo.UpdateAgentCredential(agentCredential); err != nil {
-	//     return fmt.Errorf("failed to revoke agent credential: %w", err)
-	// }
+	if err := s.db.DB.Save(&agentCredential).Error; err != nil {
+		return fmt.Errorf("failed to revoke agent credential: %w", err)
+	}
 
 	return nil
 }

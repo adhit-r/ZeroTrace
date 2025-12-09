@@ -1,6 +1,5 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Download, TrendingUp, TrendingDown } from 'lucide-react';
@@ -55,33 +54,28 @@ const ComplianceReports: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Layout>
-        <div className="p-6">
-          <Card className="border-red-200 bg-red-50">
-            <CardHeader>
-              <CardTitle className="text-red-900">Error Loading Compliance Reports</CardTitle>
-              <CardDescription className="text-red-800">
-                {error instanceof Error ? error.message : 'Unknown error occurred'}
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </Layout>
+      <div className="p-6">
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-900">Error Loading Compliance Reports</CardTitle>
+            <CardDescription className="text-red-800">
+              {error instanceof Error ? error.message : 'Unknown error occurred'}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Layout>
       <div className="space-y-6 p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -272,7 +266,6 @@ const ComplianceReports: React.FC = () => {
           </div>
         </div>
       </div>
-    </Layout>
   );
 };
 

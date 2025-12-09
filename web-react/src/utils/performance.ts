@@ -26,7 +26,9 @@ class PerformanceMonitor {
           const entries = list.getEntries();
           const lastEntry = entries[entries.length - 1] as any;
           this.vitals.lcp = lastEntry.renderTime || lastEntry.loadTime;
-          this.reportMetric('LCP', this.vitals.lcp);
+          if (this.vitals.lcp !== undefined) {
+            this.reportMetric('LCP', this.vitals.lcp);
+          }
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
       } catch (e) {
@@ -40,7 +42,9 @@ class PerformanceMonitor {
           entries.forEach((entry: any) => {
             if (entry.processingStart && entry.startTime) {
               this.vitals.fid = entry.processingStart - entry.startTime;
-              this.reportMetric('FID', this.vitals.fid);
+              if (this.vitals.fid !== undefined) {
+                this.reportMetric('FID', this.vitals.fid);
+              }
             }
           });
         });
@@ -60,7 +64,9 @@ class PerformanceMonitor {
               this.vitals.cls = clsValue;
             }
           });
-          this.reportMetric('CLS', this.vitals.cls);
+          if (this.vitals.cls !== undefined) {
+            this.reportMetric('CLS', this.vitals.cls);
+          }
         });
         clsObserver.observe({ entryTypes: ['layout-shift'] });
       } catch (e) {
@@ -85,7 +91,9 @@ class PerformanceMonitor {
           entries.forEach((entry: any) => {
             if (entry.name === 'first-contentful-paint') {
               this.vitals.fcp = entry.startTime;
-              this.reportMetric('FCP', this.vitals.fcp);
+              if (this.vitals.fcp !== undefined) {
+                this.reportMetric('FCP', this.vitals.fcp);
+              }
             }
           });
         });

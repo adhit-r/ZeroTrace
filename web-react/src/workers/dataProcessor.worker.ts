@@ -206,27 +206,27 @@ function aggregateData(data: {
     return acc;
   }, {} as Record<string, any[]>);
 
-  return Object.entries(grouped).map(([key, groupItems]) => {
+  return (Object.entries(grouped) as [string, any[]][]).map(([key, groupItems]) => {
     const result: any = { [groupBy]: key };
 
     Object.entries(aggregations).forEach(([field, operation]) => {
-      const values = groupItems.map((item) => item[field]).filter((v) => v != null);
+      const values = groupItems.map((item: any) => item[field]).filter((v: any) => v != null);
 
       switch (operation) {
         case 'sum':
-          result[field] = values.reduce((sum, v) => sum + Number(v), 0);
+          result[field] = values.reduce((sum: number, v: any) => sum + Number(v), 0);
           break;
         case 'avg':
-          result[field] = values.length > 0 ? values.reduce((sum, v) => sum + Number(v), 0) / values.length : 0;
+          result[field] = values.length > 0 ? values.reduce((sum: number, v: any) => sum + Number(v), 0) / values.length : 0;
           break;
         case 'count':
           result[field] = values.length;
           break;
         case 'max':
-          result[field] = values.length > 0 ? Math.max(...values.map(Number)) : 0;
+          result[field] = values.length > 0 ? Math.max(...values.map((v: any) => Number(v))) : 0;
           break;
         case 'min':
-          result[field] = values.length > 0 ? Math.min(...values.map(Number)) : 0;
+          result[field] = values.length > 0 ? Math.min(...values.map((v: any) => Number(v))) : 0;
           break;
       }
     });

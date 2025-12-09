@@ -36,7 +36,7 @@ export function VirtualListEnhanced<T>({
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: getScrollElement || (() => parentRef.current),
-    estimateSize: estimateSize || (typeof itemHeight === 'number' ? itemHeight : undefined),
+    estimateSize: estimateSize ? (() => estimateSize) : (() => (typeof itemHeight === 'number' ? itemHeight : 50)),
     overscan,
     horizontal,
     ...(typeof itemHeight === 'function' && { getItemSize: itemHeight }),

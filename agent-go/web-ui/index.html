@@ -223,7 +223,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="logo">🛡️</div>
+        <div class="logo">️</div>
         <h1 class="title">ZeroTrace Agent</h1>
         <p class="subtitle">Security Vulnerability Scanner</p>
         
@@ -337,16 +337,16 @@
             
             if (critical > 0) {
                 statusDiv.className = 'vulnerability-status danger';
-                statusText.textContent = `⚠️ ${critical} critical vulnerabilities found`;
+                statusText.textContent = `️ ${critical} critical vulnerabilities found`;
             } else if (high > 0) {
                 statusDiv.className = 'vulnerability-status warning';
-                statusText.textContent = `⚠️ ${high} high-severity vulnerabilities found`;
+                statusText.textContent = `️ ${high} high-severity vulnerabilities found`;
             } else if (total > 0) {
                 statusDiv.className = 'vulnerability-status warning';
                 statusText.textContent = `ℹ️ ${total} vulnerabilities found`;
             } else {
                 statusDiv.className = 'vulnerability-status safe';
-                statusText.textContent = '✅ No vulnerabilities found - System is secure!';
+                statusText.textContent = ' No vulnerabilities found - System is secure!';
             }
         }
         

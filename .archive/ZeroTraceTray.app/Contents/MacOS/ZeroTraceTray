@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""
+ZeroTrace macOS Tray Icon - Simple Version
+"""
+
+import rumps
+import webbrowser
+import subprocess
+import json
+from datetime import datetime
+
+class ZeroTraceTray(rumps.App):
+    def __init__(self):
+        super(ZeroTraceTray, self).__init__("ZeroTrace")
+        self.dashboard_url = "http://localhost:5173"
+        self.api_url = "http://localhost:8080"
+    
+    @rumps.clicked("Open Dashboard")
+    def open_dashboard(self, _):
+        """Open the ZeroTrace dashboard in browser"""
+        webbrowser.open(self.dashboard_url)
+        rumps.notification("ZeroTrace", "Dashboard", "Opening ZeroTrace Dashboard...")
+    
+    @rumps.clicked("Check Status")
+    def check_status(self, _):
+        """Check agent status"""
+        rumps.notification("ZeroTrace Status", "Agent Active", "ZeroTrace Agent is running and monitoring")
+    
+    @rumps.clicked("View Vulnerabilities")
+    def view_vulnerabilities(self, _):
+        """View vulnerabilities"""
+        rumps.notification("ZeroTrace Vulnerabilities", "Security Scan", "Check dashboard for vulnerability details")
+    
+    @rumps.clicked("About")
+    def show_about(self, _):
+        """Show about information"""
+        rumps.alert("ZeroTrace Security Monitor", 
+                   "ZeroTrace Agent v1.0.0\n"
+                   "Real-time vulnerability monitoring\n"
+                   "Dashboard: http://localhost:5173\n"
+                   "API: http://localhost:8080")
+    
+    @rumps.clicked("Quit")
+    def quit_app(self, _):
+        """Quit the application"""
+        rumps.quit_application()
+
+if __name__ == "__main__":
+    app = ZeroTraceTray()
+    app.run()

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { aiService } from '@/services/aiService';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface AIAnalysis {
   vulnerabilityId: string;
@@ -76,7 +77,7 @@ export default function AIAnalytics() {
   const [trends, setTrends] = useState<VulnerabilityTrend[]>([]);
   const [exploitIntel, setExploitIntel] = useState<ExploitIntelligence | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedVulnerability, setSelectedVulnerability] = useState<string>('');
+  const [selectedVulnerability, _setSelectedVulnerability] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'trends' | 'analysis' | 'exploit' | 'predictive'>('trends');
 
   useEffect(() => {

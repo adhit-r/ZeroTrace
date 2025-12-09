@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { 
   Server, 
   Cpu, 
@@ -136,47 +137,27 @@ const Agents: React.FC = () => {
 
   const restartAgent = async (agentId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/agents/${agentId}/restart`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        alert('Agent restart initiated');
-        refresh();
-      } else {
-        alert('Failed to restart agent');
-      }
+      await agentService.restartAgent(agentId);
+      toast.success('Agent restart initiated');
+      refresh();
     } catch (error) {
       console.error('Failed to restart agent:', error);
-      alert('Failed to restart agent');
+      toast.error('Failed to restart agent. Please try again.');
     }
   };
 
   const killAgent = async (agentId: string) => {
-    if (!confirm('Are you sure you want to kill this agent?')) {
+    if (!window.confirm('Are you sure you want to kill this agent? This action cannot be undone.')) {
       return;
     }
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/agents/${agentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        alert('Agent kill initiated');
-        refresh();
-      } else {
-        alert('Failed to kill agent');
-      }
+      await agentService.killAgent(agentId);
+      toast.success('Agent kill initiated');
+      refresh();
     } catch (error) {
       console.error('Failed to kill agent:', error);
-      alert('Failed to kill agent');
+      toast.error('Failed to kill agent. Please try again.');
     }
   };
 

@@ -15,14 +15,19 @@ func ClerkAuth() gin.HandlerFunc {
 	// Get Clerk JWT verification key from environment
 	clerkSecret := os.Getenv("CLERK_JWT_VERIFICATION_KEY")
 	isDebug := os.Getenv("API_MODE") == "debug" || os.Getenv("DEBUG") == "true"
-	
+
 	if clerkSecret == "" {
 		if isDebug {
 			// Only allow development key in debug mode
 			clerkSecret = "development-key"
 		} else {
 			// In production, fail if no key is provided
-			panic("CLERK_JWT_VERIFICATION_KEY environment variable is required in production")
+			// In production, fail if no key is provided
+			// Use log.Fatal inside init/setup instead of panic
+			// Note: We avoid importing "log" and use fmt.Println + os.Exit to match the style or add import.
+			// Ideally we should import "log". Let's update imports too.
+			fmt.Printf("FATAL: CLERK_JWT_VERIFICATION_KEY environment variable is required in production\n")
+			os.Exit(1)
 		}
 	}
 

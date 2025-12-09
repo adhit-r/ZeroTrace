@@ -5,11 +5,10 @@
   "type": "module",
   "packageManager": "bun@latest",
   "scripts": {
-    "dev": "bun run vite",
-    "build": "bun run tsc -b && bun run vite build",
-    "lint": "bunx eslint .",
-    "preview": "bun run vite preview",
-    "install": "bun install"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.51.0",

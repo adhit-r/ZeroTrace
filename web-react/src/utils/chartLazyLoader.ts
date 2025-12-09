@@ -17,7 +17,7 @@ export async function loadChartJS(): Promise<void> {
   chartJsPromise = Promise.all([
     import('chart.js/auto'),
     import('react-chartjs-2'),
-  ]).then(([chartModule, reactChartModule]) => {
+  ]).then(([_chartModule, _reactChartModule]) => {
     chartJsLoaded = true;
     return;
   });

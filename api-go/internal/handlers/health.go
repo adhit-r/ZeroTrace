@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"zerotrace/api/internal/models"
+	"zerotrace/api/internal/repository"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,21 +29,41 @@ func Root(c *gin.Context) {
 }
 
 // HealthCheck handles health check requests
-func HealthCheck(c *gin.Context) {
-	response := models.HealthCheckResponse{
-		Status:    "healthy",
-		Timestamp: time.Now(),
-		Services: map[string]string{
-			"api":      "healthy",
-			"database": "healthy", // TODO: Add actual DB health check
-			"redis":    "healthy", // TODO: Add actual Redis health check
-		},
-	}
+func HealthCheck(db *repository.Database) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		dbStatus := "unknown"
 
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success:   true,
-		Data:      response,
-		Message:   "Service is healthy",
-		Timestamp: time.Now(),
-	})
+		// Check database health
+		if sqlDB, err := db.DB.DB(); err == nil {
+			if err := sqlDB.Ping(); err == nil {
+				dbStatus = "healthy"
+			} else {
+				dbStatus = "unhealthy"
+			}
+		} else {
+			dbStatus = "error"
+		}
+
+		response := models.HealthCheckResponse{
+			Status:    "healthy",
+			Timestamp: time.Now(),
+			Services: map[string]string{
+				"api":      "healthy",
+				"database": dbStatus,
+				"redis":    "disabled", // Redis integration is currently pending
+			},
+		}
+
+		// If DB is down, overall status might be degraded, but we return 200 OK so monitoring can read the body
+		if dbStatus != "healthy" {
+			response.Status = "degraded"
+		}
+
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success:   true,
+			Data:      response,
+			Message:   "Service status retrieved",
+			Timestamp: time.Now(),
+		})
+	}
 }

@@ -2,7 +2,7 @@
  * Touch gesture hooks using @use-gesture/react
  */
 import { useGesture } from '@use-gesture/react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 
 /**
  * Swipe gesture hook

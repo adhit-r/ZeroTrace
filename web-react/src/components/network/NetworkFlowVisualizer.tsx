@@ -1,19 +1,25 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import ReactFlow, {
-  Node,
-  Edge,
+  type Node,
+  type Edge,
   Controls,
   Background,
   MiniMap,
-  Connection,
   addEdge,
   useNodesState,
   useEdgesState,
   Panel,
   MarkerType,
-  NodeTypes,
-  EdgeTypes,
+  type NodeTypes,
 } from 'reactflow';
+
+// Connection type definition (not exported in reactflow v11)
+type Connection = {
+  source: string | null;
+  target: string | null;
+  sourceHandle: string | null;
+  targetHandle: string | null;
+};
 import 'reactflow/dist/style.css';
 import {
   Server,
@@ -26,16 +32,9 @@ import {
   XCircle,
   Network,
   Database,
-  Cloud,
-  Filter,
   Search,
   Download,
-  Settings,
   RefreshCw,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Info,
 } from 'lucide-react';
 import { networkScanService } from '../../services/networkScanService';
 
@@ -66,9 +65,8 @@ const DeviceNode = ({ data, selected }: { data: any; selected: boolean }) => {
 
   return (
     <div
-      className={`px-4 py-3 rounded-lg border-2 shadow-lg transition-all ${
-        selected ? 'border-blue-500 shadow-xl' : 'border-gray-300'
-      } ${getStatusColor()} bg-white min-w-[200px]`}
+      className={`px-4 py-3 rounded-lg border-2 shadow-lg transition-all ${selected ? 'border-blue-500 shadow-xl' : 'border-gray-300'
+        } ${getStatusColor()} bg-white min-w-[200px]`}
     >
       <div className="flex items-center gap-2 mb-2">
         <div className="text-gray-700">{getIcon()}</div>
@@ -82,7 +80,7 @@ const DeviceNode = ({ data, selected }: { data: any; selected: boolean }) => {
           <XCircle className="w-4 h-4 text-red-500" />
         )}
       </div>
-      
+
       <div className="mt-2 space-y-1 text-xs">
         <div className="flex justify-between">
           <span className="text-gray-600">IP:</span>
@@ -90,10 +88,9 @@ const DeviceNode = ({ data, selected }: { data: any; selected: boolean }) => {
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">Risk:</span>
-          <span className={`font-semibold ${
-            data.riskScore >= 70 ? 'text-red-600' :
+          <span className={`font-semibold ${data.riskScore >= 70 ? 'text-red-600' :
             data.riskScore >= 40 ? 'text-yellow-600' : 'text-green-600'
-          }`}>
+            }`}>
             {data.riskScore.toFixed(1)}
           </span>
         </div>
@@ -131,9 +128,8 @@ const VulnerabilityNode = ({ data, selected }: { data: any; selected: boolean })
 
   return (
     <div
-      className={`px-3 py-2 rounded-lg border-2 shadow-md transition-all ${
-        selected ? 'border-blue-500 shadow-xl' : ''
-      } ${getSeverityColor()} text-white min-w-[180px]`}
+      className={`px-3 py-2 rounded-lg border-2 shadow-md transition-all ${selected ? 'border-blue-500 shadow-xl' : ''
+        } ${getSeverityColor()} text-white min-w-[180px]`}
     >
       <div className="flex items-center gap-2 mb-1">
         <Shield className="w-4 h-4" />
@@ -150,9 +146,8 @@ const VulnerabilityNode = ({ data, selected }: { data: any; selected: boolean })
 const ServiceNode = ({ data, selected }: { data: any; selected: boolean }) => {
   return (
     <div
-      className={`px-3 py-2 rounded-lg border-2 shadow-md transition-all ${
-        selected ? 'border-blue-500 shadow-xl' : 'border-purple-300'
-      } bg-purple-50 min-w-[150px]`}
+      className={`px-3 py-2 rounded-lg border-2 shadow-md transition-all ${selected ? 'border-blue-500 shadow-xl' : 'border-purple-300'
+        } bg-purple-50 min-w-[150px]`}
     >
       <div className="flex items-center gap-2">
         <Database className="w-4 h-4 text-purple-600" />
@@ -178,41 +173,7 @@ interface NetworkFlowVisualizerProps {
   onEdgeClick?: (edge: Edge) => void;
 }
 
-interface NetworkScanResult {
-  id: string;
-  agent_id: string;
-  company_id: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  network_findings: NetworkFinding[];
-  metadata: {
-    total_hosts: number;
-    total_findings: number;
-    port_findings: number;
-    vuln_findings: number;
-  };
-}
 
-interface NetworkFinding {
-  id: string;
-  finding_type: string;
-  severity: string;
-  host: string;
-  port: number;
-  protocol: string;
-  service_name: string;
-  service_version: string;
-  banner: string;
-  description: string;
-  remediation: string;
-  discovered_at: string;
-  status: string;
-  device_type?: string;
-  os?: string;
-  os_version?: string;
-  metadata?: any;
-}
 
 const NetworkFlowVisualizer: React.FC<NetworkFlowVisualizerProps> = ({
   className = '',
@@ -296,10 +257,10 @@ const NetworkFlowVisualizer: React.FC<NetworkFlowVisualizerProps> = ({
           }));
 
         // Convert edges
-        const newEdges: Edge[] = topologyData.edges.map((edge, index) => {
-          const sourceNode = topologyData.nodes.find((n) => n.id === edge.source);
+        const newEdges: Edge[] = topologyData.edges.map((edge) => {
+          // const sourceNode = topologyData.nodes.find((n) => n.id === edge.source);
           const targetNode = topologyData.nodes.find((n) => n.id === edge.target);
-          
+
           let strokeColor = '#8b5cf6';
           if (targetNode?.type === 'vulnerability') {
             const severity = targetNode.severity;
@@ -307,8 +268,8 @@ const NetworkFlowVisualizer: React.FC<NetworkFlowVisualizerProps> = ({
               severity === 'critical'
                 ? '#ef4444'
                 : severity === 'high'
-                ? '#f97316'
-                : '#eab308';
+                  ? '#f97316'
+                  : '#eab308';
           }
 
           return {
@@ -372,7 +333,7 @@ const NetworkFlowVisualizer: React.FC<NetworkFlowVisualizerProps> = ({
   );
 
   const handleNodeClick = useCallback(
-    (event: React.MouseEvent, node: Node) => {
+    (_event: React.MouseEvent, node: Node) => {
       setSelectedNode(node);
       if (onNodeClick) {
         onNodeClick(node);
@@ -382,7 +343,7 @@ const NetworkFlowVisualizer: React.FC<NetworkFlowVisualizerProps> = ({
   );
 
   const handleEdgeClick = useCallback(
-    (event: React.MouseEvent, edge: Edge) => {
+    (_event: React.MouseEvent, edge: Edge) => {
       if (onEdgeClick) {
         onEdgeClick(edge);
       }
@@ -481,10 +442,10 @@ const NetworkFlowVisualizer: React.FC<NetworkFlowVisualizerProps> = ({
               return severity === 'critical'
                 ? '#ef4444'
                 : severity === 'high'
-                ? '#f97316'
-                : severity === 'medium'
-                ? '#eab308'
-                : '#3b82f6';
+                  ? '#f97316'
+                  : severity === 'medium'
+                    ? '#eab308'
+                    : '#3b82f6';
             }
             return '#8b5cf6';
           }}

@@ -2,7 +2,8 @@
  * Error Boundary component for granular error handling
  * Provides error recovery mechanisms and user-friendly error messages
  */
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface ErrorBoundaryProps {

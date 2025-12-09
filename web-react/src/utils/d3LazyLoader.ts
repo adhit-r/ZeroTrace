@@ -12,15 +12,14 @@ export async function loadD3(): Promise<typeof import('d3')> {
 
   if (d3Promise) {
     await d3Promise;
-    return import('d3');
   }
 
   d3Promise = import('d3').then((d3) => {
     d3Loaded = true;
     return d3;
-  });
+  }) as Promise<any>;
 
-  return d3Promise;
+  return d3Promise as Promise<any>;
 }
 
 export async function loadD3Geo(): Promise<typeof import('d3-geo')> {

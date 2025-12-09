@@ -105,10 +105,10 @@ git push origin feature/documentation-and-cicd
 1. Go to GitHub repository
 2. Click on "Actions" tab
 3. Verify workflows are running:
-   - ✅ CI workflow
-   - ✅ CodeQL workflow
-   - ✅ Docker workflow
-   - ✅ Documentation workflow (on main branch)
+   -  CI workflow
+   -  CodeQL workflow
+   -  Docker workflow
+   -  Documentation workflow (on main branch)
 
 ### 2. Enable GitHub Pages
 

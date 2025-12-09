@@ -98,7 +98,17 @@ class JobQueue:
             await self.redis_pool.close()
 
 
-# Job functions (registered with ARQ worker)
+from .services.enrichment import enrichment_service
+
+async def startup(ctx):
+    """Initialize services on worker startup"""
+    logger.info("ARQ Worker starting up...")
+    await enrichment_service.initialize()
+
+async def shutdown(ctx):
+    """Cleanup on worker shutdown"""
+    logger.info("ARQ Worker shutting down...")
+    await enrichment_service.close()
 
 async def enrichment_job(ctx, app_data: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -106,33 +116,77 @@ async def enrichment_job(ctx, app_data: Dict[str, Any]) -> Dict[str, Any]:
     
     Args:
         ctx: ARQ context
-        app_data: Application data to enrich
+        app_data: Application data to enrich (expects 'packages' list or similar)
     """
-    logger.info(f"Processing enrichment job for app: {app_data.get('app_name')}")
+    logger.info(f"Processing enrichment job for app: {app_data.get('app_name', 'unknown')}")
     
-    # TODO: Implement enrichment logic
-    # - Call CVE enrichment service
-    # - Store results in database
-    # - Update job status
-    
-    return {
-        "status": "completed",
-        "app_id": app_data.get("id"),
-        "processed_at": datetime.utcnow().isoformat()
-    }
+    try:
+        # Extract software list from app_data
+        # Supports multiple formats: 
+        # 1. Direct list of packages
+        # 2. 'packages' or 'dependencies' key
+        software_list = []
+        if isinstance(app_data, list):
+            software_list = app_data
+        elif "packages" in app_data:
+            software_list = app_data["packages"]
+        elif "dependencies" in app_data:
+            software_list = app_data["dependencies"]
+        else:
+            # Fallback: treat app_data as single item if it has name/version
+            if "name" in app_data:
+                software_list = [app_data]
+        
+        if not software_list:
+            logger.warning("No software items found in enrichment job payload")
+            return {"status": "skipped", "reason": "no_packages"}
+
+        # Perform enrichment
+        results = await enrichment_service.enrich_software(software_list)
+        
+        # In a real app, we might save this to DB here if not handled by service
+        # For now, we return detailed results which ARQ stores
+        
+        return {
+            "status": "completed",
+            "app_id": app_data.get("id"),
+            "processed_count": len(results),
+            "vulnerabilities_found": sum(len(item.get("vulnerabilities", [])) for item in results),
+            "processed_at": datetime.utcnow().isoformat(),
+            "results": results 
+        }
+    except Exception as e:
+        logger.error(f"Enrichment job failed: {e}")
+        return {
+            "status": "failed",
+            "error": str(e)
+        }
 
 
 async def batch_enrichment_job(ctx, batch_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Background job for batch enrichment processing
     """
-    logger.info(f"Processing batch enrichment job: {len(batch_data.get('apps', []))} apps")
+    apps = batch_data.get("apps", [])
+    logger.info(f"Processing batch enrichment job: {len(apps)} apps")
     
-    # TODO: Implement batch enrichment logic
+    processed_count = 0
+    errors = 0
+    
+    for app in apps:
+        try:
+            # We can reusing the logic by calling enqueue or directly processing
+            # Processing directly to save queue overhead for batch
+            await enrichment_job(ctx, app)
+            processed_count += 1
+        except Exception as e:
+            logger.error(f"Failed to process app in batch: {e}")
+            errors += 1
     
     return {
         "status": "completed",
-        "processed_count": len(batch_data.get("apps", [])),
+        "processed_count": processed_count,
+        "error_count": errors,
         "processed_at": datetime.utcnow().isoformat()
     }
 
@@ -145,6 +199,9 @@ class WorkerFunctions:
         enrichment_job,
         batch_enrichment_job,
     ]
+    
+    on_startup = startup
+    on_shutdown = shutdown
 
 
 # Global job queue instance

@@ -30,7 +30,8 @@ func (tm *TransactionManager) WithTransaction(ctx context.Context, fn func(pgx.T
 	defer func() {
 		if p := recover(); p != nil {
 			_ = tx.Rollback(ctx)
-			panic(p)
+			// Don't panic, return error instead
+			err = fmt.Errorf("panic in transaction: %v", p)
 		} else if err != nil {
 			_ = tx.Rollback(ctx)
 		} else {
@@ -61,7 +62,8 @@ func (tm *TransactionManager) WithTransactionIsolation(
 	defer func() {
 		if p := recover(); p != nil {
 			_ = tx.Rollback(ctx)
-			panic(p)
+			// Don't panic, return error instead
+			err = fmt.Errorf("panic in transaction: %v", p)
 		} else if err != nil {
 			_ = tx.Rollback(ctx)
 		} else {
@@ -87,4 +89,3 @@ func (tm *TransactionManager) BatchOperations(ctx context.Context, operations []
 		return nil
 	})
 }
-

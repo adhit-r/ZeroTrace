@@ -63,6 +63,19 @@ class Settings(BaseSettings):
     # CPE Guesser Integration
     cpe_guesser_url: str = Field(default="http://cpe-guesser:8000", env="CPE_GUESSER_URL")
     cpe_guesser_enabled: bool = Field(default=True, env="CPE_GUESSER_ENABLED")
+    
+    # Threat Intelligence Feeds
+    cisa_kev_enabled: bool = Field(default=True, env="CISA_KEV_ENABLED")  # Enabled by default
+    mitre_attack_enabled: bool = Field(default=False, env="MITRE_ATTACK_ENABLED")
+    mitre_attack_data_url: str = Field(
+        default="https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json",
+        env="MITRE_ATTACK_DATA_URL"
+    )
+    alienvault_otx_enabled: bool = Field(default=False, env="ALIENVAULT_OTX_ENABLED")
+    alienvault_otx_api_key: Optional[str] = Field(default=None, env="ALIENVAULT_OTX_API_KEY")
+    opencve_enabled: bool = Field(default=False, env="OPENCVE_ENABLED")
+    opencve_api_url: str = Field(default="http://localhost:8000", env="OPENCVE_API_URL")
+    opencve_api_key: Optional[str] = Field(default=None, env="OPENCVE_API_KEY")
 
     class Config:
         env_file = ".env"
