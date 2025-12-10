@@ -455,3 +455,19 @@ type NetworkHost struct {
 	CreatedAt  time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at" db:"updated_at"`
 }
+
+// DashboardSnapshot represents a historical snapshot of dashboard metrics
+type DashboardSnapshot struct {
+	ID                   uuid.UUID `json:"id" db:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	OrganizationID       uuid.UUID `json:"organization_id" db:"organization_id"`
+	Date                 time.Time `json:"date" db:"date"`
+	TotalAssets          int       `json:"total_assets" db:"total_assets"`
+	TotalVulnerabilities int       `json:"total_vulnerabilities" db:"total_vulnerabilities"`
+	CriticalVulns        int       `json:"critical_vulns" db:"critical_vulns"`
+	HighVulns            int       `json:"high_vulns" db:"high_vulns"`
+	MediumVulns          int       `json:"medium_vulns" db:"medium_vulns"`
+	LowVulns             int       `json:"low_vulns" db:"low_vulns"`
+	AvgRiskScore         float64   `json:"avg_risk_score" db:"avg_risk_score"`
+	ComplianceScore      float64   `json:"compliance_score" db:"compliance_score"`
+	CreatedAt            time.Time `json:"created_at" db:"created_at"`
+}

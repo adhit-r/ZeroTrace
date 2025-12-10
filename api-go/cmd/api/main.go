@@ -213,6 +213,9 @@ func setupRoutes(router *gin.Engine, db *repository.Database, scanService *servi
 	// Analytics routes (unified service for heatmap, maturity, compliance)
 	analyticsHandler := handlers.NewAnalyticsHandler(analyticsService)
 
+	// Dashboard history route
+	router.GET("/api/dashboard/history", analyticsHandler.GetDashboardHistory)
+
 	// Risk heatmap routes (public for now)
 	heatmaps := router.Group("/api/heatmaps")
 	{

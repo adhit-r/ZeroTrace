@@ -21,6 +21,34 @@ func NewAnalyticsHandler(analyticsService *analytics.AnalyticsService) *Analytic
 	}
 }
 
+// GetDashboardHistory returns dashboard history snapshots
+func (h *AnalyticsHandler) GetDashboardHistory(c *gin.Context) {
+	organizationIDStr := c.Query("organization_id")
+	if organizationIDStr == "" {
+		BadRequest(c, "MISSING_PARAM", "Organization ID is required", nil)
+		return
+	}
+
+	organizationID, err := uuid.Parse(organizationIDStr)
+	if err != nil {
+		BadRequest(c, "INVALID_UUID", "Invalid organization ID format", err.Error())
+		return
+	}
+
+	days := 30 // Default to 30 days
+	if c.Query("days") != "" {
+		// Parse days
+	}
+
+	snapshots, err := h.analyticsService.GetDashboardHistory(organizationID, days)
+	if err != nil {
+		InternalServerError(c, "HISTORY_RETRIEVAL_FAILED", "Failed to retrieve dashboard history", err)
+		return
+	}
+
+	SuccessResponse(c, http.StatusOK, gin.H{"history": snapshots}, "Dashboard history retrieved successfully")
+}
+
 // Heatmap endpoints
 
 // GenerateRiskHeatmap generates a risk heatmap for an organization
@@ -353,4 +381,3 @@ func (h *AnalyticsHandler) GetExecutiveSummary(c *gin.Context) {
 
 	SuccessResponse(c, http.StatusOK, gin.H{"executive_summary": report.ExecutiveSummary}, "Executive summary retrieved successfully")
 }
-

@@ -10,6 +10,7 @@ import (
 	"zerotrace/api/internal/models"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -19,6 +20,7 @@ import (
 type Database struct {
 	DB          *gorm.DB
 	PgxPool     *pgxpool.Pool // Direct pgx pool for hot paths
+	Redis       *redis.Client
 	QueryCache  *QueryCache
 	StmtMgr     *PreparedStatementManager
 	PoolMonitor *PoolMonitor
@@ -85,14 +87,28 @@ func NewDatabase(cfg *config.Config) (*Database, error) {
 
 	log.Println("Database connected successfully (GORM + pgx pool)")
 
-	// Initialize query cache (Valkey will be passed later)
-	queryCache := NewQueryCache(pgxPool, nil, 5*time.Minute)
+	// Initialize Redis
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", cfg.RedisHost, cfg.RedisPort),
+		Password: cfg.RedisPassword,
+		DB:       cfg.RedisDB,
+	})
+
+	// Test Redis connection
+	ctx := context.Background()
+	if err := redisClient.Ping(ctx).Err(); err != nil {
+		log.Printf("Warning: Failed to connect to Redis: %v", err)
+		// We don't return error here to allow running without Redis (it will just fail cache operations)
+	} else {
+		log.Println("Redis connected successfully")
+	}
+
+	// Initialize query cache with Redis client
+	queryCache := NewQueryCache(pgxPool, redisClient, 5*time.Minute)
 
 	// Initialize prepared statement manager
 	stmtMgr := NewPreparedStatementManager(pgxPool)
 
-	// Initialize prepared statements
-	ctx := context.Background()
 	if err := stmtMgr.InitializePreparedStatements(ctx); err != nil {
 		log.Printf("Warning: Failed to initialize prepared statements: %v", err)
 	}
@@ -106,6 +122,7 @@ func NewDatabase(cfg *config.Config) (*Database, error) {
 	return &Database{
 		DB:          db,
 		PgxPool:     pgxPool,
+		Redis:       redisClient,
 		QueryCache:  queryCache,
 		StmtMgr:     stmtMgr,
 		PoolMonitor: poolMonitor,
@@ -128,6 +145,7 @@ func (d *Database) AutoMigrate() error {
 		&models.NetworkHost{},
 		&models.EnrollmentToken{},
 		&models.AgentCredential{},
+		&models.DashboardSnapshot{},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
@@ -153,6 +171,13 @@ func (d *Database) Close() error {
 	// Close pgx pool
 	if d.PgxPool != nil {
 		d.PgxPool.Close()
+	}
+
+	// Close Redis
+	if d.Redis != nil {
+		if err := d.Redis.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close Redis: %w", err))
+		}
 	}
 
 	if len(errs) > 0 {

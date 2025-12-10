@@ -44,18 +44,30 @@ func HealthCheck(db *repository.Database) gin.HandlerFunc {
 			dbStatus = "error"
 		}
 
+		// Check Redis health
+		redisStatus := "unknown"
+		if db.Redis != nil {
+			if err := db.Redis.Ping(c.Request.Context()).Err(); err == nil {
+				redisStatus = "healthy"
+			} else {
+				redisStatus = "unhealthy"
+			}
+		} else {
+			redisStatus = "disabled"
+		}
+
 		response := models.HealthCheckResponse{
 			Status:    "healthy",
 			Timestamp: time.Now(),
 			Services: map[string]string{
 				"api":      "healthy",
 				"database": dbStatus,
-				"redis":    "disabled", // Redis integration is currently pending
+				"redis":    redisStatus,
 			},
 		}
 
-		// If DB is down, overall status might be degraded, but we return 200 OK so monitoring can read the body
-		if dbStatus != "healthy" {
+		// If DB or Redis is down, overall status is degraded
+		if dbStatus != "healthy" || (redisStatus != "healthy" && redisStatus != "disabled") {
 			response.Status = "degraded"
 		}
 
